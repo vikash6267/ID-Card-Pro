@@ -6,12 +6,13 @@ import Cropper from "react-cropper";
 import "cropperjs/dist/cropper.css";
 import axios from "../../../axiosconfig";
 import Swal from "sweetalert2";
+import {Camera} from "react-camera-pro";
 
 const StudentPhotoCapture = ({ setCroppedPhoto, aspectRatio }) => {
   const [photo, setPhoto] = useState(null);
   const [isCropModalOpen, setIsCropModalOpen] = useState(false);
   const cropperRef = useRef(null);
-  const [cameraFacingMode, setCameraFacingMode] = useState("environment");
+  const [cameraFacingMode, setCameraFacingMode] = useState("user");
   const [isCameraAccessible, setIsCameraAccessible] = useState(true);
   const webcamRef = useRef(null);
 
@@ -34,7 +35,7 @@ const StudentPhotoCapture = ({ setCroppedPhoto, aspectRatio }) => {
 
   const handleCaptureClick = () => {
     if (webcamRef.current) {
-      const imageSrc = webcamRef.current.getScreenshot();
+      const imageSrc = webcamRef.current.takePhoto();
       setPhoto(imageSrc);
       setIsCropModalOpen(true);
     }
@@ -47,19 +48,6 @@ const StudentPhotoCapture = ({ setCroppedPhoto, aspectRatio }) => {
       setIsCropModalOpen(false);
     }
   };
-
-
-  useEffect(() => {
-    const getCameras = async () => {
-      const devices = await navigator.mediaDevices.enumerateDevices();
-      const videoDevices = devices.filter((device) => device.kind === "videoinput");
-      console.log("Available video devices:", videoDevices);
-    };
-  
-    getCameras();
-  }, []);
-
-  
 
   const handleCameraSwitch = () => {
     setCameraFacingMode((prevMode) => (prevMode === "user" ? "environment" : "user"));
@@ -75,14 +63,15 @@ const StudentPhotoCapture = ({ setCroppedPhoto, aspectRatio }) => {
 
   return (
     <div className="text-center mt-6">
-      <Webcam
+      <Camera
+    
         ref={webcamRef}
+        aspectRatio={5 / 4} 
         audio={false}
+        facingMode={cameraFacingMode}
         className="rounded-lg border-2 border-gray-300 shadow-lg"
         screenshotFormat="image/jpeg"
-        videoConstraints={{
-          facingMode: cameraFacingMode,
-        }}
+      
       />
       <div className="mt-6 flex justify-center gap-6">
         <button
@@ -140,10 +129,10 @@ const StudentDisplay = () => {
   const [studentClass, setStudentClass] = useState("");
   const [stuSection, setSection] = useState("");
   const [stuCourse, setCourse] = useState("");
-  const [aspectRatio, setAspectRatio] = useState(1);
+  const [aspectRatio, setAspectRatio] = useState(1 / 1);
 
   const handleAspectRatioChange = (e) => {
-    const selectedRatio = e.target.value === "passport" ? 0.8 : 1;
+    const selectedRatio = e.target.value === "passport" ? 7 / 9 : 1 / 1;
     setAspectRatio(selectedRatio);
   };
 
