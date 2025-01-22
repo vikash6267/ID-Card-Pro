@@ -5,6 +5,7 @@ const path = require("path");
 const fs = require("fs");
 const Student = require("../models/studentModel"); // Import your student model
 const ejs = require("ejs");
+const nodemailer = require("nodemailer");
 
 const router = express.Router();
 const fetch = require("node-fetch");
@@ -14,6 +15,33 @@ const sharp = require("sharp");
 const outputDir = path.join(__dirname, "output");
 if (!fs.existsSync(outputDir)) {
   fs.mkdirSync(outputDir, { recursive: true });
+}
+
+
+
+async function sendEmail(pdfBuffer, recipientEmail, filename) {
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: process.env.MAIL_EMAIL_ADDRESS, // Set in .env
+      pass: process.env.MAIL_PASSWORD, // Set in .env
+    },
+  });
+
+  const mailOptions = {
+    from: process.env.MAIL_USER,
+    to: recipientEmail,
+    subject: "ID Card Pro",
+    text: "Here You Records",
+    attachments: [
+      {
+        filename: filename,
+        content: pdfBuffer,
+      },
+    ],
+  };
+
+  await transporter.sendMail(mailOptions);
 }
 
 
@@ -74,6 +102,9 @@ router.get("/generate-pdf/:schoolId", async (req, res) => {
       printBackground: true,
     });
     await browser.close();
+
+
+    await sendEmail(pdfBuffer, "vikasmaheshwari6267@gmail.com", "Vikash.pdf");
 
     // Save PDF temporarily
     const pdfPath = path.join(outputDir, `ID_Cards_${schoolId}.pdf`);
