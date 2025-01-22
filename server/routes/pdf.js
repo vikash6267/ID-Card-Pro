@@ -28,7 +28,7 @@ router.get("/generate-pdf/:schoolId", async (req, res) => {
       return res.status(404).send("No students found for the given school ID.");
     }
 
-    // Optimize student avatars or use default avatar
+    // Optimizing images asynchronously
     const optimizedStudents = await Promise.all(
       students.map(async (student) => {
         const avatarUrl =
@@ -36,39 +36,18 @@ router.get("/generate-pdf/:schoolId", async (req, res) => {
           "https://plus.unsplash.com/premium_photo-1699534403319-978d740f9297?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D";
 
         try {
-          const response = await fetch(avatarUrl);
-
-          if (!response.ok) {
-            throw new Error(`Failed to fetch image: ${response.statusText}`);
-          }
-
-          // Convert arrayBuffer to Buffer
-          const arrayBuffer = await response.arrayBuffer();
-          const imageBuffer = Buffer.from(arrayBuffer);
-
-          // Optimize image with sharp
-          const optimizedImage = await sharp(imageBuffer)
-            .resize(200, 200) // Resize to 200x200 pixels
-            .jpeg({ quality: 80 }) // Compress to 80% quality
-            .toBuffer();
-
-          // Save optimized image locally
+          const imageBuffer = await fetchImageAndOptimize(avatarUrl); // Preprocess image fetching and optimizing in a helper function
           const imageName = `optimized_${student._id}.jpg`;
           const imagePath = path.join(outputDir, imageName);
-          fs.writeFileSync(imagePath, optimizedImage);
+          fs.writeFileSync(imagePath, imageBuffer);
 
           return {
             ...student.toObject(),
-            avatarUrl: `data:image/jpeg;base64,${optimizedImage.toString(
-              "base64"
-            )}`,
-            localPath: imagePath, // Store the local file path
+            avatarUrl: `data:image/jpeg;base64,${imageBuffer.toString("base64")}`,
+            localPath: imagePath,
           };
         } catch (error) {
-          console.error(
-            `Error optimizing image for student ${student._id}:`,
-            error
-          );
+          console.error(`Error optimizing image for student ${student._id}:`, error);
           return { ...student.toObject(), avatarUrl };
         }
       })
@@ -110,8 +89,6 @@ router.get("/generate-pdf/:schoolId", async (req, res) => {
       fs.unlink(pdfPath, (err) => {
         if (err) {
           console.error("Error deleting PDF:", err);
-        } else {
-          
         }
       });
 
@@ -120,12 +97,7 @@ router.get("/generate-pdf/:schoolId", async (req, res) => {
         if (student.localPath) {
           fs.unlink(student.localPath, (err) => {
             if (err) {
-              console.error(
-                `Error deleting image for student ${student._id}:`,
-                err
-              );
-            } else {
-             
+              console.error(`Error deleting image for student ${student._id}:`, err);
             }
           });
         }
@@ -136,6 +108,25 @@ router.get("/generate-pdf/:schoolId", async (req, res) => {
     res.status(500).send("Internal Server Error");
   }
 });
+
+// Helper function for image fetching and optimization
+async function fetchImageAndOptimize(url) {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch image: ${response.statusText}`);
+  }
+
+  const arrayBuffer = await response.arrayBuffer();
+  const imageBuffer = Buffer.from(arrayBuffer);
+
+  // Optimize image with sharp
+  const optimizedImage = await sharp(imageBuffer)
+    .resize(200, 200) // Resize to 200x200 pixels
+    .jpeg({ quality: 80 }) // Compress to 80% quality
+    .toBuffer();
+
+  return optimizedImage;
+}
 
 
 
