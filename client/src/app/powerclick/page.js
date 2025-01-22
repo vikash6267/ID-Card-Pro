@@ -11,9 +11,43 @@ const StudentPhotoCapture = ({ setCroppedPhoto, aspectRatio }) => {
   const [photo, setPhoto] = useState(null);
   const [isCropModalOpen, setIsCropModalOpen] = useState(false);
   const cropperRef = useRef(null);
-  const [cameraFacingMode, setCameraFacingMode] = useState("user");
+  const [cameraFacingMode, setCameraFacingMode] = useState("environment");
   const [isCameraAccessible, setIsCameraAccessible] = useState(true);
   const webcamRef = useRef(null);
+
+  const videoRef = useRef(null);
+  const canvasRef = useRef(null);
+  let stream = useRef(null);
+
+  useEffect(() => {
+    const startCamera = async () => {
+      try {
+        stream.current = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: cameraFacingMode },
+        });
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream.current;
+          videoRef.current.play();
+        }
+      } catch (error) {
+        setIsCameraAccessible(false);
+        Swal.fire({
+          title: "Camera Permission Denied",
+          text: "Please enable camera access in your browser settings to capture photos.",
+          icon: "error",
+        });
+      }
+    };
+    startCamera();
+
+    return () => {
+      if (stream.current) {
+        const tracks = stream.current.getTracks();
+        tracks.forEach((track) => track.stop());
+      }
+    };
+  }, [cameraFacingMode]);
+
 
   useEffect(() => {
     const requestCameraPermission = async () => {
@@ -32,13 +66,26 @@ const StudentPhotoCapture = ({ setCroppedPhoto, aspectRatio }) => {
     requestCameraPermission();
   }, []);
 
+
+useEffect(() => {
+  if (videoRef.current && canvasRef.current) {
+    canvasRef.current.width = videoRef.current.videoWidth;
+    canvasRef.current.height = videoRef.current.videoHeight;
+  }
+}, [videoRef.current, canvasRef.current]);
+
+
   const handleCaptureClick = () => {
-    if (webcamRef.current) {
-      const imageSrc = webcamRef.current.getScreenshot();
+    console.log(videoRef)
+    if (videoRef.current && canvasRef.current) {
+      const context = canvasRef.current.getContext("2d");
+      context.drawImage(videoRef.current, 0, 0, canvasRef.current.width, canvasRef.current.height);
+      const imageSrc = canvasRef.current.toDataURL("image/jpeg");
       setPhoto(imageSrc);
       setIsCropModalOpen(true);
     }
   };
+  
 
   const handleCrop = () => {
     if (cropperRef.current && cropperRef.current.cropper) {
@@ -62,14 +109,16 @@ const StudentPhotoCapture = ({ setCroppedPhoto, aspectRatio }) => {
 
   return (
     <div className="text-center mt-6">
-      <Webcam
-        ref={webcamRef}
-        audio={false}
+     <video
+        ref={videoRef}
         className="rounded-lg border-2 border-gray-300 shadow-lg"
-        screenshotFormat="image/jpeg"
-        videoConstraints={{
-          facingMode: cameraFacingMode,
-        }}
+
+      />
+       <canvas
+        ref={canvasRef}
+        style={{ display: "none" }}
+        width={640}
+        height={480}
       />
       <div className="mt-6 flex justify-center gap-6">
         <button
@@ -122,7 +171,7 @@ const StudentPhotoCapture = ({ setCroppedPhoto, aspectRatio }) => {
 const StudentDisplay = () => {
   const [students, setStudents] = useState([]);
   const [currentStudentIndex, setCurrentStudentIndex] = useState(0);
-  const [capturedPhoto, setCapturedPhoto] = useState(null);
+
   const [croppedPhoto, setCroppedPhoto] = useState(null);
   const [studentClass, setStudentClass] = useState("");
   const [stuSection, setSection] = useState("");
@@ -153,7 +202,6 @@ const StudentDisplay = () => {
     }
   }, [currentStudentIndex]);
 
-  const handlePhotoCaptured = (photoUrl) => setCapturedPhoto(photoUrl);
 
   const handleNextStudent = () => {
     setCurrentStudentIndex((prevIndex) => (prevIndex + 1) % students.length);
