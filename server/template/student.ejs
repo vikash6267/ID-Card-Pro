@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+    }
+    .page {
+      display: flex;
+      flex-wrap: wrap;
+      page-break-after: always;
+    }
+    .id-card {
+      width: 48%;
+      margin: 1%;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      padding: 10px;
+      box-sizing: border-box;
+      display: flex;
+    }
+    .avatar {
+      width: 80px;
+      height: 80px;
+      margin-right: 10px;
+      border-radius: 50%;
+    }
+    .details {
+      flex: 1;
+    }
+    .details h3 {
+      margin: 0;
+      font-size: 14px;
+    }
+    .details p {
+      margin: 5px 0;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <% pages.forEach((students) => { %>
+    <div class="page">
+      <% students.forEach((student) => { %>
+        <div class="id-card">
+          <img src="<%= student.avatarUrl %>" alt="Avatar" class="avatar">
+     
+          <div class="details">
+            <h3><%= student.name %></h3>
+                      <p><strong>Roll No:</strong> <%= student.rollNo %></p>
+            <p><strong>Class:</strong> <%= student.class %></p>
+            <p><strong>Section:</strong> <%= student.section %></p>
+            <p><strong>Valid Upto:</strong> <%= student.validUpTo %></p>
+          </div>
+        </div>
+      <% }) %>
+    </div>
+  <% }) %>
+</body>
+</html>

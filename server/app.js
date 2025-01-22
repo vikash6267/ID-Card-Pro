@@ -610,6 +610,7 @@ app.use("/user", require("./routes/userRoutes.js"));
 // Admin Routes
 app.use("/admin", require("./routes/adminRoutes.js"));
 app.use("/image", require("./routes/imageRoute.js"));
+app.use("/pdf", require("./routes/pdf.js"));
 
 //error handling
 
