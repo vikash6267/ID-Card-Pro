@@ -6,10 +6,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Student Details</title>
   <style>
+    @page {
+      size: A4;
+      margin: 40px;
+    }
+
     body {
       font-family: Arial, sans-serif;
       margin: 0;
-      padding: 0;
+      padding: 20px;
       background-color: #f4f4f4;
     }
 
@@ -18,11 +23,12 @@
       margin-top: 20px;
       font-size: 24px;
       color: #333;
+      page-break-before: always;
     }
 
     .student-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      display: flex;
+      flex-wrap: wrap;
       gap: 10px;
       padding: 10px;
     }
@@ -34,28 +40,33 @@
       overflow: hidden;
       text-align: center;
       padding: 8px;
+      width: calc(33.33% - 10px);
+      box-sizing: border-box;
+      page-break-inside: avoid;
+      break-inside: avoid;
     }
 
     .student-image img {
-      width: 50%;
-      height: 90px;
-      object-fit: fit;
+      width: 55%;
+      height: 100px;
+      object-fit: cover;
       border-radius: 50%;
     }
 
     .student-details h3 {
       font-size: 15px;
       color: #333;
-      margin: 5px 0; /* Reduced margin */
+      margin: 5px 0;
     }
 
     .student-details p {
       font-size: 14px;
       color: #666;
-      margin: 5px 0; /* Reduced margin */
+      margin: 5px 0;
     }
 
     .extra-fields ul {
+      text-align: center;
       list-style-type: none;
       padding: 0;
       margin: 0;
@@ -64,23 +75,24 @@
     .extra-fields li {
       font-size: 12px;
       color: #777;
-      margin: 3px 0; /* Reduced margin */
+      margin: 3px 0;
     }
 
     .page-break {
-      page-break-before: always;
+      page-break-after: always;
+      clear: both;
     }
 
     /* Responsiveness */
     @media (max-width: 768px) {
-      .student-grid {
-        grid-template-columns: repeat(2, 1fr);
+      .student-card {
+        width: calc(50% - 10px);
       }
     }
 
     @media (max-width: 480px) {
-      .student-grid {
-        grid-template-columns: 1fr;
+      .student-card {
+        width: 100%;
       }
 
       .student-details h3 {
@@ -90,7 +102,18 @@
       .student-details p,
       .extra-fields li {
         font-size: 8px;
-        margin: 2px 0; /* Reduced margin on small screens */
+        margin: 2px 0;
+      }
+    }
+
+    @media print {
+      body {
+        background-color: white;
+      }
+
+      .student-card {
+        box-shadow: none;
+        border: 1px solid #ddd;
       }
     }
   </style>
@@ -98,17 +121,17 @@
 
 <body>
   <% Object.entries(groupedByClass).forEach(([className, students]) => { %>
-    <h1 class="class-heading">Class: <%= className %></h1>
+    <h1 class="class-heading"><%= heading %></h1>
+
     <div class="student-grid">
-      <% students.forEach((student,index) => { %>
+      <% students.forEach((student, index) => { %>
         <div class="student-card">
           <div class="student-image">
             <img src="<%= student.avatarUrl %>" alt="Student Image">
           </div>
           <div class="student-details">
             <h3><%= student.name %></h3>
-            <p><strong>Roll No:</strong> <%= student.rollNo || "N/A" %></p>
-             <div class="extra-fields">
+            <div class="extra-fields">
               <ul>
                 <% Object.entries(student.extraFields).forEach(([key, value]) => { %>
                   <li><strong><%= key %>:</strong> <%= value %></li>
@@ -118,18 +141,14 @@
           </div>
         </div>
 
-        <% if ((index + 1) % 10 === 0) { %>
+        <% if ((index + 1) % 9 === 0 || index === students.length - 1) { %>
           <div class="page-break"></div>
         <% } %>
-  
-
-
       <% }) %>
     </div>
 
-    
-    <div class="page-break"></div> <!-- Add a page break after each class -->
   <% }) %>
 </body>
 
 </html>
+

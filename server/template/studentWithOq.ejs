@@ -1,139 +1,110 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Student Details</title>
   <style>
+    @page {
+      size: A4;
+      margin: 20px;
+    }
     body {
       font-family: Arial, sans-serif;
       margin: 0;
-      padding: 0;
+      padding: 20px;
       background-color: #f4f4f4;
     }
-
     .class-heading {
       text-align: center;
-      margin-top: 20px;
+      padding: 10px 0;
       font-size: 24px;
       color: #333;
+      page-break-before: always;
     }
-
     .student-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 10px;
-      padding: 10px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-around;
     }
-
     .student-card {
       background-color: white;
       border-radius: 8px;
       box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-      overflow: hidden;
-      text-align: center;
-      padding: 8px;
+      width: calc(33.33% - 20px);
+      margin: 10px;
+      padding: 10px;
+      box-sizing: border-box;
+      page-break-inside: avoid;
     }
-
     .student-image img {
-      width: 50%;
-      height: 90px;
-      object-fit: fit;
+      width: 80px;
+      height: 80px;
+      object-fit: cover;
       border-radius: 50%;
+      margin: 0 auto;
+      display: block;
     }
-
     .student-details h3 {
-      font-size: 15px;
-      color: #333;
-      margin: 5px 0; /* Reduced margin */
-    }
-
-    .student-details p {
       font-size: 14px;
-      color: #666;
-      margin: 5px 0; /* Reduced margin */
+      color: #333;
+      margin: 10px 0 5px;
+      text-align: center;
     }
-
-    .extra-fields ul {
-      list-style-type: none;
-      padding: 0;
-      margin: 0;
-    }
-
-    .extra-fields li {
+    .student-details p {
       font-size: 12px;
-      color: #777;
-      margin: 3px 0; /* Reduced margin */
+      color: #666;
+      margin: 5px 0;
+      text-align: center;
     }
-
-    .page-break {
-      page-break-before: always;
+    .qr-code {
+      text-align: center;
+      margin-top: 10px;
     }
-
-    /* Responsiveness */
-    @media (max-width: 768px) {
-      .student-grid {
-        grid-template-columns: repeat(2, 1fr);
-      }
+    .qr-code p {
+      font-size: 10px;
+      margin-bottom: 5px;
     }
-
-    @media (max-width: 480px) {
-      .student-grid {
-        grid-template-columns: 1fr;
+    .qr-code img {
+      width: 90px;
+      height: 90px;
+    }
+    @media print {
+      .student-card {
+        page-break-inside: avoid;
+        break-inside: avoid;
       }
-
-      .student-details h3 {
-        font-size: 12px;
-      }
-
-      .student-details p,
-      .extra-fields li {
-        font-size: 8px;
-        margin: 2px 0; /* Reduced margin on small screens */
+      .class-heading {
+        page-break-before: always;
       }
     }
   </style>
 </head>
-
 <body>
   <% Object.entries(groupedByClass).forEach(([className, students]) => { %>
-    <h1 class="class-heading">Class: <%= className %></h1>
+    <h1 class="class-heading"><%= heading %></h1>
     <div class="student-grid">
-      <% students.forEach((student,index) => { %>
+      <% students.forEach((student, index) => { %>
         <div class="student-card">
           <div class="student-image">
             <img src="<%= student.avatarUrl %>" alt="Student Image">
           </div>
           <div class="student-details">
             <h3><%= student.name %></h3>
-            <p><strong>Roll No:</strong> <%= student.rollNo || "N/A" %></p>
-             <div class="extra-fields">
-              <ul>
-                <% Object.entries(student.extraFields).forEach(([key, value]) => { %>
-                  <li><strong><%= key %>:</strong> <%= value %></li>
-                <% }) %>
-              </ul>
-            </div>
-
-            <div class="qr-code">
-              <img src="<%= student.qrCodeImage %>" alt="QR Code" style="width: 100px; height: 100px;" />
+            <% if (heading === "All Records") { %>
+              <p><strong>Class:</strong> <%= student.class %></p>
+              <p><strong>Section:</strong> <%= student.section %></p>
+            <% } %>
           </div>
+          <div class="qr-code">
+            <p>Please Scan QR For ID Card
+              Updation</p>
+            <img src="<%= student.qrCodeImage %>" alt="QR Code">
           </div>
         </div>
-
-        <% if ((index + 1) % 10 === 0) { %>
-          <div class="page-break"></div>
-        <% } %>
-  
-
-
       <% }) %>
     </div>
-
-    
-    <div class="page-break"></div> <!-- Add a page break after each class -->
   <% }) %>
 </body>
-
 </html>
+

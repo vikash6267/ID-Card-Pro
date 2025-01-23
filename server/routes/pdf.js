@@ -96,6 +96,17 @@ router.get("/generate-pdf/:schoolId", async (req, res) => {
     const withQR = req.query.withQR; // Search term from query parameters
 
 
+    let heading = "All Records"; // Default heading
+
+    if (studentClass || section || course) {
+      const selectedFilters = [];
+      if (studentClass) selectedFilters.push(`Class: ${studentClass}`);
+      if (section) selectedFilters.push(`Section: ${section}`);
+      if (course) selectedFilters.push(`Course: ${course}`);
+      heading = selectedFilters.join(", ");
+    }
+
+
     let queryObj = { school: schoolId };
 
     if (status) {
@@ -159,7 +170,6 @@ if(withQR==="true"){
           const imagePath = path.join(outputDir, imageName);
           fs.writeFileSync(imagePath, imageBuffer);
 
-          console.log(student.name)
           return {
             ...student.toObject(),
             avatarUrl: `data:image/jpeg;base64,${imageBuffer.toString(
@@ -209,22 +219,22 @@ if(withQR==="true"){
     if (withQR === "true") {
       html = await ejs.renderFile(
         path.join(__dirname, "../template/studentWithOq.ejs"),
-        { groupedByClass } // Pass grouped data to the template
+        { groupedByClass,heading } // Pass grouped data to the template
       );
     } else {
       html = await ejs.renderFile(
         path.join(__dirname, "../template/student.ejs"),
-        { groupedByClass } // Pass grouped data to the template
+        { groupedByClass,heading } // Pass grouped data to the template
       );
     }
 
     // Generate PDF using Puppeteer
-    const browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
-    });
+    // const browser = await puppeteer.launch({
+    //   headless: true,
+    //   args: ['--no-sandbox', '--disable-setuid-sandbox']
+    // });
 
-    // const browser = await puppeteer.launch();
+    const browser = await puppeteer.launch();
 
     const page = await browser.newPage();
     await page.setContent(html, { waitUntil: "networkidle0", timeout: 60000 });
