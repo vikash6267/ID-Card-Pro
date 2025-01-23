@@ -108,27 +108,32 @@
           <div class="student-details">
             <h3><%= student.name %></h3>
             <p><strong>Roll No:</strong> <%= student.rollNo || "N/A" %></p>
-            <div class="extra-fields">
+             <div class="extra-fields">
               <ul>
                 <% Object.entries(student.extraFields).forEach(([key, value]) => { %>
                   <li><strong><%= key %>:</strong> <%= value %></li>
                 <% }) %>
               </ul>
             </div>
+
+            <div class="qr-code">
+              <img src="<%= student.qrCodeImage %>" alt="QR Code" style="width: 100px; height: 100px;" />
           </div>
-          <div class="qr-code">
-            <img src="<%= student.qrCodeImage %>" alt="QR Code" style="width: 100px; height: 100px;" />
-        </div>
-        
+          </div>
         </div>
 
         <% if ((index + 1) % 10 === 0) { %>
-            <div class="page-break"></div>
-          <% } %>
-      <% }) %>
+          <div class="page-break"></div>
+        <% } %>
+  
+
+
       <% }) %>
     </div>
- 
+
+    
+    <div class="page-break"></div> <!-- Add a page break after each class -->
+  <% }) %>
 </body>
 
 </html>

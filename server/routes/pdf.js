@@ -149,8 +149,10 @@ router.get("/generate-pdf/:schoolId", async (req, res) => {
             : avatarUrl;
 
         const qrCodeUrl = `https://cardpro.co.in/shareview/edit/${student._id}?schoolid=${schoolId}`;
-        const qrCodeImage = await generateQRWithLogo(qrCodeUrl); // Generate QR code as base64 image
-
+        let qrCodeImage = ''
+if(withQR==="true"){
+  qrCodeImage = await generateQRWithLogo(qrCodeUrl); // Generate QR code as base64 image
+}
         try {
           const imageBuffer = await fetchImageAndOptimize(avatarUrl); // Preprocess image fetching and optimizing in a helper function
           const imageName = `optimized_${student._id}.jpg`;
@@ -216,10 +218,11 @@ router.get("/generate-pdf/:schoolId", async (req, res) => {
     }
 
     // Generate PDF using Puppeteer
-    const browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
-    });
+    // const browser = await puppeteer.launch({
+    //   headless: true,
+    //   args: ['--no-sandbox', '--disable-setuid-sandbox']
+    // });
+    const browser = await puppeteer.launch();
     const page = await browser.newPage();
     await page.setContent(html, { waitUntil: "networkidle0", timeout: 60000 });
     const pdfBuffer = await page.pdf({

@@ -100,7 +100,7 @@
   <% Object.entries(groupedByClass).forEach(([className, students]) => { %>
     <h1 class="class-heading">Class: <%= className %></h1>
     <div class="student-grid">
-      <% students.forEach((student) => { %>
+      <% students.forEach((student,index) => { %>
         <div class="student-card">
           <div class="student-image">
             <img src="<%= student.avatarUrl %>" alt="Student Image">
@@ -117,8 +117,17 @@
             </div>
           </div>
         </div>
+
+        <% if ((index + 1) % 10 === 0) { %>
+          <div class="page-break"></div>
+        <% } %>
+  
+
+
       <% }) %>
     </div>
+
+    
     <div class="page-break"></div> <!-- Add a page break after each class -->
   <% }) %>
 </body>
