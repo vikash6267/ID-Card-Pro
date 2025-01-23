@@ -76,7 +76,6 @@ async function generateQRWithLogo(url, logoUrl) {
     // Convert to base64
     const qrCodeWithLogo = canvas.toDataURL();
     
-    console.log('QR Code with logo generated successfully!');
 
     return qrCodeWithLogo;
   } catch (error) {
@@ -95,7 +94,7 @@ router.get("/generate-pdf/:schoolId", async (req, res) => {
     const section = req.query.section; // Search term from query parameters
     const course = req.query.course; // Search term from query parameters
     const withQR = req.query.withQR; // Search term from query parameters
-    console.log(req.query);
+
 
     let queryObj = { school: schoolId };
 
@@ -217,7 +216,10 @@ router.get("/generate-pdf/:schoolId", async (req, res) => {
     }
 
     // Generate PDF using Puppeteer
-    const browser = await puppeteer.launch();
+    const browser = await puppeteer.launch({
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox']
+    });
     const page = await browser.newPage();
     await page.setContent(html, { waitUntil: "networkidle0", timeout: 60000 });
     const pdfBuffer = await page.pdf({
