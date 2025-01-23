@@ -1,36 +1,134 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <style>
-      @page {
-        margin: 1in;
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Details</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f4f4f4;
+    }
+
+    .class-heading {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 24px;
+      color: #333;
+    }
+
+    .student-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      padding: 10px;
+    }
+
+    .student-card {
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+      text-align: center;
+      padding: 8px;
+    }
+
+    .student-image img {
+      width: 50%;
+      height: 90px;
+      object-fit: fit;
+      border-radius: 50%;
+    }
+
+  
+
+    .student-details h3 {
+      font-size: 15px;
+      color: #333;
+    }
+
+    .student-details p {
+      font-size: 14px;
+      color: #666;
+    }
+
+    .extra-fields ul {
+      list-style-type: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .extra-fields li {
+      font-size: 12px;
+      color: #777;
+  
+    }
+
+    .page-break {
+      page-break-before: always;
+    }
+
+    /* Responsiveness */
+    @media (max-width: 768px) {
+      .student-grid {
+        grid-template-columns: repeat(2, 1fr);
       }
-      .page-break {
-        page-break-after: always;
+    }
+
+    @media (max-width: 480px) {
+      .student-grid {
+        grid-template-columns: 1fr;
       }
-      .class-heading {
-        font-size: 18px;
-        font-weight: bold;
-        margin-bottom: 10px;
+
+      .student-details h3 {
+        font-size: 12px;
       }
-      .student {
-        margin-bottom: 15px;
+
+      .student-details p,
+      .extra-fields li {
+        font-size: 8px;
       }
-    </style>
-  </head>
-  <body>
-    <% for (const [className, students] of Object.entries(groupedByClass)) { %>
-      <div>
-        <div class="class-heading">Class: <%= className %></div>
-        <% students.forEach((student) => { %>
-          <div class="student">
-            <p>Name: <%= student.name %></p>
-            <p>Section: <%= student.section || "N/A" %></p>
-            <img src="<%= student.avatarUrl %>" alt="Avatar" width="100" height="100" />
+    }
+  </style>
+</head>
+
+<body>
+
+    <% pages.forEach((page, pageIndex) => { %>
+      <% if (pageIndex === 0 || pageIndex % 10 === 0) { %>
+        <h1 class="class-heading">Class: <%= page[0].class || "No Class Assigned" %></h1>
+      <% } %>
+      <div class="student-grid">
+        <% page.forEach(student => { %> <!-- Directly iterate over each student in the page -->
+          <div class="student-card">
+            <div class="student-image">
+              <img src="<%= student.avatarUrl %>" alt="Student Image">
+            </div>
+            <div class="student-details">
+              <h3><%= student.name %></h3>
+              <p><strong>Roll No:</strong> <%= student.rollNo || "N/A" %></p>
+              <p><strong>class</strong> <%= student.class || "N/A" %></p>
+              <p><strong>section</strong> <%= student.section || "N/A" %></p>
+              <div class="extra-fields">
+                <ul>
+                  <% Object.entries(student.extraFields).forEach(([key, value]) => { %>
+                    <li><strong><%= key %>:</strong> <%= value %></li>
+                  <% }) %>
+                </ul>
+              </div>
+            </div>
           </div>
-        <% }); %>
+        <% }) %>
       </div>
-      <div class="page-break"></div>
-    <% } %>
-  </body>
+      <% if (pageIndex < pages.length - 1) { %>
+        <div class="page-break"></div>
+      <% } %>
+    <% }) %>
+  
+  
+</body>
+
 </html>

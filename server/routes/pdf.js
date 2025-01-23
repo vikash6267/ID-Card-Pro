@@ -114,16 +114,24 @@ const optimizedStudents = await Promise.all(
         ...student.toObject(),
         avatarUrl: `data:image/jpeg;base64,${imageBuffer.toString("base64")}`,
         localPath: imagePath,
+        class :student.class,
+        section :student.section,
+        extraFields: student.extraFields ? Object.fromEntries(student.extraFields) : {}, // Convert Map to object
       };
     } catch (error) {
       console.error(
         `Error optimizing image for student ${student._id}:`,
         error
       );
-      return { ...student.toObject(), avatarUrl };
+      return { 
+        ...student.toObject(), 
+        avatarUrl, 
+        extraFields: student.extraFields ? Object.fromEntries(student.extraFields) : {} 
+      };
     }
   })
 );
+
 
 // Group students by class
 const groupedByClass = optimizedStudents.reduce((acc, student) => {
@@ -138,16 +146,18 @@ const groupedByClass = optimizedStudents.reduce((acc, student) => {
 
 
 
-    // Split data into pages (10 students per page)
+   
     const pages = [];
-    for (let i = 0; i < optimizedStudents.length; i += 10) {
-      pages.push(optimizedStudents.slice(i, i + 10));
-    }
+for (let i = 0; i < optimizedStudents.length; i += 10) {
+  pages.push(optimizedStudents.slice(i, i + 10));
+}
+  
+   
 
  // Render EJS to HTML with grouped data
 const html = await ejs.renderFile(
   path.join(__dirname, "../template/student.ejs"),
-  { groupedByClass } // Pass grouped data to the template
+  { pages  } // Pass grouped data to the template
 );
 
     // Generate PDF using Puppeteer
