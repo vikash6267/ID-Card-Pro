@@ -10,7 +10,8 @@ const nodemailer = require("nodemailer");
 const router = express.Router();
 const fetch = require("node-fetch");
 const sharp = require("sharp");
-const QRCode = require('qrcode');
+const QRCode = require("qrcode");
+const { createCanvas, loadImage } = require('canvas');
 
 // Ensure output directory exists
 const outputDir = path.join(__dirname, "output");
@@ -42,6 +43,48 @@ async function sendEmail(pdfBuffer, recipientEmail, filename) {
 
   await transporter.sendMail(mailOptions);
 }
+async function generateQRWithLogo(url, logoUrl) {
+  try {
+    // Generate the QR code on a canvas first
+    const canvas = createCanvas(400, 400);
+    await QRCode.toCanvas(canvas, url, {
+      errorCorrectionLevel: 'H', // High error correction to allow for logo
+      margin: 2,
+      width: 400,
+      color: {
+        dark: '#000000',
+        light: '#ffffff'
+      }
+    });
+
+    // Load and draw the logo
+    const logoImage = await loadImage('https://cardpro.co.in/login.jpg'); // Replace with your actual logo URL
+    const ctx = canvas.getContext('2d');
+    
+    // Calculate center position and size for logo
+    const logoSize = canvas.width * 0.2; // Logo will be 20% of QR code size
+    const logoX = (canvas.width - logoSize) / 2;
+    const logoY = (canvas.height - logoSize) / 2;
+    
+    // Draw white background for logo
+    ctx.fillStyle = '#FFF';
+    ctx.fillRect(logoX, logoY, logoSize, logoSize);
+    
+    // Draw the logo
+    ctx.drawImage(logoImage, logoX, logoY, logoSize, logoSize);
+
+    // Convert to base64
+    const qrCodeWithLogo = canvas.toDataURL();
+    
+    console.log('QR Code with logo generated successfully!');
+
+    return qrCodeWithLogo;
+  } catch (error) {
+    console.error('Error generating QR code:', error);
+    throw error;
+  }
+}
+
 
 router.get("/generate-pdf/:schoolId/:email", async (req, res) => {
   try {
@@ -52,7 +95,7 @@ router.get("/generate-pdf/:schoolId/:email", async (req, res) => {
     const section = req.query.section; // Search term from query parameters
     const course = req.query.course; // Search term from query parameters
     const withQR = req.query.withQR; // Search term from query parameters
-console.log(req.query)
+    console.log(req.query);
 
     let queryObj = { school: schoolId };
 
@@ -105,9 +148,9 @@ console.log(req.query)
           "https://plus.unsplash.com/premium_photo-1699534403319-978d740f9297?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
             ? "https://cardpro.co.in/login.jpg"
             : avatarUrl;
-      
-            const qrCodeUrl = `https://cardpro.co.in/shareview/edit/${student._id}?schoolid=${schoolId}`;
-        const qrCodeImage = await QRCode.toDataURL(qrCodeUrl);  // Generate QR code as base64 image
+
+        const qrCodeUrl = `https://cardpro.co.in/shareview/edit/${student._id}?schoolid=${schoolId}`;
+        const qrCodeImage = await generateQRWithLogo(qrCodeUrl); // Generate QR code as base64 image
 
         try {
           const imageBuffer = await fetchImageAndOptimize(avatarUrl); // Preprocess image fetching and optimizing in a helper function
@@ -122,7 +165,7 @@ console.log(req.query)
             )}`,
             localPath: imagePath,
             class: student.class,
-            qrCodeImage:qrCodeImage,
+            qrCodeImage: qrCodeImage,
             section: student.section,
             extraFields: student.extraFields
               ? Object.fromEntries(student.extraFields)
@@ -160,22 +203,17 @@ console.log(req.query)
     }
 
     // Render EJS to HTML with grouped data
-    let html ;
-   if(withQR){
-    html = await ejs.renderFile(
-      path.join(__dirname, "../template/studentWithOq.ejs"),
-      { groupedByClass } // Pass grouped data to the template
-
-    )
-  }
-    else{
-    
-
+    let html;
+    if (withQR === "true") {
+      html = await ejs.renderFile(
+        path.join(__dirname, "../template/studentWithOq.ejs"),
+        { groupedByClass } // Pass grouped data to the template
+      );
+    } else {
       html = await ejs.renderFile(
         path.join(__dirname, "../template/student.ejs"),
         { groupedByClass } // Pass grouped data to the template
-  
-      )
+      );
     }
 
     // Generate PDF using Puppeteer
