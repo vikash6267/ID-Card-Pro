@@ -159,6 +159,7 @@ if(withQR==="true"){
           const imagePath = path.join(outputDir, imageName);
           fs.writeFileSync(imagePath, imageBuffer);
 
+          console.log(student.name)
           return {
             ...student.toObject(),
             avatarUrl: `data:image/jpeg;base64,${imageBuffer.toString(
@@ -222,7 +223,7 @@ if(withQR==="true"){
       headless: true,
       args: ['--no-sandbox', '--disable-setuid-sandbox']
     });
-    
+
     // const browser = await puppeteer.launch();
 
     const page = await browser.newPage();
