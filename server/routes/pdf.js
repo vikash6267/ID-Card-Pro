@@ -218,11 +218,13 @@ if(withQR==="true"){
     }
 
     // Generate PDF using Puppeteer
-    // const browser = await puppeteer.launch({
-    //   headless: true,
-    //   args: ['--no-sandbox', '--disable-setuid-sandbox']
-    // });
-    const browser = await puppeteer.launch();
+    const browser = await puppeteer.launch({
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox']
+    });
+    
+    // const browser = await puppeteer.launch();
+
     const page = await browser.newPage();
     await page.setContent(html, { waitUntil: "networkidle0", timeout: 60000 });
     const pdfBuffer = await page.pdf({
