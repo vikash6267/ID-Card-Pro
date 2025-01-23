@@ -9,6 +9,8 @@ const DownloadPopup = ({
   section,
   course,
   currRole,
+  institute,
+  staffType
 }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -24,10 +26,20 @@ const DownloadPopup = ({
 
 
     try {
-      const response = await axios.get(
-        `/pdf/generate-pdf/${schoolId}?status=${status}&class=${studentClass}&section=${section}&course=${course}&withQR=${withQR}`,
-        { responseType: "blob" } // Handle binary file download
-      );
+
+      let response ;
+      if(currRole === "student"){
+        response = await axios.get(
+          `/pdf/generate-pdf/${schoolId}?status=${status}&class=${studentClass}&section=${section}&course=${course}&withQR=${withQR}`,
+          { responseType: "blob" } // Handle binary file download
+        );
+      }   else if(currRole === "staff"){
+        response = await axios.get(
+          `/pdf/generate-pdf/staffs/${schoolId}?status=${status}&staffType=${staffType}&institute=${institute}&withQR=${withQR}`,
+          { responseType: "blob" } // Handle binary file download
+        );
+      }
+     
 
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement("a");

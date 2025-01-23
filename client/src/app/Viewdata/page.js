@@ -1818,7 +1818,7 @@ const Viewdata = () => {
             )}
             {
               showDownload && (
-                <DownloadPopup schoolId={currSchool} currRole={currRole} status={status} course={courseValueSearch}  onClose={setShowDownload} section={sectionValueSearch} studentClass={classNameValue}/>
+                <DownloadPopup schoolId={currSchool} currRole={currRole} status={status} course={courseValueSearch}  onClose={setShowDownload} section={sectionValueSearch} studentClass={classNameValue} institute={staffValueSearchInsi} staffType={staffValueSearch}/>
               )
             }
        <button
