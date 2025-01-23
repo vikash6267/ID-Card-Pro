@@ -83,7 +83,7 @@ router.get("/generate-pdf/:schoolId/:email", async (req, res) => {
     if (section) {
       queryObj.section = { $regex: section, $options: "i" };
     }
-console.log(queryObj)
+
 
     // Fetch students by school ID
     const students = await Student.find(queryObj);
@@ -92,37 +92,51 @@ console.log(queryObj)
       return res.status(404).send("No students found for the given school ID.");
     }
 
-    // Optimizing images asynchronously
-    const optimizedStudents = await Promise.all(
-      students.map(async (student) => {
-        let avatarUrl =
-          student.avatar?.url ||
-          "https://cardpro.co.in/login.jpg";
+// Optimize student images (already done in your code)
+const optimizedStudents = await Promise.all(
+  students.map(async (student) => {
+    let avatarUrl =
+      student.avatar?.url || "https://cardpro.co.in/login.jpg";
 
-          avatarUrl =  avatarUrl === 'https://plus.unsplash.com/premium_photo-1699534403319-978d740f9297?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D' ? "https://cardpro.co.in/login.jpg" : avatarUrl
-       
-          try {
-          const imageBuffer = await fetchImageAndOptimize(avatarUrl); // Preprocess image fetching and optimizing in a helper function
-          const imageName = `optimized_${student._id}.jpg`;
-          const imagePath = path.join(outputDir, imageName);
-          fs.writeFileSync(imagePath, imageBuffer);
+    avatarUrl =
+      avatarUrl ===
+      "https://plus.unsplash.com/premium_photo-1699534403319-978d740f9297?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+        ? "https://cardpro.co.in/login.jpg"
+        : avatarUrl;
 
-          return {
-            ...student.toObject(),
-            avatarUrl: `data:image/jpeg;base64,${imageBuffer.toString(
-              "base64"
-            )}`,
-            localPath: imagePath,
-          };
-        } catch (error) {
-          console.error(
-            `Error optimizing image for student ${student._id}:`,
-            error
-          );
-          return { ...student.toObject(), avatarUrl };
-        }
-      })
-    );
+    try {
+      const imageBuffer = await fetchImageAndOptimize(avatarUrl); // Preprocess image fetching and optimizing in a helper function
+      const imageName = `optimized_${student._id}.jpg`;
+      const imagePath = path.join(outputDir, imageName);
+      fs.writeFileSync(imagePath, imageBuffer);
+
+      return {
+        ...student.toObject(),
+        avatarUrl: `data:image/jpeg;base64,${imageBuffer.toString("base64")}`,
+        localPath: imagePath,
+      };
+    } catch (error) {
+      console.error(
+        `Error optimizing image for student ${student._id}:`,
+        error
+      );
+      return { ...student.toObject(), avatarUrl };
+    }
+  })
+);
+
+// Group students by class
+const groupedByClass = optimizedStudents.reduce((acc, student) => {
+  const className = student.class || "No Class Assigned"; // Default for students without a class
+  if (!acc[className]) {
+    acc[className] = [];
+  }
+  acc[className].push(student);
+  return acc;
+}, {});
+
+
+
 
     // Split data into pages (10 students per page)
     const pages = [];
@@ -130,11 +144,11 @@ console.log(queryObj)
       pages.push(optimizedStudents.slice(i, i + 10));
     }
 
-    // Render EJS to HTML
-    const html = await ejs.renderFile(
-      path.join(__dirname, "../template/student.ejs"),
-      { pages }
-    );
+ // Render EJS to HTML with grouped data
+const html = await ejs.renderFile(
+  path.join(__dirname, "../template/student.ejs"),
+  { groupedByClass } // Pass grouped data to the template
+);
 
     // Generate PDF using Puppeteer
     const browser = await puppeteer.launch();
