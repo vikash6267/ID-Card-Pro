@@ -26,6 +26,7 @@ import { FaCheckCircle, FaTimesCircle } from "react-icons/fa";
 import Pagination from "@/component/Pagination";
 import Link from "next/link";
 import SharePopup from "./Component/Share";
+import DownloadPopup from "./Component/DownloadPopup";
 
 const Viewdata = () => {
   const { user, schools, error } = useSelector((state) => state.user);
@@ -53,6 +54,7 @@ const Viewdata = () => {
     pageSize: 500,
   });
   const [showPopup, setShowPopup] = useState(false);
+  const [showDownload, setShowDownload] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [className, setClassname] = useState([]);
@@ -1814,11 +1816,22 @@ const Viewdata = () => {
                 onClose={setShowPopup}
               />
             )}
+            {
+              showDownload && (
+                <DownloadPopup schoolId={currSchool} currRole={currRole} status={status} course={courseValueSearch}  onClose={setShowDownload} section={sectionValueSearch} studentClass={classNameValue}/>
+              )
+            }
        <button
               className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg shadow-lg"
               onClick={() => setShowPopup(true)}
             >
               Share
+            </button>
+       <button
+              className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg shadow-lg"
+              onClick={() => setShowDownload(true)}
+            >
+              Download Tab
             </button>
             {!user?.school && (
               <>

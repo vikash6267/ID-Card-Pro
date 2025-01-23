@@ -98,9 +98,8 @@ router.post("/edit/school/:id",upload, isAuthenticated ,editSchool);
 
 router.post("/delete/school/:id", isAuthenticated ,deleteSchool);
 
-router.post("/students/:id", getAllStudentsInSchool);
 
-router.post("/staffs/:id", getAllStaffInSchool);
+
 
 router.post("/registration/student/:id", upload, isAuthenticated ,addStudent);
 
@@ -123,7 +122,9 @@ router.post("/staff/signature/:id", upload, isAuthenticated , StaffSignature);
 // delete routes
 router.post("/delete/student/:id", deleteStudent);
 router.post("/delete/staff/:id", deleteStaffcurr);
-
+//ALL Data
+router.post("/students/:id", getAllStudentsInSchool);
+router.post("/staffs/:id", getAllStaffInSchool);
 
 router.post("/school/search", isAuthenticated ,SerchSchool);
 
@@ -231,7 +232,7 @@ router.get('/students/count/:schoolId', async (req, res, next) => {
       
       let queryObj = {
         school: schoolId,
-        "avatar.url": "https://plus.unsplash.com/premium_photo-1699534403319-978d740f9297?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+        "avatar.url": { $in: ["", null, "https://cardpro.co.in/login.jpg", "https://plus.unsplash.com/premium_photo-1699534403319-978d740f9297?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"] },
       };
   
       function escapeRegex(value) {
@@ -286,7 +287,7 @@ router.get('/students/count/:schoolId', async (req, res, next) => {
   console.log(req.body)
       // Set default values for avatar if not provided
       const defaultAvatarUrl =
-        "https://plus.unsplash.com/premium_photo-1699534403319-978d740f9297?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D";
+        "https://cardpro.co.in/login.jpg";
   
       const updatedAvatar = {
         publicId: publicId || "",

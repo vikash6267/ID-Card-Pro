@@ -831,7 +831,7 @@ exports.addStudent = catchAsyncErron(async (req, res, next) => {
     // Assign default values if fields are empty
     student.avatar = {
       publicId: publicId || null, // Default to `null` if no `publicId` is provided
-      url: url || "https://plus.unsplash.com/premium_photo-1699534403319-978d740f9297?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D", // Default URL
+      url: url || "https://cardpro.co.in/login.jpg", // Default URL
     };
     
 
@@ -3241,7 +3241,7 @@ exports.StaffAvatarsDownload = catchAsyncErron(async (req, res, next) => {
     const studentAvatars = students.map((student, index) => ({
       url:
         student?.avatar?.url ||
-        "https://plus.unsplash.com/premium_photo-1699534403319-978d740f9297?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+        "https://cardpro.co.in/login.jpg",
       name: `${student.photoNameUnuiq}`,
     }));
 
@@ -3338,7 +3338,7 @@ exports.StaffNewAvatarsDownload = catchAsyncErron(async (req, res, next) => {
     const studentAvatars = students.map((student, index) => ({
       url:
         student.avatar?.url ||
-        "https://plus.unsplash.com/premium_photo-1699534403319-978d740f9297?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+        "https://cardpro.co.in/login.jpg",
       name: `IMG${student.photoNameUnuiq}`,
     }));
 
@@ -3435,7 +3435,7 @@ exports.StaffSignatureDownload = catchAsyncErron(async (req, res, next) => {
     const studentAvatars = students.map((student, index) => ({
       url:
         student.signatureImage?.url ||
-        "https://plus.unsplash.com/premium_photo-1699534403319-978d740f9297?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+        "https://cardpro.co.in/login.jpg",
       name: `SIG${student.signatureNameUnuiq}`,
     }));
 

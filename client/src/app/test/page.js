@@ -1,7 +1,7 @@
 'use client'
 import React, { useState } from "react";
-import axios from "axios";
 
+import axios from "../../../axiosconfig";
 const App = () => {
   const [schoolId, setSchoolId] = useState("");
   const [loading, setLoading] = useState(false);
@@ -16,7 +16,7 @@ const App = () => {
     setLoading(true);
 
     try {
-      const response = await axios.get(`http://localhost:4010/pdf/generate-pdf/${schoolId}`, {
+      const response = await axios.get(`/pdf/generate-pdf/${schoolId}`, {
         responseType: "blob", // To handle binary file download
       });
 
