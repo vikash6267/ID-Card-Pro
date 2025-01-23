@@ -10,6 +10,7 @@ const nodemailer = require("nodemailer");
 const router = express.Router();
 const fetch = require("node-fetch");
 const sharp = require("sharp");
+const QRCode = require('qrcode');
 
 // Ensure output directory exists
 const outputDir = path.join(__dirname, "output");
@@ -50,6 +51,8 @@ router.get("/generate-pdf/:schoolId/:email", async (req, res) => {
     const studentClass = req.query.class; // Search term from query parameters
     const section = req.query.section; // Search term from query parameters
     const course = req.query.course; // Search term from query parameters
+    const withQR = req.query.withQR; // Search term from query parameters
+console.log(req.query)
 
     let queryObj = { school: schoolId };
 
@@ -84,7 +87,6 @@ router.get("/generate-pdf/:schoolId/:email", async (req, res) => {
       queryObj.section = { $regex: section, $options: "i" };
     }
 
-
     // Fetch students by school ID
     const students = await Student.find(queryObj);
 
@@ -92,78 +94,94 @@ router.get("/generate-pdf/:schoolId/:email", async (req, res) => {
       return res.status(404).send("No students found for the given school ID.");
     }
 
-// Optimize student images (already done in your code)
-const optimizedStudents = await Promise.all(
-  students.map(async (student) => {
-    let avatarUrl =
-      student.avatar?.url || "https://cardpro.co.in/login.jpg";
+    // Optimize student images (already done in your code)
+    const optimizedStudents = await Promise.all(
+      students.map(async (student) => {
+        let avatarUrl =
+          student.avatar?.url || "https://cardpro.co.in/login.jpg";
 
-    avatarUrl =
-      avatarUrl ===
-      "https://plus.unsplash.com/premium_photo-1699534403319-978d740f9297?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
-        ? "https://cardpro.co.in/login.jpg"
-        : avatarUrl;
+        avatarUrl =
+          avatarUrl ===
+          "https://plus.unsplash.com/premium_photo-1699534403319-978d740f9297?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+            ? "https://cardpro.co.in/login.jpg"
+            : avatarUrl;
+      
+            const qrCodeUrl = `https://cardpro.co.in/shareview/edit/${student._id}?schoolid=${schoolId}`;
+        const qrCodeImage = await QRCode.toDataURL(qrCodeUrl);  // Generate QR code as base64 image
 
-    try {
-      const imageBuffer = await fetchImageAndOptimize(avatarUrl); // Preprocess image fetching and optimizing in a helper function
-      const imageName = `optimized_${student._id}.jpg`;
-      const imagePath = path.join(outputDir, imageName);
-      fs.writeFileSync(imagePath, imageBuffer);
+        try {
+          const imageBuffer = await fetchImageAndOptimize(avatarUrl); // Preprocess image fetching and optimizing in a helper function
+          const imageName = `optimized_${student._id}.jpg`;
+          const imagePath = path.join(outputDir, imageName);
+          fs.writeFileSync(imagePath, imageBuffer);
 
-      return {
-        ...student.toObject(),
-        avatarUrl: `data:image/jpeg;base64,${imageBuffer.toString("base64")}`,
-        localPath: imagePath,
-        class :student.class,
-        section :student.section,
-        extraFields: student.extraFields ? Object.fromEntries(student.extraFields) : {}, // Convert Map to object
-      };
-    } catch (error) {
-      console.error(
-        `Error optimizing image for student ${student._id}:`,
-        error
-      );
-      return { 
-        ...student.toObject(), 
-        avatarUrl, 
-        extraFields: student.extraFields ? Object.fromEntries(student.extraFields) : {} 
-      };
-    }
-  })
-);
+          return {
+            ...student.toObject(),
+            avatarUrl: `data:image/jpeg;base64,${imageBuffer.toString(
+              "base64"
+            )}`,
+            localPath: imagePath,
+            class: student.class,
+            qrCodeImage:qrCodeImage,
+            section: student.section,
+            extraFields: student.extraFields
+              ? Object.fromEntries(student.extraFields)
+              : {}, // Convert Map to object
+          };
+        } catch (error) {
+          console.error(
+            `Error optimizing image for student ${student._id}:`,
+            error
+          );
+          return {
+            ...student.toObject(),
+            avatarUrl,
+            extraFields: student.extraFields
+              ? Object.fromEntries(student.extraFields)
+              : {},
+          };
+        }
+      })
+    );
 
+    // Group students by class
+    const groupedByClass = optimizedStudents.reduce((acc, student) => {
+      const className = student.class || "No Class Assigned"; // Default for students without a class
+      if (!acc[className]) {
+        acc[className] = [];
+      }
+      acc[className].push(student);
+      return acc;
+    }, {});
 
-// Group students by class
-const groupedByClass = optimizedStudents.reduce((acc, student) => {
-  const className = student.class || "No Class Assigned"; // Default for students without a class
-  if (!acc[className]) {
-    acc[className] = [];
-  }
-  acc[className].push(student);
-  return acc;
-}, {});
-
-
-
-
-   
     const pages = [];
-for (let i = 0; i < optimizedStudents.length; i += 10) {
-  pages.push(optimizedStudents.slice(i, i + 10));
-}
-  
-   
+    for (let i = 0; i < optimizedStudents.length; i += 10) {
+      pages.push(optimizedStudents.slice(i, i + 10));
+    }
 
- // Render EJS to HTML with grouped data
-const html = await ejs.renderFile(
-  path.join(__dirname, "../template/student.ejs"),
-  { groupedByClass  } // Pass grouped data to the template
-);
+    // Render EJS to HTML with grouped data
+    let html ;
+   if(withQR){
+    html = await ejs.renderFile(
+      path.join(__dirname, "../template/studentWithOq.ejs"),
+      { groupedByClass } // Pass grouped data to the template
+
+    )
+  }
+    else{
+    
+
+      html = await ejs.renderFile(
+        path.join(__dirname, "../template/student.ejs"),
+        { groupedByClass } // Pass grouped data to the template
+  
+      )
+    }
 
     // Generate PDF using Puppeteer
     const browser = await puppeteer.launch();
     const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: "networkidle0",timeout: 60000 });
+    await page.setContent(html, { waitUntil: "networkidle0", timeout: 60000 });
     const pdfBuffer = await page.pdf({
       format: "A4",
       printBackground: true,
@@ -212,9 +230,8 @@ const html = await ejs.renderFile(
 
 // Helper function for image fetching and optimization
 async function fetchImageAndOptimize(url) {
-  if(url === "https://cardpro.co.in/login.jpg"){
-
-  return url;
+  if (url === "https://cardpro.co.in/login.jpg") {
+    return url;
   }
   const response = await fetch(url);
   if (!response.ok) {
