@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import axios from "../../../../axiosconfig";
+import Swal from "sweetalert2";
 
 const DownloadPopup = ({
   onClose,
@@ -15,32 +16,43 @@ const DownloadPopup = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+
   const handleDownload = async (withQR) => {
     if (!schoolId) {
-      setError("Please enter a valid School ID.");
+      Swal.fire({
+        icon: "error",
+        title: "Invalid School ID",
+        text: "Please enter a valid School ID.",
+      });
       return;
     }
-   
-    setError("");
-    setLoading(true);
-
-
+  
+    Swal.fire({
+      title: "Generating PDF...",
+      text: "Please wait while we prepare your download.",
+      allowOutsideClick: false,
+      showConfirmButton: false,
+      didOpen: () => {
+        Swal.showLoading(); // Show the loading spinner
+      },
+    });
+  
     try {
-
-      let response ;
-      if(currRole === "student"){
+      let response;
+  
+      if (currRole === "student") {
         response = await axios.get(
           `/pdf/generate-pdf/${schoolId}?status=${status}&class=${studentClass}&section=${section}&course=${course}&withQR=${withQR}`,
           { responseType: "blob" } // Handle binary file download
         );
-      }   else if(currRole === "staff"){
+      } else if (currRole === "staff") {
         response = await axios.get(
           `/pdf/generate-pdf/staffs/${schoolId}?status=${status}&staffType=${staffType}&institute=${institute}&withQR=${withQR}`,
           { responseType: "blob" } // Handle binary file download
         );
       }
-     
-
+  
+      // Download the file
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement("a");
       link.href = url;
@@ -48,13 +60,26 @@ const DownloadPopup = ({
       document.body.appendChild(link);
       link.click();
       link.remove();
+  
+      // Show success message
+      Swal.fire({
+        icon: "success",
+        title: "Download Successful",
+        text: `The PDF for School ID ${schoolId} has been downloaded.`,
+      });
     } catch (err) {
       console.error(err);
-      setError("Failed to generate the PDF. Please try again.");
-    } finally {
-      setLoading(false);
+  
+      // Show error message
+      Swal.fire({
+        icon: "error",
+        title: "Download Failed",
+        text: "Failed to generate the PDF. Please try again.",
+      });
     }
   };
+  
+  
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
@@ -78,7 +103,7 @@ const DownloadPopup = ({
             }`}
             disabled={loading}
           >
-            {loading ? "Processing..." : "Download with QR"}
+            {loading ? "Processing..." : "Download Proof Data"}
           </button>
           <button
             onClick={() => handleDownload(false)} // Download without QR
@@ -87,7 +112,7 @@ const DownloadPopup = ({
             }`}
             disabled={loading}
           >
-            {loading ? "Processing..." : "Download without QR"}
+            {loading ? "Processing..." : "Download Proof QR"}
           </button>
         </div>
 
