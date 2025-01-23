@@ -86,9 +86,9 @@ async function generateQRWithLogo(url, logoUrl) {
 }
 
 
-router.get("/generate-pdf/:schoolId/:email", async (req, res) => {
+router.get("/generate-pdf/:schoolId", async (req, res) => {
   try {
-    const { email } = req.params;
+
     const { schoolId } = req.params;
     const status = req.query.status; // Status from query parameters
     const studentClass = req.query.class; // Search term from query parameters

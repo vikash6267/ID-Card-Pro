@@ -12,7 +12,6 @@ const DownloadPopup = ({
 }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [email, setEmail] = useState("");
 
   const handleDownload = async (withQR) => {
     if (!schoolId) {
@@ -26,7 +25,7 @@ const DownloadPopup = ({
 
     try {
       const response = await axios.get(
-        `/pdf/generate-pdf/${schoolId}/${email}?status=${status}&class=${studentClass}&section=${section}&course=${course}&withQR=${withQR}`,
+        `/pdf/generate-pdf/${schoolId}?status=${status}&class=${studentClass}&section=${section}&course=${course}&withQR=${withQR}`,
         { responseType: "blob" } // Handle binary file download
       );
 
