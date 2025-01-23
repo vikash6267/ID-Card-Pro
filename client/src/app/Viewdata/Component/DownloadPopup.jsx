@@ -19,13 +19,11 @@ const DownloadPopup = ({
       setError("Please enter a valid School ID.");
       return;
     }
-    if (!email) {
-      setError("Please enter a valid Email ID.");
-      return;
-    }
+   
     setError("");
     setLoading(true);
-console.log( `/pdf/generate-pdf/${schoolId}/${email}?status=${status}&class=${studentClass}&section=${section}&course=${course}&withQR=${withQR}`,)
+
+
     try {
       const response = await axios.get(
         `/pdf/generate-pdf/${schoolId}/${email}?status=${status}&class=${studentClass}&section=${section}&course=${course}&withQR=${withQR}`,
@@ -52,18 +50,12 @@ console.log( `/pdf/generate-pdf/${schoolId}/${email}?status=${status}&class=${st
       <div className="bg-white p-6 rounded-lg shadow-lg w-96">
         <h3 className="text-lg font-bold mb-4 text-center">Download Options</h3>
 
-        <p className="text-sm mb-4">
+        {/* <p className="text-sm mb-4">
           Enter your email address to receive the data. The data will be sent
           to your email within 4 hours.
-        </p>
+        </p> */}
 
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="Enter your email"
-          className="w-full border p-2 rounded mb-4"
-        />
+       
 
         {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
 
