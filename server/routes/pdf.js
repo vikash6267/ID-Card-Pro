@@ -157,7 +157,7 @@ for (let i = 0; i < optimizedStudents.length; i += 10) {
  // Render EJS to HTML with grouped data
 const html = await ejs.renderFile(
   path.join(__dirname, "../template/student.ejs"),
-  { pages  } // Pass grouped data to the template
+  { groupedByClass  } // Pass grouped data to the template
 );
 
     // Generate PDF using Puppeteer

@@ -43,8 +43,6 @@
       border-radius: 50%;
     }
 
-  
-
     .student-details h3 {
       font-size: 15px;
       color: #333;
@@ -64,7 +62,6 @@
     .extra-fields li {
       font-size: 12px;
       color: #777;
-  
     }
 
     .page-break {
@@ -96,38 +93,32 @@
 </head>
 
 <body>
-
-    <% pages.forEach((page, pageIndex) => { %>
-      <% if (pageIndex === 0 || pageIndex % 10 === 0) { %>
-        <h1 class="class-heading">Class: <%= page[0].class || "No Class Assigned" %></h1>
-      <% } %>
-      <div class="student-grid">
-        <% page.forEach(student => { %> <!-- Directly iterate over each student in the page -->
-          <div class="student-card">
-            <div class="student-image">
-              <img src="<%= student.avatarUrl %>" alt="Student Image">
-            </div>
-            <div class="student-details">
-              <h3><%= student.name %></h3>
-              <p><strong>Roll No:</strong> <%= student.rollNo || "N/A" %></p>
-              <p><strong>class</strong> <%= student.class || "N/A" %></p>
-              <p><strong>section</strong> <%= student.section || "N/A" %></p>
-              <div class="extra-fields">
-                <ul>
-                  <% Object.entries(student.extraFields).forEach(([key, value]) => { %>
-                    <li><strong><%= key %>:</strong> <%= value %></li>
-                  <% }) %>
-                </ul>
-              </div>
+  <% Object.entries(groupedByClass).forEach(([className, students]) => { %>
+    <h1 class="class-heading">Class: <%= className %></h1>
+    <div class="student-grid">
+      <% students.forEach((student) => { %>
+        <div class="student-card">
+          <div class="student-image">
+            <img src="<%= student.avatarUrl %>" alt="Student Image">
+          </div>
+          <div class="student-details">
+            <h3><%= student.name %></h3>
+            <p><strong>Roll No:</strong> <%= student.rollNo || "N/A" %></p>
+            <p><strong>Class:</strong> <%= student.class || "N/A" %></p>
+            <p><strong>Section:</strong> <%= student.section || "N/A" %></p>
+            <div class="extra-fields">
+              <ul>
+                <% Object.entries(student.extraFields).forEach(([key, value]) => { %>
+                  <li><strong><%= key %>:</strong> <%= value %></li>
+                <% }) %>
+              </ul>
             </div>
           </div>
-        <% }) %>
-      </div>
-      <% if (pageIndex < pages.length - 1) { %>
-        <div class="page-break"></div>
-      <% } %>
-    <% }) %>
-  
+        </div>
+      <% }) %>
+    </div>
+    <div class="page-break"></div> <!-- Add a page break after each class -->
+  <% }) %>
   
 </body>
 
