@@ -4048,13 +4048,52 @@ exports.getSchoolById = async (req, res) => {
     const { id } = req.params; // Get the schoolId from URL params
     const school = await School.findById(id); // Fetch school from database
 
+  
+    let queryObj = { school: new mongoose.Types.ObjectId(id) };
+
+
     if (!school) {
       return res
         .status(404)
         .json({ success: false, message: "School not found" });
     }
 
-    return res.status(200).json({ success: true, data: school });
+
+    let staffCountByStatus = {};
+    let studentCountByStatus = {};
+    
+    try {
+      // Aggregating staff count by status
+      staffCountByStatus = await Staff.aggregate([
+        {
+          $match: queryObj, // Match the query conditions for staff
+        },
+        {
+          $group: {
+            _id: "$status", // Grouping by status
+            count: { $sum: 1 }, // Count the number of documents for each status
+          },
+        },
+      ]);
+    
+      // Aggregating student count by status
+      studentCountByStatus = await Student.aggregate([
+        {
+          $match: queryObj, // Match the query conditions for students
+        },
+        {
+          $group: {
+            _id: "$status", // Grouping by status
+            count: { $sum: 1 }, // Count the number of documents for each status
+          },
+        },
+      ]);
+    } catch (error) {
+      console.log(error);
+    }
+
+
+    return res.status(200).json({ success: true, data: school,staffCountByStatus,studentCountByStatus });
   } catch (err) {
     console.error("Error fetching school data:", err);
     return res

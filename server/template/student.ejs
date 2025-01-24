@@ -18,12 +18,22 @@
       background-color: #f4f4f4;
     }
 
+
     .class-heading {
       text-align: center;
-      margin-top: 20px;
+      margin: 20px 0;
       font-size: 24px;
       color: #333;
-      page-break-before: always;
+      position: relative;
+    }
+
+    .class-heading img {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 50px;
+      height: auto;
     }
 
     .student-grid {
@@ -44,6 +54,17 @@
       box-sizing: border-box;
       page-break-inside: avoid;
       break-inside: avoid;
+      position: relative;
+    }
+
+    /* Fixed www.cardpro.co at the top of the card */
+    .top-center-text {
+      font-size: 10px;
+      color: rgba(0, 0, 0, 0.6);
+      position: absolute;
+      top: 5px;
+      left: 50%;
+      transform: translateX(-50%);
     }
 
     .student-image img {
@@ -51,6 +72,7 @@
       height: 100px;
       object-fit: cover;
       border-radius: 50%;
+      margin-top: 20px;
     }
 
     .student-details h3 {
@@ -121,16 +143,25 @@
 
 <body>
   <% Object.entries(groupedByClass).forEach(([className, students]) => { %>
-    <h1 class="class-heading"><%= heading %></h1>
+    <h1 class="class-heading"><%= heading %>
+    
+      <img src="https://cardpro.co.in/login.jpg" alt="Logo">
+    </h1>
 
     <div class="student-grid">
       <% students.forEach((student, index) => { %>
         <div class="student-card">
+          <!-- Fixed text at the top -->
+          <div class="top-center-text">www.cardpro.co</div>
           <div class="student-image">
             <img src="<%= student.avatarUrl %>" alt="Student Image">
           </div>
           <div class="student-details">
             <h3><%= student.name %></h3>
+            <% if (heading === "All Records") { %>
+              <p><strong>Class:</strong> <%= student.class %></p>
+              <p><strong>Section:</strong> <%= student.section %></p>
+            <% } %>
             <div class="extra-fields">
               <ul>
                 <% Object.entries(student.extraFields).forEach(([key, value]) => { %>
@@ -151,4 +182,3 @@
 </body>
 
 </html>
-

@@ -97,7 +97,8 @@ const Viewdata = () => {
       axios
         .get(`user/getschool/${schoolId}`)
         .then((response) => {
-          setSchoolData(response.data.data); // Update the state with fetched data
+          setSchoolData(response.data.data);
+          console.log(response.data)
           console.log(response.data.data);
         })
         .catch((err) => {
@@ -251,8 +252,29 @@ const Viewdata = () => {
       axios
         .get(`user/getschool/${schoolId}`)
         .then((response) => {
-          setSchoolData(response.data.data); // Update the state with fetched data
-          console.log(response.data.data);
+          setSchoolData(response.data.data);
+        const studentCountByStatus = response.data.studentCountByStatus
+         
+        if (!status) {
+   
+            setSatusCount(studentCountByStatus)
+            setCurrRole("student")
+            // Map to extract statuses
+            const studentStatuses = studentCountByStatus.map(item => item._id);
+  
+            // Set status based on available statuses
+            if (studentStatuses.includes("Panding")) {
+              setstatus("Panding");
+            } else if (studentStatuses.includes("Ready to print")) {
+              setstatus("Ready to print");
+            } else if (studentStatuses.includes("Printed")) {
+              setstatus("Printed");
+            } else {
+              setstatus("Panding"); // Default status
+            }
+          }
+
+          
         })
         .catch((err) => {
           console.log("Error fetching Vendor data"); // Handle error if request fails
@@ -1816,18 +1838,31 @@ const Viewdata = () => {
                 onClose={setShowPopup}
               />
             )}
-            {
-              showDownload && (
-                <DownloadPopup schoolId={currSchool} currRole={currRole} status={status} course={courseValueSearch}  onClose={setShowDownload} section={sectionValueSearch} studentClass={classNameValue} institute={staffValueSearchInsi} staffType={staffValueSearch}/>
-              )
-            }
-       <button
+            {showDownload && (
+              <DownloadPopup
+                schoolId={currSchool}
+                currRole={currRole}
+                status={status}
+                course={courseValueSearch}
+                onClose={setShowDownload}
+                section={sectionValueSearch}
+                studentClass={classNameValue}
+                institute={staffValueSearchInsi}
+                staffType={staffValueSearch}
+                user={user}
+                schoolData={schoolData}
+                downloadExcel={downloadExcel}
+                downloadImages={downloadImages}
+                downloadSignature={downloadSignature}
+              />
+            )}
+            <button
               className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg shadow-lg"
               onClick={() => setShowPopup(true)}
             >
               Share
             </button>
-       <button
+            <button
               className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg shadow-lg"
               onClick={() => setShowDownload(true)}
             >
@@ -1858,7 +1893,7 @@ const Viewdata = () => {
             {/* Pending status */}
             {status === "Panding" && (
               <>
-                {(user?.exportExcel || user?.school?.exportExcel) && (
+                {/* {(user?.exportExcel || user?.school?.exportExcel) && (
                   <button
                     className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg shadow-lg"
                     onClick={downloadExcel}
@@ -1884,7 +1919,7 @@ const Viewdata = () => {
                   >
                     <FaImages /> Signature Download
                   </button>
-                )}
+                )} */}
 
                 <>
                   <button
@@ -1916,7 +1951,7 @@ const Viewdata = () => {
                     <FaArrowLeft /> Move Back to Pending
                   </button>
                 )}
-                {(user?.exportExcel || user?.school?.exportExcel) && (
+                {/* {(user?.exportExcel || user?.school?.exportExcel) && (
                   <button
                     className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg shadow-lg"
                     onClick={downloadExcel}
@@ -1931,14 +1966,14 @@ const Viewdata = () => {
                   >
                     <FaImages /> Export Images
                   </button>
-                )}
+                )} */}
               </>
             )}
 
             {/* Printed status */}
             {status === "Printed" && (
               <>
-                {(user?.exportExcel || user?.school?.exportExcel) && (
+                {/* {(user?.exportExcel || user?.school?.exportExcel) && (
                   <button
                     className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg shadow-lg"
                     onClick={downloadExcel}
@@ -1953,7 +1988,7 @@ const Viewdata = () => {
                   >
                     <FaImages /> Export Images
                   </button>
-                )}
+                )} */}
               </>
             )}
           </div>

@@ -15,12 +15,22 @@
       padding: 20px;
       background-color: #f4f4f4;
     }
+   
     .class-heading {
       text-align: center;
-      padding: 10px 0;
+      margin: 20px 0;
       font-size: 24px;
       color: #333;
-      page-break-before: always;
+      position: relative;
+    }
+
+    .class-heading img {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 50px;
+      height: auto;
     }
     .student-grid {
       display: flex;
@@ -82,7 +92,10 @@
 </head>
 <body>
   <% Object.entries(groupedByClass).forEach(([className, students]) => { %>
-    <h1 class="class-heading"><%= heading %></h1>
+    <h1 class="class-heading"><%= heading %>
+      <img src="https://cardpro.co.in/login.jpg" alt="Logo">
+    
+    </h1>
     <div class="student-grid">
       <% students.forEach((student, index) => { %>
         <div class="student-card">

@@ -16,6 +16,32 @@
       margin: 0;
       padding: 0;
       background-color: #f4f4f4;
+      position: relative;
+    }
+
+    .watermark {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: rgba(0, 0, 0, 0.05);
+      font-size: 50px;
+      transform: rotate(-30deg);
+      text-align: center;
+      pointer-events: none;
+    }
+
+    .watermark img {
+      display: block;
+      margin: 0 auto;
+      width: 100px;
+      height: auto;
+      opacity: 0.1;
     }
 
     .class-heading {
@@ -24,6 +50,16 @@
       font-size: 24px;
       color: #333;
       page-break-before: always;
+      position: relative;
+    }
+
+    .class-heading img {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 50px;
+      height: auto;
     }
 
     .student-grid {
@@ -44,6 +80,16 @@
       box-sizing: border-box;
       page-break-inside: avoid;
       break-inside: avoid;
+      position: relative;
+    }
+
+    .student-card .top-center-text {
+      font-size: 10px;
+      color: rgba(0, 0, 0, 0.6);
+      position: absolute;
+      top: 5px;
+      left: 50%;
+      transform: translateX(-50%);
     }
 
     .student-image img {
@@ -51,7 +97,7 @@
       height: 80px;
       object-fit: cover;
       border-radius: 50%;
-      margin: 0 auto;
+      margin: 20px auto 10px;
     }
 
     .student-details h3 {
@@ -103,11 +149,25 @@
 </head>
 
 <body>
-  <h1 class="class-heading"><%= heading %></h1>
+  <!-- Watermark Text -->
+  <div class="watermark">
+    <div>
+      <img src="https://cardpro.co.in/login.jpg" alt="Watermark Logo">
+      <p>www.cardpro.co.in</p>
+    </div>
+  </div>
 
+  <!-- Page Heading with Logo -->
+  <h1 class="class-heading">
+    <%= heading %>
+    <img src="https://cardpro.co.in/login.jpg" alt="Logo">
+  </h1>
+
+  <!-- Student Grid -->
   <div class="student-grid">
     <% optimizedStudents.forEach((student, index) => { %>
       <div class="student-card">
+        <div class="top-center-text">www.cardpro.co</div>
         <div class="student-image">
           <img src="<%= student.avatarUrl %>" alt="<%= student.name %>">
         </div>
@@ -133,4 +193,3 @@
 </body>
 
 </html>
-

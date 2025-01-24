@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import axios from "../../../../axiosconfig";
 import Swal from "sweetalert2";
+import { FaFileExport, FaImages } from "react-icons/fa";
 
 const DownloadPopup = ({
   onClose,
@@ -11,11 +12,16 @@ const DownloadPopup = ({
   course,
   currRole,
   institute,
-  staffType
+  staffType,
+
+  user,
+  schoolData,
+  downloadExcel,
+  downloadImages,
+  downloadSignature,
 }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-
 
   const handleDownload = async (withQR) => {
     if (!schoolId) {
@@ -26,7 +32,7 @@ const DownloadPopup = ({
       });
       return;
     }
-  
+
     Swal.fire({
       title: "Generating PDF...",
       text: "Please wait while we prepare your download.",
@@ -36,10 +42,10 @@ const DownloadPopup = ({
         Swal.showLoading(); // Show the loading spinner
       },
     });
-  
+
     try {
       let response;
-  
+
       if (currRole === "student") {
         response = await axios.get(
           `/pdf/generate-pdf/${schoolId}?status=${status}&class=${studentClass}&section=${section}&course=${course}&withQR=${withQR}`,
@@ -51,7 +57,7 @@ const DownloadPopup = ({
           { responseType: "blob" } // Handle binary file download
         );
       }
-  
+
       // Download the file
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement("a");
@@ -60,7 +66,7 @@ const DownloadPopup = ({
       document.body.appendChild(link);
       link.click();
       link.remove();
-  
+
       // Show success message
       Swal.fire({
         icon: "success",
@@ -69,7 +75,7 @@ const DownloadPopup = ({
       });
     } catch (err) {
       console.error(err);
-  
+
       // Show error message
       Swal.fire({
         icon: "error",
@@ -78,8 +84,6 @@ const DownloadPopup = ({
       });
     }
   };
-  
-  
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
@@ -91,37 +95,110 @@ const DownloadPopup = ({
           to your email within 4 hours.
         </p> */}
 
-       
-
         {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
 
-        <div className="flex flex-col space-y-2">
+        <div className="flex flex-col space-y-4">
           <button
             onClick={() => handleDownload(true)} // Download with QR
-            className={`bg-blue-500 text-white px-4 py-2 rounded ${
-              loading ? "opacity-50 cursor-not-allowed" : ""
-            }`}
-            disabled={loading}
-          >
-            {loading ? "Processing..." : "Download Proof Data"}
-          </button>
-          <button
-            onClick={() => handleDownload(false)} // Download without QR
-            className={`bg-green-500 text-white px-4 py-2 rounded ${
+            className={`flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg shadow-lg ${
               loading ? "opacity-50 cursor-not-allowed" : ""
             }`}
             disabled={loading}
           >
             {loading ? "Processing..." : "Download Proof QR"}
           </button>
-        </div>
+          <button
+            onClick={() => handleDownload(false)} // Download without QR
+            className={`flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg shadow-lg ${
+              loading ? "opacity-50 cursor-not-allowed" : ""
+            }`}
+            disabled={loading}
+          >
+            {loading ? "Processing..." : "Download Proof Data"}
+          </button>
+          {/* Pending status */}
+          {status === "Panding" && (
+            <>
+              {(user?.exportExcel || user?.school?.exportExcel) && (
+                <button
+                  className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg shadow-lg"
+                  onClick={downloadExcel}
+                >
+                  <FaFileExport /> Export Excel
+                </button>
+              )}
+              {(user?.exportImage || user?.school?.exportImages) && (
+                <button
+                  className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded-lg shadow-lg"
+                  onClick={downloadImages}
+                >
+                  <FaImages /> Export Images
+                </button>
+              )}
+              {((currRole === "staff" &&
+                schoolData?.requiredFieldsStaff.includes("Signature Name") &&
+                user?.exportImage) ||
+                user?.school?.exportImages) && (
+                <button
+                  className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded-lg shadow-lg"
+                  onClick={downloadSignature}
+                >
+                  <FaImages /> Signature Download
+                </button>
+              )}
+            </>
+          )}
 
-        <button
-          onClick={() => onClose(false)}
-          className="mt-4 bg-gray-500 text-white px-4 py-2 rounded w-full"
-        >
-          Close
-        </button>
+          {/* Ready to Print status */}
+          {status === "Ready to print" && (
+            <>
+              {(user?.exportExcel || user?.school?.exportExcel) && (
+                <button
+                  className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg shadow-lg"
+                  onClick={downloadExcel}
+                >
+                  <FaFileExport /> Export Excel
+                </button>
+              )}
+              {(user?.exportImage || user?.school?.exportImages) && (
+                <button
+                  className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded-lg shadow-lg"
+                  onClick={downloadImages}
+                >
+                  <FaImages /> Export Images
+                </button>
+              )}
+            </>
+          )}
+
+          {/* Printed status */}
+          {status === "Printed" && (
+            <>
+              {(user?.exportExcel || user?.school?.exportExcel) && (
+                <button
+                  className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg shadow-lg"
+                  onClick={downloadExcel}
+                >
+                  <FaFileExport /> Export Excel
+                </button>
+              )}
+              {(user?.exportImage || user?.school?.exportImages) && (
+                <button
+                  className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded-lg shadow-lg"
+                  onClick={downloadImages}
+                >
+                  <FaImages /> Export Images
+                </button>
+              )}
+            </>
+          )}
+          <button
+            onClick={() => onClose(false)}
+            className="mt-4 bg-gray-500 hover:bg-gray-600 text-white py-2 px-4 rounded-lg w-full shadow-lg"
+          >
+            Close
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -413,8 +413,7 @@ router.get("/generate-pdf/staffs/:schoolId", async (req, res) => {
       })
     );
 
-    console.log(optimizedStudents);
-
+    
     const pages = [];
     for (let i = 0; i < optimizedStudents.length; i += 10) {
       pages.push(optimizedStudents.slice(i, i + 10));
