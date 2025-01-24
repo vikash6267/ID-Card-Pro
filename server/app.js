@@ -612,6 +612,26 @@ app.use("/admin", require("./routes/adminRoutes.js"));
 app.use("/image", require("./routes/imageRoute.js"));
 app.use("/pdf", require("./routes/pdf.js"));
 
+
+app.get('/proxy', async (req, res) => {
+  const url = req.query.url;
+
+  if (!url) {
+    return res.status(400).json({ error: 'URL parameter is missing or invalid.' });
+  }
+
+  try {
+    const response = await fetch(url);
+    const data = await response.json();
+
+    res.json(data); // Forward the JSON response to the client
+  } catch (error) {
+    console.error('Error fetching data:', error.message);
+    res.status(500).json({ error: 'Error fetching data from the provided URL.' });
+  }
+});
+
+
 //error handling
 
 const { generatedErrors } = require("./middlewares/error");
