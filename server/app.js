@@ -36,13 +36,14 @@ app.use(cookieParser());
 
 // CORS setup
 const allowedOrigins = [
- 
+ "https://xtream-generator.com",
+ "https://cardpro.co.in"
   
 ];
 
 app.use(
   cors({
-    origin: "*",
+    origin: allowedOrigins,
     credentials: true,
     allowedHeaders: ["Content-Type", "Authorization", "Content-Disposition"],
     exposedHeaders: ["Content-Disposition"], // Include this
