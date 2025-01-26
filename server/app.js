@@ -37,7 +37,10 @@ app.use(cookieParser());
 // CORS setup
 const allowedOrigins = [
  "https://xtream-generator.com",
- "https://cardpro.co.in"
+ "https://www.xtream-generator.com",
+ "https://cardpro.co.in",
+ "https://www.cardpro.co.in",
+"https://id-card-ten.vercel.app"
   
 ];
 
