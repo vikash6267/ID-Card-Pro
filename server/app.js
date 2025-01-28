@@ -40,7 +40,8 @@ const allowedOrigins = [
  "https://www.xtream-generator.com",
  "https://cardpro.co.in",
  "https://www.cardpro.co.in",
-"https://id-card-ten.vercel.app"
+"https://id-card-ten.vercel.app",
+"http://localhost:3000"
   
 ];
 
@@ -364,7 +365,7 @@ app.post(
         return header; // Return null as is
       }
     });
-    console.log("newheader", newheader);
+   console.log("newheader", newheader);
 
     const columnIndex = {
       name: newheader.indexOf(cleanedMappings.Name || ""),
@@ -396,6 +397,7 @@ app.post(
       panCardNo: newheader.indexOf(cleanedMappings.PANCardNo || ""),
       extraField1: newheader.indexOf(cleanedMappings.ExtraField1 || ""),
       extraField2: newheader.indexOf(cleanedMappings.ExtraField2 || ""),
+      institute: newheader.indexOf(cleanedMappings.Institute || ""),
     };
 
     const extraFields = {}; // Initialize extraFields object to hold the extra fields
@@ -414,16 +416,8 @@ app.post(
       }
     }
 
-    console.log("Final Mapped Extra Fields: ", extraFields);
-
-    console.log(
-      "Normalized newheader: ",
-      newheader.map((item) => item.trim().toLowerCase())
-    );
-    console.log(
-      "Normalized extraMapping values: ",
-      Object.values(extraMapping).map((value) => value.trim().toLowerCase())
-    );
+ 
+ 
 
     if (!columnIndex.name == -1) {
       return next(new errorHandler("Name is Required"));
@@ -474,6 +468,7 @@ app.post(
           panCardNo: row[columnIndex.panCardNo],
           extraField1: row[columnIndex.extraField1],
           extraField2: row[columnIndex.extraField2],
+          institute: row[columnIndex.institute],
           photoNameUnuiq: await getNextSequenceValue("staffName"),
           signatureNameUnuiq: await getNextSequenceValue("staffSignature"),
           extraFieldsStaff: new Map(),
