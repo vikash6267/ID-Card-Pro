@@ -106,7 +106,7 @@ const AddSchool = () => {
 
   // Handle removing a field
   const handleRemoveFieldStaff = (index) => {
-    const updatedFields = extraFields.filter((_, i) => i !== index);
+    const updatedFields = extraFieldsStaff.filter((_, i) => i !== index);
     setExtraFieldsStaff(updatedFields);
   };
 
