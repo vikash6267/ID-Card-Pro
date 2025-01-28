@@ -108,11 +108,6 @@ const EditSchool = ({ params }) => {
     }
   };
 
-  // Handle removing a field
-  const handleRemoveField = (index) => {
-    const updatedFields = extraFields.filter((_, i) => i !== index);
-    setExtraFields(updatedFields);
-  };
 
   // /staff
 
@@ -125,11 +120,22 @@ const EditSchool = ({ params }) => {
     }
   };
 
+
+  
+  // Handle removing a field
+  const handleRemoveField = (index) => {
+    const updatedFields = extraFields.filter((_, i) => i !== index);
+    setExtraFields(updatedFields);
+  };
+
+
   // Handle removing a field
   const handleRemoveFieldStaff = (index) => {
-    const updatedFields = extraFields.filter((_, i) => i !== index);
+    const updatedFields = extraFieldsStaff.filter((_, i) => i !== index);
     setExtraFieldsStaff(updatedFields);
   };
+
+
   return (
     <>
       <Nav />
