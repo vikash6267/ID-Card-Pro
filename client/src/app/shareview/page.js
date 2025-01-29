@@ -93,7 +93,7 @@ const Viewdata = () => {
     const course = query.get("course");
     const staffType = query.get("staffType");
     const institute = query.get("institute");
-console.log(role)
+console.log(institute)
     // Setting states based on query parameters
     if (vendor) {
     
@@ -117,7 +117,7 @@ console.log(role)
     if (section) setSectionValueSearch(section);
     if (course) setCourseValueSearch(course);
     if (staffType) setValueStaff(staffType);
-    if (institute) setUnqiueStaffInsi(institute);
+    if (institute) setValueStaffInsi(institute);
   }, []);
 
   // Function to handle selection of a student
