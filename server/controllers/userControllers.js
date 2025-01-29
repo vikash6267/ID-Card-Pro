@@ -3219,52 +3219,45 @@ exports.StaffSignature = catchAsyncErron(async (req, res, next) => {
 
 //stuednt
 exports.StaffAvatarsDownload = catchAsyncErron(async (req, res, next) => {
-  const schoolId = req.params.id; // School ID from URL parameter
-  const { status } = req.body; // Status from request body
+  const schoolId = req.params.id;
+  const { status } = req.body;
 
   try {
-    // Fetch school details and student data
-    const school = await School.findById(schoolId); // Assuming you have a School model
+    const school = await School.findById(schoolId);
     if (!school) {
-      return res
-        .status(404)
-        .json({ success: false, message: "School not found" });
+      return res.status(404).json({ success: false, message: "School not found" });
     }
 
     const students = await Student.find({ school: schoolId, status });
     if (!students.length) {
-      return res
-        .status(404)
-        .json({ success: false, message: "No students found" });
+      return res.status(404).json({ success: false, message: "No students found" });
     }
 
-    const studentAvatars = students.map((student, index) => ({
-      url:
-        student?.avatar?.url ||
-        "https://cardpro.co.in/login.jpg",
-      name: `${student.photoNameUnuiq}`,
-    }));
+    // Extracting avatar URLs and preserving original extensions
+    const studentAvatars = students.map((student) => {
+      const url = student?.avatar?.url || "https://cardpro.co.in/login.jpg";
+      console.log(url)
+      const originalExt = path.extname(url).split("?")[0] || ".jpg"; // Extract extension
+      const name = `${student.photoNameUnuiq}${originalExt}`; // Preserve extension
 
-    // Create a temporary directory to store the avatars
+      return { url, name };
+    });
+
+    // Create a temporary directory
     const tempDir = path.join(__dirname, "temp");
     if (!fs.existsSync(tempDir)) {
       fs.mkdirSync(tempDir);
     }
 
-    // Download the images and save them locally with student names
+    // Download images and save with original extensions
     for (let { url, name } of studentAvatars) {
       try {
-        const response = await axios({
-          url,
-          method: "GET",
-          responseType: "stream",
-        });
+        const response = await axios({ url, method: "GET", responseType: "stream" });
 
-        const filePath = path.join(tempDir, `${name.replace(/ /g, "_")}.jpg`);
+        const filePath = path.join(tempDir, name.replace(/ /g, "_"));
         const writer = fs.createWriteStream(filePath);
         response.data.pipe(writer);
 
-        // Wait until the image is fully downloaded
         await new Promise((resolve, reject) => {
           writer.on("finish", resolve);
           writer.on("error", reject);
@@ -3274,39 +3267,33 @@ exports.StaffAvatarsDownload = catchAsyncErron(async (req, res, next) => {
       }
     }
 
-    // Create a ZIP file named after the school
+    // Create a ZIP file
     const zipFileName = `${school.name.replace(/ /g, "_")}_avatars.zip`;
-    console.log(zipFileName);
     const zipFilePath = path.join(__dirname, zipFileName);
     const output = fs.createWriteStream(zipFilePath);
     const archive = archiver("zip", { zlib: { level: 9 } });
 
     archive.pipe(output);
 
-    // Add all the downloaded files to the ZIP archive
+    // Add all downloaded images to ZIP
     const files = fs.readdirSync(tempDir);
     files.forEach((file) => {
-      const filePath = path.join(tempDir, file);
-      archive.file(filePath, { name: file });
+      archive.file(path.join(tempDir, file), { name: file });
     });
 
     await archive.finalize();
 
-    // Cleanup the temporary directory after creating the ZIP file
+    // Cleanup temporary files
     fs.rmSync(tempDir, { recursive: true, force: true });
 
-    // Send the ZIP file to the client
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename="${zipFileName}"`
-    );
+    // Send the ZIP file
+    res.setHeader("Content-Disposition", `attachment; filename="${zipFileName}"`);
     res.setHeader("Content-Type", "application/zip");
     const readStream = fs.createReadStream(zipFilePath);
     readStream.pipe(res);
 
-    // Once the ZIP is sent, delete it from the server
     readStream.on("close", () => {
-      fs.unlinkSync(zipFilePath); // Clean up the ZIP file
+      fs.unlinkSync(zipFilePath); // Delete ZIP after sending
     });
   } catch (error) {
     console.error("Error while creating or downloading ZIP file:", error);
@@ -3316,52 +3303,38 @@ exports.StaffAvatarsDownload = catchAsyncErron(async (req, res, next) => {
 
 //staff
 exports.StaffNewAvatarsDownload = catchAsyncErron(async (req, res, next) => {
-  const schoolId = req.params.id; // School ID from URL parameter
-  const { status } = req.body; // Status from request body
+  const schoolId = req.params.id;
+  const { status } = req.body;
 
   try {
-    // Fetch school details and student data
-    const school = await School.findById(schoolId); // Assuming you have a School model
+    const school = await School.findById(schoolId);
     if (!school) {
-      return res
-        .status(404)
-        .json({ success: false, message: "School not found" });
+      return res.status(404).json({ success: false, message: "School not found" });
     }
 
-    const students = await Staff.find({ school: schoolId, status });
-    if (!students.length) {
-      return res
-        .status(404)
-        .json({ success: false, message: "No students found" });
+    const staffs = await Staff.find({ school: schoolId, status });
+    if (!staffs.length) {
+      return res.status(404).json({ success: false, message: "No staff found" });
     }
 
-    const studentAvatars = students.map((student, index) => ({
-      url:
-        student.avatar?.url ||
-        "https://cardpro.co.in/login.jpg",
-      name: `IMG${student.photoNameUnuiq}`,
-    }));
+    const staffAvatars = staffs.map((staff) => {
+      const url = staff?.avatar?.url || "https://cardpro.co.in/login.jpg";
+      const originalExt = path.extname(url).split("?")[0] || ".jpg";
+      const name = `${staff.photoNameUnuiq}${originalExt}`;
+      return { url, name };
+    });
 
-    // Create a temporary directory to store the avatars
     const tempDir = path.join(__dirname, "temp");
     if (!fs.existsSync(tempDir)) {
       fs.mkdirSync(tempDir);
     }
 
-    // Download the images and save them locally with student names
-    for (let { url, name } of studentAvatars) {
+    for (let { url, name } of staffAvatars) {
       try {
-        const response = await axios({
-          url,
-          method: "GET",
-          responseType: "stream",
-        });
-
-        const filePath = path.join(tempDir, `${name.replace(/ /g, "_")}.jpg`);
+        const response = await axios({ url, method: "GET", responseType: "stream" });
+        const filePath = path.join(tempDir, name.replace(/ /g, "_"));
         const writer = fs.createWriteStream(filePath);
         response.data.pipe(writer);
-
-        // Wait until the image is fully downloaded
         await new Promise((resolve, reject) => {
           writer.on("finish", resolve);
           writer.on("error", reject);
@@ -3371,39 +3344,27 @@ exports.StaffNewAvatarsDownload = catchAsyncErron(async (req, res, next) => {
       }
     }
 
-    // Create a ZIP file named after the school
     const zipFileName = `${school.name.replace(/ /g, "_")}_avatars.zip`;
-    console.log(zipFileName);
     const zipFilePath = path.join(__dirname, zipFileName);
     const output = fs.createWriteStream(zipFilePath);
     const archive = archiver("zip", { zlib: { level: 9 } });
-
     archive.pipe(output);
 
-    // Add all the downloaded files to the ZIP archive
     const files = fs.readdirSync(tempDir);
     files.forEach((file) => {
-      const filePath = path.join(tempDir, file);
-      archive.file(filePath, { name: file });
+      archive.file(path.join(tempDir, file), { name: file });
     });
 
     await archive.finalize();
 
-    // Cleanup the temporary directory after creating the ZIP file
     fs.rmSync(tempDir, { recursive: true, force: true });
 
-    // Send the ZIP file to the client
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename="${zipFileName}"`
-    );
+    res.setHeader("Content-Disposition", `attachment; filename="${zipFileName}"`);
     res.setHeader("Content-Type", "application/zip");
     const readStream = fs.createReadStream(zipFilePath);
     readStream.pipe(res);
-
-    // Once the ZIP is sent, delete it from the server
     readStream.on("close", () => {
-      fs.unlinkSync(zipFilePath); // Clean up the ZIP file
+      fs.unlinkSync(zipFilePath);
     });
   } catch (error) {
     console.error("Error while creating or downloading ZIP file:", error);
