@@ -1066,7 +1066,7 @@ console.log(institute)
                 )}
                 {submitted && (
                   <Link
-                    href={`/shareview?vendor=${currSchool}&role=${currRole}&class=${classNameValue}&section=${sectionValueSearch}&course=${courseValueSearch}&staffType=${staffValueSearch}&institute=${staffValueSearchInsi}`}
+                    href={`/shareview/Adddata?vendor=${currSchool}&role=${currRole}&class=${classNameValue}&section=${sectionValueSearch}&course=${courseValueSearch}&staffType=${staffValueSearch}&institute=${staffValueSearchInsi}`}
                     className={`px-4 py-2 rounded-md font-medium  bg-gray-200 text-gray-700`}
                   >
                     Add  {currRole}
