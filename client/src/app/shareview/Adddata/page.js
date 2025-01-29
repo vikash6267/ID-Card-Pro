@@ -239,7 +239,7 @@ console.log(response.data.data)
           {!loginSchool && schools?.length !== 0 && (
             <form className="mt-6 w-full max-w-md">
               <div className="mb-4 flex gap-3 items-center justify-center">
-              <span>School Name :- </span>  <p>{currSchool?.name}</p>
+              <span>Vendor Name :- </span>  <p>{currSchool?.name}</p>
               </div>
             </form>
           )}
