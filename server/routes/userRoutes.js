@@ -100,9 +100,9 @@ router.post("/edit/school/:id", upload, isAuthenticated, editSchool);
 
 router.post("/delete/school/:id", isAuthenticated, deleteSchool);
 
-router.post("/registration/student/:id", upload, isAuthenticated, addStudent);
+router.post("/registration/student/:id", upload,  addStudent);
 
-router.post("/registration/staff/:id", upload, isAuthenticated, addStaff);
+router.post("/registration/staff/:id", upload,  addStaff);
 
 router.get("/student/:id", upload, getStudent);
 

@@ -704,7 +704,7 @@ exports.ChangeActive = catchAsyncErron(async (req, res, next) => {
 
 exports.addStudent = catchAsyncErron(async (req, res, next) => {
   const id = req.id;
-  let file = null;
+console.log(req.params.id)
 
   const user = await User.findById(id);
   if (user) {
@@ -844,7 +844,10 @@ exports.addStudent = catchAsyncErron(async (req, res, next) => {
       student: student,
     });
   }
-  const school = await School.findById(id);
+
+  const school = await School.findById(req.params.id);
+  console.log(school)
+
   if (school) {
     const schoolID = req.params.id;
     const currSchool = await School.findById(schoolID);
@@ -866,6 +869,7 @@ exports.addStudent = catchAsyncErron(async (req, res, next) => {
     if (req.body.extraFields) {
       currStudent.extraFields = req.body.extraFields;
     }
+
     if (req.body.motherName) {
       currStudent.motherName = req.body.motherName;
     }
@@ -889,9 +893,13 @@ exports.addStudent = catchAsyncErron(async (req, res, next) => {
     }
     if (req.body.class) {
       currStudent.class = req.body.class;
+    } else {
+      currStudent.class = null;
     }
     if (req.body.section) {
       currStudent.section = req.body.section;
+    } else {
+      currStudent.section = null;
     }
     if (req.body.session) {
       currStudent.session = req.body.session;
@@ -921,6 +929,35 @@ exports.addStudent = catchAsyncErron(async (req, res, next) => {
       currStudent.aadharNo = req.body.aadharNo;
     }
 
+    // Additional fields
+    if (req.body.houseName) {
+      currStudent.houseName = req.body.houseName;
+    }
+    if (req.body.validUpTo) {
+      currStudent.validUpTo = req.body.validUpTo; // Ensure date format validation if needed
+    }
+    if (req.body.course) {
+      currStudent.course = req.body.course;
+    } else {
+      currStudent.course = null;
+    }
+    if (req.body.batch) {
+      currStudent.batch = req.body.batch;
+    }
+    if (req.body.idNo) {
+      currStudent.idNo = req.body.idNo;
+    }
+    if (req.body.regNo) {
+      currStudent.regNo = req.body.regNo;
+    }
+    if (req.body.extraField1) {
+      currStudent.extraField1 = req.body.extraField1;
+    }
+    if (req.body.extraField2) {
+      currStudent.extraField2 = req.body.extraField2;
+    }
+
+    console.log(currStudent)
     const student = await Student.create(currStudent);
     // if(req.body.avatar){
 
@@ -928,19 +965,15 @@ exports.addStudent = catchAsyncErron(async (req, res, next) => {
 
     student.school = currSchool._id;
     student.user = school.user;
+    student.photoNameUnuiq = await getNextSequenceValue("studentName");
+    const { publicId, url } = req.body;
 
-    if (file) {
-      const fileUri = getDataUri(file);
+    // Assign default values if fields are empty
+    student.avatar = {
+      publicId: publicId || null, // Default to `null` if no `publicId` is provided
+      url: url || "https://cardpro.co.in/login.jpg", // Default URL
+    };
 
-      const myavatar = await cloudinary.v2.uploader.upload(fileUri.content);
-
-      console.log(myavatar);
-
-      student.avatar = {
-        publicId: myavatar.public_id,
-        url: myavatar.secure_url,
-      };
-    }
     student.save();
 
     res.status(200).json({
@@ -949,6 +982,8 @@ exports.addStudent = catchAsyncErron(async (req, res, next) => {
       student: student,
     });
   }
+
+
 });
 
 exports.editStudent = catchAsyncErron(async (req, res, next) => {
@@ -1161,7 +1196,7 @@ exports.addStaff = catchAsyncErron(async (req, res, next) => {
       });
     }
 
-    const school = await School.findById(id);
+    const school = await School.findById(req.params.id);
     if (school) {
       const schoolID = req.params.id;
       const currSchool = await School.findById(schoolID);
@@ -1267,11 +1302,19 @@ exports.addStaff = catchAsyncErron(async (req, res, next) => {
 
       const { publicId, url } = req.body;
       staff.photoNameUnuiq = await getNextSequenceValue("staffName");
+          staff.signatureNameUnuiq = await getNextSequenceValue("staffSignature");
 
+    
       staff.avatar = {
         publicId: publicId,
         url: url,
       };
+      if (req.body.SignatureData) {
+        staff.signatureImage = {
+          publicId: req.body.SignatureData.publicId,
+          url: req.body.SignatureData.url,
+        };
+      }
 
       await staff.save();
 
