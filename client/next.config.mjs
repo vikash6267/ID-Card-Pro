@@ -36,25 +36,28 @@ const nextConfig = {
         headers: [
           {
             key: "Permissions-Policy",
-            value: "camera=(self), microphone=(self), geolocation=(self)",
+            value: "camera=(self), microphone=(self), geolocation=(self)"
           },
           {
             key: "Content-Security-Policy",
-            value: `default-src 'self';
-                    script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://www.gstatic.com;
-                    style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
-                    img-src 'self' data: blob: https://www.gstatic.com;
-                    connect-src 'self' https://api.cardpro.co.in/;
-                    frame-src 'self';
-                    font-src 'self' https://fonts.gstatic.com;
-                    object-src 'none';
-                    media-src 'self' blob: https://www.gstatic.com;
-                    worker-src 'self' blob:;`, // Fixed formatting here
+            value: `
+              default-src 'self';
+              script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://www.gstatic.com;
+              style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+              img-src 'self' data: blob: https://www.gstatic.com;
+              connect-src 'self' https://api.cardpro.co.in/;
+              frame-src 'self';
+              font-src 'self' https://fonts.gstatic.com;
+              object-src 'none';
+              media-src 'self' blob: https://www.gstatic.com;
+              worker-src 'self' blob:;
+            `.replace(/\n/g, ' ').trim() // Removing unnecessary line breaks
           },
         ],
       },
     ];
-  },
+  }
+,  
   experimental: {
     appDir: true,
     serverActions: true,
