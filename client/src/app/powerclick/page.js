@@ -19,19 +19,7 @@ const StudentPhotoCapture = ({ setCroppedPhoto, aspectRatio }) => {
   const canvasRef = useRef(null);
 
   useEffect(() => {
-    const requestCameraPermission = async () => {
-      try {
-        await navigator.mediaDevices.getUserMedia({ video: true });
-        setIsCameraAccessible(true);
-      } catch (error) {
-        setIsCameraAccessible(false);
-        Swal.fire({
-          title: "Camera Permission Denied",
-          text: "Please enable camera access in your browser settings to capture photos.",
-          icon: "error",
-        });
-      }
-    };
+  
     const startCamera = async () => {
       try {
         // First, request camera permission
@@ -40,7 +28,7 @@ const StudentPhotoCapture = ({ setCroppedPhoto, aspectRatio }) => {
   
         // Then, start the camera
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: "environment" },
+          video: { facingMode: "user" },
         });
         videoRef.current.srcObject = stream;
       } catch (error) {
