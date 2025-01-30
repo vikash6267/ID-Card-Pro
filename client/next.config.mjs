@@ -1,6 +1,3 @@
-
-
-
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -35,27 +32,28 @@ const nextConfig = {
   async headers() {
     return [
       {
-        source: '/(.*)',
+        source: "/(.*)",
         headers: [
           {
-            key: 'Permissions-Policy',
-            value: 'camera=self, microphone=self, geolocation=self',
+            key: "Permissions-Policy",
+            value: "camera=(), microphone=(), geolocation=()",
+          },
+          {
+            key: "Content-Security-Policy",
+            value:
+              "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self' ws: wss:; frame-src 'self'; style-src 'self' 'unsafe-inline';",
           },
         ],
       },
     ];
   },
-  // Enable experimental features (optional)
   experimental: {
     appDir: true,
     serverActions: true,
   },
-  // Webpack configuration (if needed)
-  webpack: (config, { isServer }) => {
-    // Add any custom webpack configurations here
+  webpack: (config) => {
     return config;
   },
 };
 
 export default nextConfig;
-
