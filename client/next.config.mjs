@@ -41,7 +41,12 @@ const nextConfig = {
           {
             key: "Content-Security-Policy",
             value:
-              "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self' ws: wss:; frame-src 'self'; style-src 'self' 'unsafe-inline';",
+              "default-src 'self'; " +
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://www.gstatic.com https://api.cardpro.co.in/; " +
+              "img-src 'self' data: blob:; " +
+              "connect-src 'self' https://api.cardpro.co.in/ ws: wss:; " +
+              "frame-src 'self' https://www.google.com; " +
+              "style-src 'self' 'unsafe-inline';"
           },
         ],
       },
