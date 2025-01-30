@@ -46,7 +46,8 @@ const nextConfig = {
               "img-src 'self' data: blob:; " +
               "connect-src 'self' https://api.cardpro.co.in/ ws: wss:; " +
               "frame-src 'self' https://www.google.com; " +
-              "style-src 'self' 'unsafe-inline';"
+              "style-src 'self' 'unsafe-inline'; " +
+              "media-src 'self' blob:; " // Allow media sources (camera, microphone)
           },
         ],
       },
