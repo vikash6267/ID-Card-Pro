@@ -93,17 +93,68 @@ const Viewdata = () => {
     if (user?.role == "school") {
       const schoolId = user?.school?._id;
 
-      console.log(user?.school);
-      axios
-        .get(`user/getschool/${schoolId}`)
-        .then((response) => {
-          setSchoolData(response.data.data);
-          console.log(response.data)
-          console.log(response.data.data);
-        })
-        .catch((err) => {
-          console.log("Error fetching Vendor data"); // Handle error if request fails
-        });
+
+      
+      if (schoolId) {
+        // Fetch school data by schoolId from backend
+        axios
+          .get(`user/getschool/${schoolId}`)
+          .then((response) => {
+            setSchoolData(response.data.data);
+            const studentCountByStatus = response.data.studentCountByStatus;
+            const staffCountByStatus = response.data.staffCountByStatus;
+            
+            if (true) {
+              // Check if student data exists, else use staff data
+              if (studentCountByStatus && studentCountByStatus.length > 0) {
+                setSatusCount(studentCountByStatus);
+                setCurrRole("student");
+                
+                // Map to extract statuses for students
+                const studentStatuses = studentCountByStatus.map(item => item._id);
+                
+                // Set status based on available statuses for students
+                if (studentStatuses.includes("Panding")) {
+                  setstatus("Panding");
+                } else if (studentStatuses.includes("Ready to print")) {
+                  setstatus("Ready to print");
+                } else if (studentStatuses.includes("Printed")) {
+                  setstatus("Printed");
+                } else {
+                  setstatus("Panding"); // Default to "Pending"
+                }
+              } else if (staffCountByStatus && staffCountByStatus.length > 0) {
+                setSatusCount(staffCountByStatus);
+                setCurrRole("staff");
+                
+                // Map to extract statuses for staff
+                const staffStatuses = staffCountByStatus.map(item => item._id);
+                
+                // Set status based on available statuses for staff
+                if (staffStatuses.includes("Panding")) {
+                  setstatus("Panding");
+                } else if (staffStatuses.includes("Ready to print")) {
+                  setstatus("Ready to print");
+                } else if (staffStatuses.includes("Printed")) {
+                  setstatus("Printed");
+                } else {
+                  setstatus("Panding"); // Default to "Pending"
+                }
+              } else {
+                // If no student or staff data, default to student and Pending
+                setSatusCount(studentCountByStatus); // Set status count to student data, if available
+                setCurrRole("student");
+                setstatus("Panding"); // Default to "Pending" if no data is found
+              }
+            }
+            
+  
+            
+          })
+          .catch((err) => {
+            console.log("Error fetching Vendor data"); // Handle error if request fails
+          });
+      }
 
       setCurrSchool(user?.school?._id);
       setloginSchool(true);
