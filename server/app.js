@@ -41,7 +41,8 @@ const allowedOrigins = [
  "https://cardpro.co.in",
  "https://www.cardpro.co.in",
 "https://id-card-ten.vercel.app",
-"http://localhost:3000"
+"http://localhost:3000",
+"https://id-card-pro.vercel.app"
   
 ];
 
