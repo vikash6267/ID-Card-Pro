@@ -32,7 +32,38 @@ const StudentPhotoCapture = ({ setCroppedPhoto, aspectRatio }) => {
         });
       }
     };
+    const startCamera = async () => {
+      try {
+        // First, request camera permission
+        await navigator.mediaDevices.getUserMedia({ video: true });
+        setIsCameraAccessible(true);
+  
+        // Then, start the camera
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "environment" },
+        });
+        videoRef.current.srcObject = stream;
+      } catch (error) {
+        setIsCameraAccessible(false);
+        Swal.fire({
+          title: "Camera Permission Denied",
+          text: "Please enable camera access in your browser settings to capture photos.",
+          icon: "error",
+        });
+      }
+    };
+  
+    startCamera();
+  
     requestCameraPermission();
+    // Cleanup on component unmount
+    return () => {
+      if (videoRef.current && videoRef.current.srcObject) {
+        const stream = videoRef.current.srcObject;
+        const tracks = stream.getTracks();
+        tracks.forEach((track) => track.stop());
+      }
+    };
   }, []);
 
 
@@ -62,9 +93,7 @@ const StudentPhotoCapture = ({ setCroppedPhoto, aspectRatio }) => {
     }
   };
 
-  const handleCameraSwitch = () => {
-    setCameraFacingMode((prevMode) => (prevMode === "user" ? "environment" : "user"));
-  };
+
 
   if (!isCameraAccessible) {
     return (
@@ -76,30 +105,6 @@ const StudentPhotoCapture = ({ setCroppedPhoto, aspectRatio }) => {
 
 
 
-  useEffect(() => {
-    const startCamera = async () => {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: "environment" },
-        });
-        videoRef.current.srcObject = stream;
-      } catch (err) {
-        console.error("Error accessing webcam:", err);
-      }
-    };
-
-    startCamera();
-
-    // Cleanup on component unmount
-    return () => {
-      if (videoRef.current && videoRef.current.srcObject) {
-        const stream = videoRef.current.srcObject;
-        const tracks = stream.getTracks();
-        tracks.forEach((track) => track.stop());
-      }
-    };
-  }, []);
-  
   return (
     <div className="text-center mt-6">
       {/* <Camera
