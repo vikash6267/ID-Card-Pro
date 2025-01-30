@@ -55,7 +55,7 @@ const StudentPhotoCapture = ({ setCroppedPhoto, aspectRatio }) => {
   
     startCamera();
   
-    requestCameraPermission();
+
     // Cleanup on component unmount
     return () => {
       if (videoRef.current && videoRef.current.srcObject) {
