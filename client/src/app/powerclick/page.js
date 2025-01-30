@@ -95,13 +95,7 @@ const StudentPhotoCapture = ({ setCroppedPhoto, aspectRatio }) => {
 
 
 
-  if (!isCameraAccessible) {
-    return (
-      <div className="text-center mt-6 text-red-600">
-        <p>Camera access is blocked. Please enable camera access to use this feature.</p>
-      </div>
-    );
-  }
+  
 
 
 
