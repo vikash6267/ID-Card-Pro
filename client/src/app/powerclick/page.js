@@ -18,31 +18,27 @@ const StudentPhotoCapture = ({ setCroppedPhoto, aspectRatio }) => {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
 
+
+   // Start the camera based on facingMode
+   const startCamera = async (facingMode) => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: facingMode },
+      });
+      videoRef.current.srcObject = stream;
+    } catch (error) {
+      setIsCameraAccessible(false);
+      Swal.fire({
+        title: "Camera Permission Denied",
+        text: "Please enable camera access in your browser settings to capture photos.",
+        icon: "error",
+      });
+    }
+  };
+
+
   useEffect(() => {
-  
-    const startCamera = async () => {
-      try {
-        // First, request camera permission
-        await navigator.mediaDevices.getUserMedia({ video: true });
-        setIsCameraAccessible(true);
-  
-        // Then, start the camera
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: "user" },
-        });
-        videoRef.current.srcObject = stream;
-      } catch (error) {
-        setIsCameraAccessible(false);
-        Swal.fire({
-          title: "Camera Permission Denied",
-          text: "Please enable camera access in your browser settings to capture photos.",
-          icon: "error",
-        });
-      }
-    };
-  
-    startCamera();
-  
+    startCamera(cameraFacingMode);
 
     // Cleanup on component unmount
     return () => {
@@ -52,7 +48,7 @@ const StudentPhotoCapture = ({ setCroppedPhoto, aspectRatio }) => {
         tracks.forEach((track) => track.stop());
       }
     };
-  }, []);
+  }, [cameraFacingMode]);
 
 
 
@@ -84,7 +80,9 @@ const StudentPhotoCapture = ({ setCroppedPhoto, aspectRatio }) => {
 
 
   
-
+const handleCameraSwitch = () => {
+    setCameraFacingMode((prevMode) => (prevMode === "user" ? "environment" : "user"));
+  };
 
 
   return (
@@ -117,12 +115,12 @@ const StudentPhotoCapture = ({ setCroppedPhoto, aspectRatio }) => {
         >
           Capture Photo
         </button>
-        {/* <button
+        <button
           onClick={handleCameraSwitch}
           className="px-6 py-2 bg-gray-600 text-white rounded-lg shadow-md hover:bg-gray-700 transition duration-300"
         >
           Switch Camera
-        </button> */}
+        </button>
       </div>
 
 
