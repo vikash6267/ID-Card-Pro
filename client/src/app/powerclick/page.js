@@ -63,16 +63,16 @@ const StudentPhotoCapture = ({ setCroppedPhoto, aspectRatio }) => {
 
   return (
     <div className="text-center mt-6">
-      <Camera
-    
-        ref={webcamRef}
-        aspectRatio={5 / 4} 
-        audio={false}
-        facingMode={cameraFacingMode}
-        className="rounded-lg border-2 border-gray-300 shadow-lg"
-        screenshotFormat="image/jpeg"
-      
-      />
+   <Webcam
+  audio={false}
+  ref={webcamRef}
+  screenshotFormat="image/jpeg"
+  width="100%"
+  videoConstraints={{
+    facingMode: cameraFacingMode
+  }}
+/>
+
       <div className="mt-6 flex justify-center gap-6">
         <button
           onClick={handleCaptureClick}
