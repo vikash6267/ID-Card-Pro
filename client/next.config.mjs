@@ -32,22 +32,15 @@ const nextConfig = {
   async headers() {
     return [
       {
-        source: "/(.*)",
+        source: "/(.*)",  // Apply this to all routes
         headers: [
           {
             key: "Permissions-Policy",
-            value: "camera=(), microphone=(), geolocation=()",
+            value: "camera=(self), microphone=(self), geolocation=(self)",
           },
           {
             key: "Content-Security-Policy",
-            value:
-              "default-src 'self'; " +
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://www.gstatic.com https://api.cardpro.co.in/; " +
-              "img-src 'self' data: blob:; " +
-              "connect-src 'self' https://api.cardpro.co.in/ ws: wss:; " +
-              "frame-src 'self' https://www.google.com; " +
-              "style-src 'self' 'unsafe-inline'; " +
-              "media-src 'self' blob:; " // Allow media sources (camera, microphone)
+            value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self' ws: wss:; frame-src 'self'; style-src 'self' 'unsafe-inline';",
           },
         ],
       },
