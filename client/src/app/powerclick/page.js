@@ -7,7 +7,6 @@ import "cropperjs/dist/cropper.css";
 import axios from "../../../axiosconfig";
 import Swal from "sweetalert2";
 
-
 const StudentPhotoCapture = ({ setCroppedPhoto, aspectRatio }) => {
   const [photo, setPhoto] = useState(null);
   const [isCropModalOpen, setIsCropModalOpen] = useState(false);
@@ -18,9 +17,8 @@ const StudentPhotoCapture = ({ setCroppedPhoto, aspectRatio }) => {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
 
-
-   // Start the camera based on facingMode
-   const startCamera = async (facingMode) => {
+  // Start the camera based on facingMode
+  const startCamera = async (facingMode) => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: facingMode },
@@ -36,7 +34,6 @@ const StudentPhotoCapture = ({ setCroppedPhoto, aspectRatio }) => {
     }
   };
 
-
   useEffect(() => {
     startCamera(cameraFacingMode);
 
@@ -49,8 +46,6 @@ const StudentPhotoCapture = ({ setCroppedPhoto, aspectRatio }) => {
       }
     };
   }, [cameraFacingMode]);
-
-
 
   const handleCaptureClick = () => {
     const canvas = canvasRef.current;
@@ -71,19 +66,19 @@ const StudentPhotoCapture = ({ setCroppedPhoto, aspectRatio }) => {
 
   const handleCrop = () => {
     if (cropperRef.current && cropperRef.current.cropper) {
-      const croppedDataUrl = cropperRef.current.cropper.getCroppedCanvas().toDataURL();
+      const croppedDataUrl = cropperRef.current.cropper
+        .getCroppedCanvas()
+        .toDataURL();
       setCroppedPhoto(croppedDataUrl);
       setIsCropModalOpen(false);
     }
   };
 
-
-
-  
-const handleCameraSwitch = () => {
-    setCameraFacingMode((prevMode) => (prevMode === "user" ? "environment" : "user"));
+  const handleCameraSwitch = () => {
+    setCameraFacingMode((prevMode) =>
+      prevMode === "user" ? "environment" : "user"
+    );
   };
-
 
   return (
     <div className="text-center mt-6">
@@ -98,7 +93,6 @@ const handleCameraSwitch = () => {
       
       /> */}
 
-
       <video
         ref={videoRef}
         autoPlay
@@ -106,7 +100,6 @@ const handleCameraSwitch = () => {
         width="100%"
         className="rounded-lg border-2 border-gray-300 shadow-lg"
       />
-
 
       <div className="mt-6 flex justify-center gap-6">
         <button
@@ -123,14 +116,14 @@ const handleCameraSwitch = () => {
         </button>
       </div>
 
-
       <canvas ref={canvasRef} style={{ display: "none" }}></canvas>
-
 
       {isCropModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 shadow-lg w-11/12 max-w-md">
-            <h3 className="text-2xl font-semibold mb-6 text-center">Crop Your Photo</h3>
+            <h3 className="text-2xl font-semibold mb-6 text-center">
+              Crop Your Photo
+            </h3>
             <Cropper
               src={photo}
               className="w-full h-64 rounded border"
@@ -163,12 +156,13 @@ const handleCameraSwitch = () => {
 const StudentDisplay = () => {
   const [students, setStudents] = useState([]);
   const [currentStudentIndex, setCurrentStudentIndex] = useState(0);
-  const [capturedPhoto, setCapturedPhoto] = useState(null);
   const [croppedPhoto, setCroppedPhoto] = useState(null);
   const [studentClass, setStudentClass] = useState("");
   const [stuSection, setSection] = useState("");
   const [stuCourse, setCourse] = useState("");
+  const [currRole, setCurrRole] = useState("");
   const [aspectRatio, setAspectRatio] = useState(1 / 1);
+  const [className, setClassname] = useState([]);
 
   const handleAspectRatioChange = (e) => {
     const selectedRatio = e.target.value === "passport" ? 7 / 9 : 1 / 1;
@@ -181,29 +175,40 @@ const StudentDisplay = () => {
     const className = query.get("class");
     const section = query.get("section");
     const course = query.get("course");
+    const role = query.get("role");
 
     if (className) setStudentClass(className);
     if (section) setSection(section);
     if (course) setCourse(course);
+    if (role) setCurrRole(role);
 
     if (vendor) {
       axios
-        .get(`/user/students/no-photo/${vendor}?studentClass=${studentClass}&section=${stuSection}&course=${stuCourse}`)
-        .then((response) => {console.log(response.data) ; setStudents(response.data)})
+        .get(
+          `/user/students/no-photo/${vendor}?studentClass=${studentClass}&section=${stuSection}&course=${stuCourse}`
+        )
+        .then((response) => {
+          console.log(response.data);
+          setStudents(response.data?.students);
+          setClassname(response.data?.uniqueStudents);
+        })
         .catch((error) => console.error("Error fetching students:", error));
     }
-  }, [currentStudentIndex]);
+  }, [currentStudentIndex, studentClass]);
 
-  const handlePhotoCaptured = (photoUrl) => setCapturedPhoto(photoUrl);
 
   const handleNextStudent = () => {
-    setCurrentStudentIndex((prevIndex) => (prevIndex + 1) % students.length);
-    setCroppedPhoto(null);
+    if (currentStudentIndex < students.length - 1) {
+      setCurrentStudentIndex((prevIndex) => prevIndex + 1);
+      setCroppedPhoto(null);
+    }
   };
 
   const handlePreviousStudent = () => {
-    setCurrentStudentIndex((prevIndex) => (prevIndex - 1 + students.length) % students.length);
-    setCroppedPhoto(null);
+    if (currentStudentIndex > 0) {
+      setCurrentStudentIndex((prevIndex) => prevIndex - 1);
+      setCroppedPhoto(null);
+    }
   };
 
   const handleUpdatePhoto = async (studentId) => {
@@ -215,62 +220,62 @@ const StudentDisplay = () => {
         allowOutsideClick: false,
         didOpen: () => Swal.showLoading(),
       });
-  
+
       try {
         // Create an image object
         const img = new Image();
         img.src = croppedPhoto;
-        
+
         img.onload = async () => {
           // Create a canvas to resize the image
-          const canvas = document.createElement('canvas');
-          const ctx = canvas.getContext('2d');
-          
+          const canvas = document.createElement("canvas");
+          const ctx = canvas.getContext("2d");
+
           // Resize the image (adjust max width and height as needed)
-          const maxWidth = 800;  // Adjust the max width
+          const maxWidth = 800; // Adjust the max width
           const maxHeight = 800; // Adjust the max height
           let width = img.width;
           let height = img.height;
-  
+
           if (width > maxWidth || height > maxHeight) {
             const ratio = Math.min(maxWidth / width, maxHeight / height);
             width = width * ratio;
             height = height * ratio;
           }
-  
+
           // Set canvas size and draw the image
           canvas.width = width;
           canvas.height = height;
           ctx.drawImage(img, 0, 0, width, height);
-  
+
           // Convert the canvas to a data URL (image format and quality can be adjusted)
           const compressedDataUrl = canvas.toDataURL("image/jpeg", 0.7); // Adjust quality (0 to 1)
-  
+
           // Convert Data URL to Blob directly
-          const byteString = atob(compressedDataUrl.split(',')[1]);
+          const byteString = atob(compressedDataUrl.split(",")[1]);
           const arrayBuffer = new ArrayBuffer(byteString.length);
           const uintArray = new Uint8Array(arrayBuffer);
-  
+
           for (let i = 0; i < byteString.length; i++) {
             uintArray[i] = byteString.charCodeAt(i);
           }
-  
+
           const blob = new Blob([uintArray], { type: "image/jpeg" });
-  
+
           // Prepare the form data to upload the image
           const formData = new FormData();
           formData.append("file", new File([blob], "photo.jpg"));
-  
+
           // Upload the image
           const uploadResponse = await axios.post("/image/upload", formData, {
             headers: { "Content-Type": "multipart/form-data" },
           });
-  
+
           Swal.close();
-  
+
           if (uploadResponse.data.success) {
             const { public_id, url } = uploadResponse.data.thumbnailImage;
-  
+
             // Update the student's avatar with the uploaded image URL
             const res = await axios.put(`/user/students/${studentId}/avatar`, {
               publicId: public_id,
@@ -279,7 +284,7 @@ const StudentDisplay = () => {
             console.log(res);
           }
         };
-  
+
         img.onerror = () => {
           Swal.close();
           Swal.fire({
@@ -304,9 +309,6 @@ const StudentDisplay = () => {
       });
     }
   };
-  
-  
-
 
   const handleShare = () => {
     if (window.navigator.share) {
@@ -326,7 +328,6 @@ const StudentDisplay = () => {
     }
   };
 
-
   if (students.length === 0) {
     return (
       <div className="text-center mt-8 text-gray-600">
@@ -336,24 +337,66 @@ const StudentDisplay = () => {
   }
 
   const currentStudent = students[currentStudentIndex];
-  const upcomingStudents = students.slice(currentStudentIndex + 1, currentStudentIndex + 4);
+  const upcomingStudents = students.slice(
+    currentStudentIndex + 1,
+    currentStudentIndex + 4
+  );
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 py-8">
+      {currRole === "student" && className && className.length > 0 && (
+        <div className="flex items-center gap-4">
+          {/* Dropdown */}
+          <select
+            value={studentClass || ""} // Ensure value is always a string
+            onChange={(e) => {
+              setStudentClass(e.target.value);
+            }}
+            className="w-full sm:w-auto p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base "
+            style={{ maxHeight: "200px", overflowY: "auto" }}
+          >
+            <option value=""> All Class</option>
+            {className.map((name, index) =>
+              name && name.trim() ? (
+                <option key={index} value={name}>
+                  {name}
+                </option>
+              ) : (
+                <option key={index} value="no-class">
+                  Without Class Name
+                </option>
+              )
+            )}
+          </select>
+        </div>
+      )}
+
       <div className="bg-white shadow-lg rounded-lg p-8 w-11/12 max-w-lg">
-        <h2 className="text-3xl font-semibold text-center mb-6">{currentStudent?.name}</h2>
+        <h2 className="text-3xl font-semibold text-center mb-6">
+          {currentStudent?.name}
+        </h2>
         <div className="flex justify-center mt-4 mb-6">
-          <img src={currentStudent?.avatar.url} alt="" className="h-24 w-24 rounded-full border-4 border-gray-300" />
+          <img
+            src={currentStudent?.avatar.url}
+            alt=""
+            className="h-24 w-24 rounded-full border-4 border-gray-300"
+          />
           <div className="ml-4 text-left">
             {currentStudent?.class && (
-              <p className="text-lg font-medium">Class: {currentStudent?.class}</p>
+              <p className="text-lg font-medium">
+                Class: {currentStudent?.class}
+              </p>
             )}
             {currentStudent?.section && (
-              <p className="text-lg font-medium">Section: {currentStudent?.section}</p>
+              <p className="text-lg font-medium">
+                Section: {currentStudent?.section}
+              </p>
             )}
           </div>
         </div>
-        <p className="text-gray-600 text-center mb-6">School: {currentStudent?.school?.name}</p>
+        <p className="text-gray-600 text-center mb-6">
+          School: {currentStudent?.school?.name}
+        </p>
 
         <select
           onChange={handleAspectRatioChange}
@@ -363,7 +406,10 @@ const StudentDisplay = () => {
           <option value="passport">Passport</option>
         </select>
 
-        <StudentPhotoCapture setCroppedPhoto={setCroppedPhoto} aspectRatio={aspectRatio} />
+        <StudentPhotoCapture
+          setCroppedPhoto={setCroppedPhoto}
+          aspectRatio={aspectRatio}
+        />
 
         {croppedPhoto && (
           <div className="mt-6">
@@ -386,21 +432,34 @@ const StudentDisplay = () => {
           <h4 className="font-semibold">Upcoming Students:</h4>
           <ul>
             {upcomingStudents.map((student, index) => (
-              <li key={index} className="text-gray-600">{student.name}</li>
+              <li key={index} className="text-gray-600">
+                {student.name}
+              </li>
             ))}
           </ul>
         </div>
 
-        <div className="flex justify-between mt-8">
+        <div className="mt-6 flex justify-center gap-6">
           <button
             onClick={handlePreviousStudent}
-            className="w-28 px-6 py-2 bg-gray-600 text-white rounded-lg shadow-md hover:bg-gray-700 transition duration-300"
+            disabled={currentStudentIndex === 0}
+            className={`px-6 py-2 rounded-lg shadow-md transition duration-300 ${
+              currentStudentIndex === 0
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-blue-600 text-white hover:bg-blue-700"
+            }`}
           >
             Previous
           </button>
+
           <button
             onClick={handleNextStudent}
-            className="w-28 px-6 py-2 bg-blue-600 text-white rounded-lg shadow-md hover:bg-blue-700 transition duration-300"
+            disabled={currentStudentIndex >= students.length - 1}
+            className={`px-6 py-2 rounded-lg shadow-md transition duration-300 ${
+              currentStudentIndex >= students.length - 1
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-blue-600 text-white hover:bg-blue-700"
+            }`}
           >
             Next
           </button>

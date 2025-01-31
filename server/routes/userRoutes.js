@@ -216,6 +216,7 @@ router.get("/students/no-photo/:schoolId", async (req, res) => {
   try {
     console.log(req.params);
     const { schoolId } = req.params; // Extract schoolId from URL parameters
+
     const {
       status,
       studentClass,
@@ -236,29 +237,56 @@ router.get("/students/no-photo/:schoolId", async (req, res) => {
         ],
       },
     };
+ 
+    const uniqueStudents = await Student.distinct("class", queryObj);
+
+    // console.log(uniqueStudents)
+    // Adding status filter if provided
+    if (status) {
+      queryObj.status = status;
+    }
+
+    // Adding class and section filter if provided
+    // Function to escape special characters for regex
+    function escapeRegex(value) {
+      return value.replace(/([.*+?^=!:${}()|\[\]\/\\])/g, "\\$1");
+    }
+
+    if (studentClass) {
+      if (studentClass === "no-class" || studentClass === "") {
+        queryObj.class = null; // Logic to filter for "Without Class Name"
+      } else {
+        const escapedClassName = escapeRegex(studentClass); // Escape special characters
+        queryObj.class = { $regex: `^${escapedClassName}$`, $options: "i" }; // Exact match with regex
+      }
+    }
+    if (course) {
+      if (course === "no-class" || course === "") {
+        queryObj.course = null; // Logic to filter for "Without Class Name"
+      } else {
+        const escapedcourseName = escapeRegex(course); // Escape special characters
+        queryObj.course = { $regex: `^${escapedcourseName}$`, $options: "i" }; // Exact match with regex
+      }
+    }
+
+    if (section) {
+      queryObj.section = { $regex: section, $options: "i" };
+    }
 
     function escapeRegex(value) {
       return value.replace(/([.*+?^=!:${}()|\[\]\/\\])/g, "\\$1");
     }
 
-    if (status) {
-      queryObj.status = status;
+    if (studentClass && studentClass !== "no-class" && studentClass !== "") {
+      queryObj.class = { $regex: `^${escapeRegex(studentClass)}$`, $options: "i" };
     }
-    if (studentClass) {
-      queryObj.class =
-        studentClass === "no-class" || studentClass === ""
-          ? null
-          : { $regex: `^${escapeRegex(studentClass)}$`, $options: "i" };
-    }
-    if (course) {
-      queryObj.course =
-        course === "no-class" || course === ""
-          ? null
-          : { $regex: `^${escapeRegex(course)}$`, $options: "i" };
+    if (course && course !== "no-class" && course !== "") {
+      queryObj.course = { $regex: `^${escapeRegex(course)}$`, $options: "i" };
     }
     if (section) {
-      queryObj.section = { $regex: section, $options: "i" };
+      queryObj.section = { $regex: `^${escapeRegex(section)}$`, $options: "i" };
     }
+    
 
     // Add pagination with limit and offset
     const students = await Student.find(queryObj)
@@ -275,7 +303,8 @@ router.get("/students/no-photo/:schoolId", async (req, res) => {
         .json({ message: "No students without a photo found." });
     }
 
-    return res.status(200).json(students);
+    return res.status(200).json({ students, uniqueStudents });
+
   } catch (error) {
     console.error("Error fetching students without photo:", error);
     return res
