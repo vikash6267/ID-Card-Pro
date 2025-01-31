@@ -11,32 +11,13 @@
       position: relative;
     }
 
-    /* Visit Website Banner */
-    .visit-website {
-      text-align: center;
-      font-size: 16px;
-      color: #007bff;
-      font-weight: bold;
-      position: absolute;
-      top: 10px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 1;
-      cursor: pointer;
-    }
-
-    .visit-website:hover {
-      color: #0056b3;
-      text-decoration: underline;
-    }
-
     /* Watermark */
-    body::before, body::after {
+    body::before {
       content: "www.cardpro.co.in";
       position: absolute;
       top: 50%;
       left: 50%;
-      transform: translate(-50%, -50%) rotate(45deg);
+      transform: translate(-50%, -50%);
       font-size: 50px;
       color: rgba(0, 0, 0, 0.1);
       font-weight: bold;
@@ -44,19 +25,6 @@
       white-space: nowrap;
     }
 
-    /* Additional rotated watermarks */
-    body::after {
-      content: "www.cardpro.co.in";
-      top: 30%;
-      left: 30%;
-      transform: translate(-30%, -30%) rotate(45deg);
-      font-size: 50px;
-      color: rgba(0, 0, 0, 0.1);
-      font-weight: bold;
-      z-index: -1;
-    }
-
-    /* Table Styling */
     .header {
       text-align: center;
       margin-bottom: 20px;
@@ -110,15 +78,10 @@
 </head>
 <body>
 
-  <!-- Visit Website Banner -->
-  <div class="visit-website">
-    Visit Website - <a href="https://www.cardpro.co.in" target="_blank" style="color: inherit;">www.cardpro.co.in</a>
-  </div>
-
   <!-- Company Logo -->
   <div class="header">
     <img src="https://cardpro.co.in/login.jpg" alt="Company Logo" class="logo">
-    <div class="title">Student Report</div>
+    <div class="title">Vendor Report</div>
   </div>
 
   <!-- School Name -->
@@ -129,7 +92,7 @@
     <thead>
       <tr>
         <th>Class</th>
-        <th>Panding</th>
+        <th>Pending</th>
         <th>Ready to Print</th>
         <th>Printed</th>
       </tr>
