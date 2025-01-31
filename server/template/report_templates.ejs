@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Student Report</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 40px;
+      padding: 20px;
+      background-color: #f8f9fa;
+      position: relative;
+    }
+
+    /* Watermark */
+    body::before {
+      content: "www.cardpro.co.in";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 50px;
+      color: rgba(0, 0, 0, 0.1);
+      font-weight: bold;
+      z-index: -1;
+      white-space: nowrap;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .logo {
+      width: 200px;
+    }
+
+    .title {
+      font-size: 28px;
+      font-weight: bold;
+      color: #333;
+      margin-top: 10px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    th, td {
+      padding: 12px;
+      border: 1px solid #ddd;
+      text-align: center;
+    }
+
+    th {
+      background: #007bff;
+      color: #fff;
+      font-weight: bold;
+    }
+
+    tr:nth-child(even) {
+      background: #f2f2f2;
+    }
+
+    tr:hover {
+      background: #ddd;
+    }
+
+    /* Total Row Styling */
+    .total-row {
+      background: #28a745 !important;
+      color: #fff;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Company Logo -->
+  <div class="header">
+    <img src="https://cardpro.co.in/login.jpg" alt="Company Logo" class="logo">
+    <div class="title">Student Report</div>
+  </div>
+
+  <!-- School Name -->
+  <h2>Vendor : <%= schoolName %></h2>
+
+  <!-- Report Table -->
+  <table>
+    <thead>
+      <tr>
+        <th>Class</th>
+        <th>Panding</th>
+        <th>Ready to Print</th>
+        <th>Printed</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% 
+        let totalPanding = 0;
+        let totalReadyToPrint = 0;
+        let totalPrinted = 0;
+        
+        result.forEach(classData => { 
+          totalPanding += classData.Panding;
+          totalReadyToPrint += classData["Ready to print"];
+          totalPrinted += classData.Printed;
+      %>
+        <tr>
+          <td><%= classData.class %></td>
+          <td><%= classData.Panding %></td>
+          <td><%= classData["Ready to print"] %></td>
+          <td><%= classData.Printed %></td>
+        </tr>
+      <% }); %>
+
+      <!-- Total Row -->
+      <tr class="total-row">
+        <td>Total</td>
+        <td><%= totalPanding %></td>
+        <td><%= totalReadyToPrint %></td>
+        <td><%= totalPrinted %></td>
+      </tr>
+    </tbody>
+  </table>
+
+</body>
+</html>

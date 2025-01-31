@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import axios from "../../../../axiosconfig";
 import Swal from "sweetalert2";
-import { FaFileExport, FaImages } from "react-icons/fa";
+
+import { FaQrcode, FaFilePdf, FaFileExport, FaImages, FaSignature, FaTimes } from "react-icons/fa";
 
 const DownloadPopup = ({
   onClose,
@@ -85,122 +86,148 @@ const DownloadPopup = ({
     }
   };
 
+  const downloadReport = async () => {
+    setLoading(true);
+
+    Swal.fire({
+      title: "Generating Report...",
+      text: "Please wait while the report is being generated.",
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading();
+      },
+    });
+
+    try {
+  
+      const response = await axios.get(`/user/generate-report?schoolId=${schoolId}`, {
+        responseType: "blob", // Ensures the response is a file (PDF)
+      });
+
+      // Create blob URL for downloading
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "student_report.pdf"; // File name
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+
+      Swal.fire({
+        title: "Success!",
+        text: "The report has been downloaded successfully.",
+        icon: "success",
+        confirmButtonColor: "#4CAF50",
+      });
+
+    } catch (error) {
+      Swal.fire({
+        title: "Error!",
+        text: error.response?.data?.message || "Failed to generate report",
+        icon: "error",
+        confirmButtonColor: "#d33",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-      <div className="bg-white p-6 rounded-lg shadow-lg w-96">
-        <h3 className="text-lg font-bold mb-4 text-center">Download Options</h3>
+    <div className="bg-gray-900 p-6 rounded-lg shadow-2xl w-96">
+      
+      {/* Header */}
+      <div className="flex justify-between items-center border-b border-gray-700 pb-3">
+        <h3 className="text-lg font-bold text-white text-center w-full">Download Options</h3>
+        <button onClick={() => onClose(false)} className="text-gray-400 hover:text-red-400">
+          <FaTimes size={20} />
+        </button>
+      </div>
 
-        {/* <p className="text-sm mb-4">
-          Enter your email address to receive the data. The data will be sent
-          to your email within 4 hours.
-        </p> */}
+      {/* Error Message */}
+      {error && <p className="text-red-400 text-sm mt-4">{error}</p>}
 
-        {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
+      {/* Buttons Section */}
+      <div className="flex flex-col space-y-4 mt-4">
 
-        <div className="flex flex-col space-y-4">
-          <button
-            onClick={() => handleDownload(true)} // Download with QR
-            className={`flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg shadow-lg ${
-              loading ? "opacity-50 cursor-not-allowed" : ""
-            }`}
-            disabled={loading}
-          >
-            {loading ? "Processing..." : "Download Proof QR"}
-          </button>
-          <button
-            onClick={() => handleDownload(false)} // Download without QR
-            className={`flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg shadow-lg ${
-              loading ? "opacity-50 cursor-not-allowed" : ""
-            }`}
-            disabled={loading}
-          >
-            {loading ? "Processing..." : "Download Proof Data"}
-          </button>
-          {/* Pending status */}
-          {status === "Panding" && (
-            <>
-              {(user?.exportExcel || user?.school?.exportExcel) && (
-                <button
-                  className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg shadow-lg"
-                  onClick={downloadExcel}
-                >
-                  <FaFileExport /> Export Excel
-                </button>
-              )}
-              {(user?.exportImage || user?.school?.exportImages) && (
-                <button
-                  className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded-lg shadow-lg"
-                  onClick={downloadImages}
-                >
-                  <FaImages /> Export Images
-                </button>
-              )}
-              {((currRole === "staff" &&
-                schoolData?.requiredFieldsStaff.includes("Signature Name") &&
-                user?.exportImage) ||
-                user?.school?.exportImages) && (
-                <button
-                  className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded-lg shadow-lg"
-                  onClick={downloadSignature}
-                >
-                  <FaImages /> Signature Download
-                </button>
-              )}
-            </>
-          )}
+        {/* Download QR */}
+        <button
+          onClick={() => handleDownload(true)}
+          className={`flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg shadow-lg transition duration-200 ${
+            loading ? "opacity-50 cursor-not-allowed" : ""
+          }`}
+          disabled={loading}
+        >
+          <FaQrcode /> {loading ? "Processing..." : "Download Proof QR"}
+        </button>
 
-          {/* Ready to Print status */}
-          {status === "Ready to print" && (
-            <>
-              {(user?.exportExcel || user?.school?.exportExcel) && (
-                <button
-                  className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg shadow-lg"
-                  onClick={downloadExcel}
-                >
-                  <FaFileExport /> Export Excel
-                </button>
-              )}
-              {(user?.exportImage || user?.school?.exportImages) && (
-                <button
-                  className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded-lg shadow-lg"
-                  onClick={downloadImages}
-                >
-                  <FaImages /> Export Images
-                </button>
-              )}
-            </>
-          )}
+        {/* Download Report */}
+        <button
+          onClick={() => downloadReport()}
+          className={`flex items-center justify-center gap-2 bg-yellow-600 hover:bg-yellow-700 text-white py-2 px-4 rounded-lg shadow-lg transition duration-200 ${
+            loading ? "opacity-50 cursor-not-allowed" : ""
+          }`}
+          disabled={loading}
+        >
+          <FaFilePdf /> {loading ? "Generating..." : "Download Report"}
+        </button>
 
-          {/* Printed status */}
-          {status === "Printed" && (
-            <>
-              {(user?.exportExcel || user?.school?.exportExcel) && (
-                <button
-                  className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg shadow-lg"
-                  onClick={downloadExcel}
-                >
-                  <FaFileExport /> Export Excel
-                </button>
-              )}
-              {(user?.exportImage || user?.school?.exportImages) && (
-                <button
-                  className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded-lg shadow-lg"
-                  onClick={downloadImages}
-                >
-                  <FaImages /> Export Images
-                </button>
-              )}
-            </>
-          )}
-          <button
-            onClick={() => onClose(false)}
-            className="mt-4 bg-gray-500 hover:bg-gray-600 text-white py-2 px-4 rounded-lg w-full shadow-lg"
-          >
-            Close
-          </button>
-        </div>
+        {/* Download Proof Data */}
+        <button
+          onClick={() => handleDownload(false)}
+          className={`flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg shadow-lg transition duration-200 ${
+            loading ? "opacity-50 cursor-not-allowed" : ""
+          }`}
+          disabled={loading}
+        >
+          <FaFilePdf /> {loading ? "Processing..." : "Download Proof Data"}
+        </button>
+
+        {/* Conditional Exports */}
+        {(status === "Panding" || status === "Ready to print" || status === "Printed") && (
+          <>
+            {(user?.exportExcel || user?.school?.exportExcel) && (
+              <button
+                className="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded-lg shadow-lg transition duration-200"
+                onClick={downloadExcel}
+              >
+                <FaFileExport /> Export Excel
+              </button>
+            )}
+            {(user?.exportImage || user?.school?.exportImages) && (
+              <button
+                className="flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded-lg shadow-lg transition duration-200"
+                onClick={downloadImages}
+              >
+                <FaImages /> Export Images
+              </button>
+            )}
+            {((currRole === "staff" &&
+              schoolData?.requiredFieldsStaff.includes("Signature Name") &&
+              user?.exportImage) ||
+              user?.school?.exportImages) && (
+              <button
+                className="flex items-center justify-center gap-2 bg-pink-600 hover:bg-pink-700 text-white py-2 px-4 rounded-lg shadow-lg transition duration-200"
+                onClick={downloadSignature}
+              >
+                <FaSignature /> Signature Download
+              </button>
+            )}
+          </>
+        )}
+
+        {/* Close Button */}
+        <button
+          onClick={() => onClose(false)}
+          className="mt-4 bg-gray-700 hover:bg-gray-800 text-white py-2 px-4 rounded-lg w-full shadow-lg transition duration-200"
+        >
+          Close
+        </button>
+
       </div>
     </div>
+  </div>
   );
 };
 

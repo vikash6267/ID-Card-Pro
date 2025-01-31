@@ -4105,3 +4105,7 @@ exports.getSchoolById = async (req, res) => {
       .json({ success: false, message: "Error retrieving school data" });
   }
 };
+
+
+
+

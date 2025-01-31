@@ -1,7 +1,11 @@
 const express = require("express");
 const Student = require("../models/studentModel");
 const Staff = require("../models/staffModel");
+const School = require("../models/schoolModel");
 
+const ejs = require("ejs");
+const htmlPdf = require("html-pdf");
+const path = require("path")
 const {
   ExcelUpload,
   userRegistration,
@@ -343,5 +347,82 @@ router.put("/students/:id/avatar", async (req, res) => {
     res.status(500).json({ message: "Server Error", error: error.message });
   }
 });
+
+
+
+async function generateReport(queryObj = {}) {
+  try {
+    // Fetch all unique classes based on the query, including students without class
+    const classes = await Student.distinct("class", queryObj);
+
+    // Ensure "No Class" category is included
+    if (!classes.includes(null) && !classes.includes(undefined)) {
+      classes.push("No Class");
+    }
+
+    // Prepare a result object to store the counts of each status for each class.
+    const result = [];
+
+    for (const className of classes) {
+      const query = className === "No Class" ? { class: { $exists: false }, ...queryObj } : { class: className, ...queryObj };
+
+      const classData = {
+        class: className,
+        Panding: await Student.countDocuments({ ...query, status: "Panding" }),
+        "Ready to print": await Student.countDocuments({ ...query, status: "Ready to print" }),
+        Printed: await Student.countDocuments({ ...query, status: "Printed" })
+      };
+
+      result.push(classData);
+    }
+
+    // Fetch the school name based on the provided query (school ID).
+    const schoolId = queryObj.school || "";
+    const school = await School.findById(schoolId);
+    const schoolName = school ? school.name : "Unknown School";
+
+    // Resolve the absolute path of the EJS template
+    const templatePath = path.resolve(__dirname, "../template/report_templates.ejs");
+    const html = await ejs.renderFile(templatePath, { schoolName, result });
+
+    // Generate PDF using html-pdf
+    return new Promise((resolve, reject) => {
+      htmlPdf.create(html).toBuffer((err, buffer) => {
+        if (err) {
+          reject("Error generating PDF: " + err);
+        } else {
+          resolve(buffer);
+        }
+      });
+    });
+  } catch (error) {
+    throw new Error("Error generating report: " + error.message);
+  }
+}
+
+
+// Route to generate and download the report PDF
+router.get("/generate-report", async (req, res) => {
+  try {
+    // Extract school ID from query params (or any other filters)
+    const { schoolId } = req.query;
+    const queryObj = { school: schoolId };
+
+    // Call the generateReport function
+    const pdfBuffer = await generateReport(queryObj);
+
+    // Set headers to serve PDF as a response
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", "attachment; filename=student_report.pdf");
+
+    // Send the PDF buffer as a response
+    res.send(pdfBuffer);
+  } catch (error) {
+    console.error("Error:", error);
+    res.status(500).send("Error generating the report.");
+  }
+});
+
+
 
 module.exports = router;
