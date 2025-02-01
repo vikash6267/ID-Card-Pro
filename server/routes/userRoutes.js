@@ -391,7 +391,10 @@ async function generateReport(queryObj = {}) {
     const html = await ejs.renderFile(templatePath, { schoolName, result });
 
     // Use Puppeteer to generate the PDF
-    const browser = await puppeteer.launch();
+        const browser = await puppeteer.launch({
+          headless: true,
+          args: ['--no-sandbox', '--disable-setuid-sandbox']
+        });
     const page = await browser.newPage();
     await page.setContent(html);
     const pdfBuffer = await page.pdf({ format: 'A4',  printBackground: true,  // This ensures that background colors and images are rendered
@@ -465,7 +468,10 @@ async function generateStaffReport(queryObj = {}, data) {
     const html = await ejs.renderFile(templatePath, { schoolName, result, heading });
 
     // Use Puppeteer to generate the PDF
-    const browser = await puppeteer.launch();
+        const browser = await puppeteer.launch({
+          headless: true,
+          args: ['--no-sandbox', '--disable-setuid-sandbox']
+        });
     const page = await browser.newPage();
     await page.setContent(html);
     const pdfBuffer = await page.pdf({ format: 'A4', printBackground: true, });
