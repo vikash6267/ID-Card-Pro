@@ -394,7 +394,8 @@ async function generateReport(queryObj = {}) {
     const browser = await puppeteer.launch();
     const page = await browser.newPage();
     await page.setContent(html);
-    const pdfBuffer = await page.pdf({ format: 'A4' });
+    const pdfBuffer = await page.pdf({ format: 'A4',  printBackground: true,  // This ensures that background colors and images are rendered
+    });
 
     // Save the PDF to the server's file system
     const filePath = path.join(__dirname, '../reports', 'student_report.pdf');
@@ -467,7 +468,7 @@ async function generateStaffReport(queryObj = {}, data) {
     const browser = await puppeteer.launch();
     const page = await browser.newPage();
     await page.setContent(html);
-    const pdfBuffer = await page.pdf({ format: 'A4' });
+    const pdfBuffer = await page.pdf({ format: 'A4', printBackground: true, });
 
     // Save the PDF to the server's file system
     const filePath = path.join(__dirname, '../reports', 'staff_report.pdf');
