@@ -3,7 +3,6 @@ const Student = require("../models/studentModel");
 const Staff = require("../models/staffModel");
 const School = require("../models/schoolModel");
 
-const phantomjs = require('phantomjs-prebuilt');
 const ejs = require("ejs");
 const htmlPdf = require("html-pdf");
 const path = require("path")
@@ -388,13 +387,9 @@ async function generateReport(queryObj = {}) {
     const templatePath = path.resolve(__dirname, "../template/report_templates.ejs");
     const html = await ejs.renderFile(templatePath, { schoolName, result });
 
-    // Generate PDF using html-pdf with PhantomJS path
-    const options = {
-      phantomPath: phantomjs.path // Set the path to the PhantomJS binary
-    };
-
+    // Generate PDF using html-pdf
     return new Promise((resolve, reject) => {
-      htmlPdf.create(html, options).toBuffer((err, buffer) => {
+      htmlPdf.create(html).toBuffer((err, buffer) => {
         if (err) {
           reject("Error generating PDF: " + err);
         } else {
@@ -410,14 +405,15 @@ async function generateReport(queryObj = {}) {
 
 
 
-
-async function generateStaffReport(queryObj = {}, data) {
+async function generateStaffReport(queryObj = {},data) {
   try {
-    const { schoolId, role } = queryObj;
-    const { staffType, institute } = data;
+   const { schoolId, role, } = queryObj;
+    const {staffType, institute } = data;
+  
 
+ 
     const result = [];
-    let heading = "Not Available";
+    let heading = "NOt AVailble";
 
     if (staffType === "true") {
       const staffTypes = await Staff.distinct("staffType", queryObj);
@@ -425,7 +421,7 @@ async function generateStaffReport(queryObj = {}, data) {
         staffTypes.push("No Staff Type");
       }
 
-      heading = "Staff Type";
+      heading = "Staff Type"
       for (const type of staffTypes) {
         const query = type === "No Staff Type" ? { staffType: { $exists: false }, ...queryObj } : { staffType: type, ...queryObj };
         result.push({
@@ -443,7 +439,7 @@ async function generateStaffReport(queryObj = {}, data) {
       if (!institutes.includes(null) && !institutes.includes(undefined)) {
         institutes.push("No Institute");
       }
-      heading = "Institute";
+      heading = "Institute"
 
       for (const inst of institutes) {
         const query = inst === "No Institute" ? { institute: { $exists: false }, ...queryObj } : { institute: inst, ...queryObj };
@@ -457,6 +453,7 @@ async function generateStaffReport(queryObj = {}, data) {
       }
     }
 
+ 
     if (result.length === 0) {
       throw new Error("No data found for the report.");
     }
@@ -464,15 +461,10 @@ async function generateStaffReport(queryObj = {}, data) {
     const school = await School.findById(schoolId);
     const schoolName = school ? school.name : "Unknown School";
     const templatePath = path.resolve(__dirname, "../template/staff_report_template.ejs");
-    const html = await ejs.renderFile(templatePath, { schoolName, result, heading });
-
-    // Generate PDF using html-pdf with PhantomJS path
-    const options = {
-      phantomPath: phantomjs.path // Set the path to the PhantomJS binary
-    };
+    const html = await ejs.renderFile(templatePath, { schoolName, result,heading });
 
     return new Promise((resolve, reject) => {
-      htmlPdf.create(html, options).toBuffer((err, buffer) => {
+      htmlPdf.create(html).toBuffer((err, buffer) => {
         if (err) {
           reject("Error generating PDF: " + err);
         } else {
