@@ -155,6 +155,58 @@ const DownloadPopup = ({
         setLoading(false);
       }
     }
+
+
+
+    if (currRole === "student") {
+ 
+  
+      Swal.fire({
+        title: "Generating Report...",
+        text: "Please wait while the report is being generated.",
+        allowOutsideClick: false,
+        didOpen: () => {
+          Swal.showLoading();
+        },
+      });
+  
+      try {
+        // Send the request with the selected parameters
+        const response = await axios.get(`/user/generate-report?schoolId=${schoolId}&role=${currRole}`, {
+          responseType: "blob", // Ensures the response is a file (PDF)
+        });
+  
+        // Create blob URL for downloading
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "Vendor_Report.pdf"; // File name
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+  
+        Swal.fire({
+          title: "Success!",
+          text: "The report has been downloaded successfully.",
+          icon: "success",
+          confirmButtonColor: "#4CAF50",
+        });
+  
+      } catch (error) {
+        Swal.fire({
+          title: "Error!",
+          text: error.response?.data?.message || "Failed to generate report",
+          icon: "error",
+          confirmButtonColor: "#d33",
+        });
+      } finally {
+        setLoading(false);
+      }
+    }
+
+
+
+
   };
   
 
