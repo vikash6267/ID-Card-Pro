@@ -559,6 +559,7 @@ async function generateStaffReport(queryObj = {},data) {
 
  
     const result = [];
+    let heading = "NOt AVailble";
 
     if (staffType === "true") {
       const staffTypes = await Staff.distinct("staffType", queryObj);
@@ -566,6 +567,7 @@ async function generateStaffReport(queryObj = {},data) {
         staffTypes.push("No Staff Type");
       }
 
+      heading = "Staff Type"
       for (const type of staffTypes) {
         const query = type === "No Staff Type" ? { staffType: { $exists: false }, ...queryObj } : { staffType: type, ...queryObj };
         result.push({
@@ -583,6 +585,7 @@ async function generateStaffReport(queryObj = {},data) {
       if (!institutes.includes(null) && !institutes.includes(undefined)) {
         institutes.push("No Institute");
       }
+      heading = "Institute"
 
       for (const inst of institutes) {
         const query = inst === "No Institute" ? { institute: { $exists: false }, ...queryObj } : { institute: inst, ...queryObj };
@@ -604,7 +607,7 @@ async function generateStaffReport(queryObj = {},data) {
     const school = await School.findById(schoolId);
     const schoolName = school ? school.name : "Unknown School";
     const templatePath = path.resolve(__dirname, "../template/staff_report_template.ejs");
-    const html = await ejs.renderFile(templatePath, { schoolName, result });
+    const html = await ejs.renderFile(templatePath, { schoolName, result,heading });
 
     return new Promise((resolve, reject) => {
       htmlPdf.create(html).toBuffer((err, buffer) => {
