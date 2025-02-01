@@ -88,49 +88,75 @@ const DownloadPopup = ({
 
   const downloadReport = async () => {
     setLoading(true);
-
-    Swal.fire({
-      title: "Generating Report...",
-      text: "Please wait while the report is being generated.",
-      allowOutsideClick: false,
-      didOpen: () => {
-        Swal.showLoading();
-      },
-    });
-
-    try {
   
-      const response = await axios.get(`/user/generate-report?schoolId=${schoolId}&role=${currRole}&staffType=false&institute=true`, {
-        responseType: "blob", // Ensures the response is a file (PDF)
+    // Prompt user to choose staffType or institute
+    if (currRole === "staff") {
+      const { value: selectedData } = await Swal.fire({
+        title: "Choose the data type",
+        text: "Would you like to generate a report for Staff Type or Institute?",
+        icon: "question",
+        showCancelButton: true,
+        confirmButtonText: "Staff Type",
+        cancelButtonText: "Institute",
+        reverseButtons: true,
       });
-
-      // Create blob URL for downloading
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "student_report.pdf"; // File name
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-
+  
+      // Check which option the user selected
+      let staffType = false;
+      let institute = false;
+  
+      if (selectedData) {
+        // User selected 'Staff Type'
+        staffType = true;
+      } else {
+        // User selected 'Institute'
+        institute = true;
+      }
+  
       Swal.fire({
-        title: "Success!",
-        text: "The report has been downloaded successfully.",
-        icon: "success",
-        confirmButtonColor: "#4CAF50",
+        title: "Generating Report...",
+        text: "Please wait while the report is being generated.",
+        allowOutsideClick: false,
+        didOpen: () => {
+          Swal.showLoading();
+        },
       });
-
-    } catch (error) {
-      Swal.fire({
-        title: "Error!",
-        text: error.response?.data?.message || "Failed to generate report",
-        icon: "error",
-        confirmButtonColor: "#d33",
-      });
-    } finally {
-      setLoading(false);
+  
+      try {
+        // Send the request with the selected parameters
+        const response = await axios.get(`/user/generate-report?schoolId=${schoolId}&role=${currRole}&staffType=${staffType}&institute=${institute}`, {
+          responseType: "blob", // Ensures the response is a file (PDF)
+        });
+  
+        // Create blob URL for downloading
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "Vendor_Report.pdf"; // File name
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+  
+        Swal.fire({
+          title: "Success!",
+          text: "The report has been downloaded successfully.",
+          icon: "success",
+          confirmButtonColor: "#4CAF50",
+        });
+  
+      } catch (error) {
+        Swal.fire({
+          title: "Error!",
+          text: error.response?.data?.message || "Failed to generate report",
+          icon: "error",
+          confirmButtonColor: "#d33",
+        });
+      } finally {
+        setLoading(false);
+      }
     }
   };
+  
 
 
   return (
