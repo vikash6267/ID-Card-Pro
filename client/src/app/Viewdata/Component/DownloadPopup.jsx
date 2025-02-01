@@ -100,7 +100,7 @@ const DownloadPopup = ({
 
     try {
   
-      const response = await axios.get(`/user/generate-report?schoolId=${schoolId}`, {
+      const response = await axios.get(`/user/generate-report?schoolId=${schoolId}&role=${currRole}`, {
         responseType: "blob", // Ensures the response is a file (PDF)
       });
 

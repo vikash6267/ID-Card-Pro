@@ -62,7 +62,6 @@ const staffModel = mongoose.Schema(
     photoNameUnuiq: String,
     shareUpdate: String,
     adharNo: String,
-    staffType: String,
     licenceNo: String,
     idNo: String,
     jobStatus: String,

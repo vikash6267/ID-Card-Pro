@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Student Report</title>
+  <title>Staff Report</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -81,21 +81,21 @@
   <!-- Company Logo -->
   <div class="header">
     <img src="https://cardpro.co.in/login.jpg" alt="Company Logo" class="logo">
-    <div class="title">Vendor Report</div>
+    <div class="title">Staff Report</div>
   </div>
 
   <!-- School Name -->
-  <h2>Vendor : <%= schoolName %></h2>
+  <h2>School: <%= schoolName %></h2>
 
   <!-- Report Table -->
   <table>
     <thead>
       <tr>
-        <th>Class</th>
+        <th>Staff Type</th>
         <th>Pending</th>
         <th>Ready to Print</th>
         <th>Printed</th>
-        <th>Total Students</th> <!-- Added Total Students column -->
+        <th>Total Staff</th>
       </tr>
     </thead>
     <tbody>
@@ -103,20 +103,20 @@
         let totalPanding = 0;
         let totalReadyToPrint = 0;
         let totalPrinted = 0;
-        let totalStudents = 0; // Variable to keep track of the total students
+        let totalStaff = 0;
         
-        result.forEach(classData => { 
-          totalPanding += classData.Panding;
-          totalReadyToPrint += classData["Ready to print"];
-          totalPrinted += classData.Printed;
-          totalStudents += classData.totalStudents; // Add total students for each class
+        result.forEach(staffData => { 
+          totalPanding += staffData.Panding;
+          totalReadyToPrint += staffData["Ready to print"];
+          totalPrinted += staffData.Printed;
+          totalStaff += staffData.totalStaff;
       %>
         <tr>
-          <td><%= classData.class %></td>
-          <td><%= classData.Panding %></td>
-          <td><%= classData["Ready to print"] %></td>
-          <td><%= classData.Printed %></td>
-          <td><%= classData.totalStudents %></td> <!-- Display Total Students -->
+          <td><%= staffData.staffType %></td>
+          <td><%= staffData.Panding %></td>
+          <td><%= staffData["Ready to print"] %></td>
+          <td><%= staffData.Printed %></td>
+          <td><%= staffData.totalStaff %></td>
         </tr>
       <% }); %>
 
@@ -126,7 +126,7 @@
         <td><%= totalPanding %></td>
         <td><%= totalReadyToPrint %></td>
         <td><%= totalPrinted %></td>
-        <td><%= totalStudents %></td> <!-- Display total count of students -->
+        <td><%= totalStaff %></td>
       </tr>
     </tbody>
   </table>

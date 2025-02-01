@@ -366,11 +366,13 @@ async function generateReport(queryObj = {}) {
     for (const className of classes) {
       const query = className === "No Class" ? { class: { $exists: false }, ...queryObj } : { class: className, ...queryObj };
 
+      // Get the count of students for each status and the total number of students in the class
       const classData = {
         class: className,
         Panding: await Student.countDocuments({ ...query, status: "Panding" }),
         "Ready to print": await Student.countDocuments({ ...query, status: "Ready to print" }),
-        Printed: await Student.countDocuments({ ...query, status: "Printed" })
+        Printed: await Student.countDocuments({ ...query, status: "Printed" }),
+        totalStudents: await Student.countDocuments(query)  // Count all students in the class
       };
 
       result.push(classData);
@@ -401,15 +403,175 @@ async function generateReport(queryObj = {}) {
 }
 
 
+// async function generateStaffReport(queryObj = {}) {
+//   try {
+//     console.log('Query Object:', queryObj);
+
+//     // Fetch all unique staff types and institutes based on the query
+//     const staffTypes = await Staff.distinct("staffType", queryObj);
+//     const institutes = await Staff.distinct("institute", queryObj);
+
+//     console.log('Staff Types:', staffTypes);
+//     console.log('Institutes:', institutes);
+
+//     const result = {
+//       staffTypeInstitute: [],
+//       staffTypeOnly: [],
+//       instituteOnly: []
+//     };
+
+//     // Check conditions for both staffType and institute
+//     if (queryObj.staffType ||  queryObj.institute) {
+//       console.log('Fetching data for both staffType and institute');
+//       const query = { ...queryObj };
+//       const staffData = {
+//         staffType: queryObj.staffType,
+//         institute: queryObj.institute,
+//         Panding: await Staff.countDocuments({ staffType: queryObj.staffType, status: "Panding" }),
+//         "Ready to print": await Staff.countDocuments({ staffType: queryObj.staffType, status: "Ready to print" }),
+//         Printed: await Staff.countDocuments({ staffType: queryObj.staffType, status: "Printed" }),
+//         totalStaff: await Staff.countDocuments({ staffType: queryObj.staffType }),
+//       };
+      
+
+//       console.log('Staff Data for both staffType and institute:', staffData);
+
+//       result.staffTypeInstitute.push(staffData);
+//     } else if (queryObj.staffType) {
+//       console.log('Fetching data for staffType only');
+//       for (const staffType of staffTypes) {
+//         const query = { ...queryObj, staffType };
+//         const staffData = {
+//           staffType,
+//           Panding: await Staff.countDocuments({ ...query, status: "Panding" }),
+//           "Ready to print": await Staff.countDocuments({ ...query, status: "Ready to print" }),
+//           Printed: await Staff.countDocuments({ ...query, status: "Printed" }),
+//           totalStaff: await Staff.countDocuments(query),
+//         };
+
+//         console.log('Staff Data for staffType:', staffData);
+
+//         result.staffTypeOnly.push(staffData);
+//       }
+//     } else if (queryObj.institute) {
+//       console.log('Fetching data for institute only');
+//       for (const institute of institutes) {
+//         const query = { ...queryObj, institute };
+//         const staffData = {
+//           institute,
+//           Panding: await Staff.countDocuments({ ...query, status: "Panding" }),
+//           "Ready to print": await Staff.countDocuments({ ...query, status: "Ready to print" }),
+//           Printed: await Staff.countDocuments({ ...query, status: "Printed" }),
+//           totalStaff: await Staff.countDocuments(query),
+//         };
+
+//         console.log('Staff Data for institute:', staffData);
+
+//         result.instituteOnly.push(staffData);
+//       }
+//     }
+
+//     console.log('Final Result:', result);
+
+//     // Fetch the school name based on the query (similar to student report)
+//     const schoolId = queryObj.school || "";
+//     const school = await School.findById(schoolId);
+//     const schoolName = school ? school.name : "Unknown School";
+
+//     // Resolve the absolute path of the EJS template
+//     const templatePath = path.resolve(__dirname, "../template/staff_report_template.ejs");
+//     const html = await ejs.renderFile(templatePath, { schoolName, result });
+
+//     // Generate the PDF
+//     return new Promise((resolve, reject) => {
+//       htmlPdf.create(html).toBuffer((err, buffer) => {
+//         if (err) {
+//           reject("Error generating PDF: " + err);
+//         } else {
+//           resolve(buffer);
+//         }
+//       });
+//     });
+//   } catch (error) {
+//     console.error('Error generating report:', error);
+//     throw new Error("Error generating report: " + error.message);
+//   }
+// }
+
+
+async function generateStaffReport(queryObj = {}) {
+  try {
+    // Fetch all unique staff types based on the query, including staff without a type
+    const staffTypes = await Staff.distinct("staffType", queryObj);
+
+    // Ensure "No Staff Type" category is included
+    if (!staffTypes.includes(null) && !staffTypes.includes(undefined)) {
+      staffTypes.push("No Staff Type");
+    }
+
+    // Prepare a result object to store the counts of each status for each staff type.
+    const result = [];
+
+    for (const staffType of staffTypes) {
+      const query = staffType === "No Staff Type" ? { staffType: { $exists: false }, ...queryObj } : { staffType, ...queryObj };
+
+      // Get the count of staff for each status and the total number of staff in the type
+      const staffData = {
+        staffType,
+        Panding: await Staff.countDocuments({ ...query, status: "Panding" }),
+        "Ready to print": await Staff.countDocuments({ ...query, status: "Ready to print" }),
+        Printed: await Staff.countDocuments({ ...query, status: "Printed" }),
+        totalStaff: await Staff.countDocuments(query)  // Count all staff in the type
+      };
+
+      result.push(staffData);
+    }
+
+    // Fetch the school name based on the provided query (school ID).
+    const schoolId = queryObj.school || "";
+    const school = await School.findById(schoolId);
+    const schoolName = school ? school.name : "Unknown School";
+
+    // Resolve the absolute path of the EJS template
+    const templatePath = path.resolve(__dirname, "../template/staff_report_template.ejs");
+    const html = await ejs.renderFile(templatePath, { schoolName, result });
+
+    // Generate PDF using html-pdf
+    return new Promise((resolve, reject) => {
+      htmlPdf.create(html).toBuffer((err, buffer) => {
+        if (err) {
+          reject("Error generating PDF: " + err);
+        } else {
+          resolve(buffer);
+        }
+      });
+    });
+  } catch (error) {
+    throw new Error("Error generating report: " + error.message);
+  }
+}
+
+
+
+
+
 // Route to generate and download the report PDF
 router.get("/generate-report", async (req, res) => {
   try {
     // Extract school ID from query params (or any other filters)
-    const { schoolId } = req.query;
+    const { schoolId,role } = req.query;
     const queryObj = { school: schoolId };
-
+    let pdfBuffer;
     // Call the generateReport function
-    const pdfBuffer = await generateReport(queryObj);
+    if(role =="student"){
+      pdfBuffer  = await generateReport(queryObj);
+
+    }
+    if(role === 'staff'){
+      console.log("first")
+      pdfBuffer  = await generateStaffReport(queryObj);
+
+    }
 
     // Set headers to serve PDF as a response
     res.setHeader("Content-Type", "application/pdf");
