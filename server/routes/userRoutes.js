@@ -4,8 +4,7 @@ const Staff = require("../models/staffModel");
 const School = require("../models/schoolModel");
 
 const ejs = require("ejs");
-const htmlPdf = require("html-pdf");
-const path = require("path")
+
 const {
   ExcelUpload,
   userRegistration,
@@ -350,6 +349,10 @@ router.put("/students/:id/avatar", async (req, res) => {
 
 
 
+const fs = require('fs');
+const path = require('path');
+const puppeteer = require('puppeteer');
+
 async function generateReport(queryObj = {}) {
   try {
     // Fetch all unique classes based on the query, including students without class
@@ -387,33 +390,31 @@ async function generateReport(queryObj = {}) {
     const templatePath = path.resolve(__dirname, "../template/report_templates.ejs");
     const html = await ejs.renderFile(templatePath, { schoolName, result });
 
-    // Generate PDF using html-pdf
-    return new Promise((resolve, reject) => {
-      htmlPdf.create(html).toBuffer((err, buffer) => {
-        if (err) {
-          reject("Error generating PDF: " + err);
-        } else {
-          resolve(buffer);
-        }
-      });
-    });
+    // Use Puppeteer to generate the PDF
+    const browser = await puppeteer.launch();
+    const page = await browser.newPage();
+    await page.setContent(html);
+    const pdfBuffer = await page.pdf({ format: 'A4' });
+
+    // Save the PDF to the server's file system
+    const filePath = path.join(__dirname, '../reports', 'student_report.pdf');
+    fs.writeFileSync(filePath, pdfBuffer);
+
+    await browser.close();
+    return filePath; // Return the file path to be used later
+
   } catch (error) {
     throw new Error("Error generating report: " + error.message);
   }
 }
 
-
-
-
-async function generateStaffReport(queryObj = {},data) {
+async function generateStaffReport(queryObj = {}, data) {
   try {
-   const { schoolId, role, } = queryObj;
-    const {staffType, institute } = data;
-  
+    const { schoolId, role } = queryObj;
+    const { staffType, institute } = data;
 
- 
     const result = [];
-    let heading = "NOt AVailble";
+    let heading = "Not Available";
 
     if (staffType === "true") {
       const staffTypes = await Staff.distinct("staffType", queryObj);
@@ -421,7 +422,7 @@ async function generateStaffReport(queryObj = {},data) {
         staffTypes.push("No Staff Type");
       }
 
-      heading = "Staff Type"
+      heading = "Staff Type";
       for (const type of staffTypes) {
         const query = type === "No Staff Type" ? { staffType: { $exists: false }, ...queryObj } : { staffType: type, ...queryObj };
         result.push({
@@ -439,7 +440,7 @@ async function generateStaffReport(queryObj = {},data) {
       if (!institutes.includes(null) && !institutes.includes(undefined)) {
         institutes.push("No Institute");
       }
-      heading = "Institute"
+      heading = "Institute";
 
       for (const inst of institutes) {
         const query = inst === "No Institute" ? { institute: { $exists: false }, ...queryObj } : { institute: inst, ...queryObj };
@@ -453,7 +454,6 @@ async function generateStaffReport(queryObj = {},data) {
       }
     }
 
- 
     if (result.length === 0) {
       throw new Error("No data found for the report.");
     }
@@ -461,17 +461,21 @@ async function generateStaffReport(queryObj = {},data) {
     const school = await School.findById(schoolId);
     const schoolName = school ? school.name : "Unknown School";
     const templatePath = path.resolve(__dirname, "../template/staff_report_template.ejs");
-    const html = await ejs.renderFile(templatePath, { schoolName, result,heading });
+    const html = await ejs.renderFile(templatePath, { schoolName, result, heading });
 
-    return new Promise((resolve, reject) => {
-      htmlPdf.create(html).toBuffer((err, buffer) => {
-        if (err) {
-          reject("Error generating PDF: " + err);
-        } else {
-          resolve(buffer);
-        }
-      });
-    });
+    // Use Puppeteer to generate the PDF
+    const browser = await puppeteer.launch();
+    const page = await browser.newPage();
+    await page.setContent(html);
+    const pdfBuffer = await page.pdf({ format: 'A4' });
+
+    // Save the PDF to the server's file system
+    const filePath = path.join(__dirname, '../reports', 'staff_report.pdf');
+    fs.writeFileSync(filePath, pdfBuffer);
+
+    await browser.close();
+    return filePath; // Return the file path to be used later
+
   } catch (error) {
     throw new Error("Error generating report: " + error.message);
   }
@@ -481,36 +485,46 @@ async function generateStaffReport(queryObj = {},data) {
 
 
 
+
 // Route to generate and download the report PDF
 router.get("/generate-report", async (req, res) => {
   try {
     // Extract school ID from query params (or any other filters)
-    const { schoolId,role,staffType,institute } = req.query;
+    const { schoolId, role, staffType, institute } = req.query;
     const queryObj = { school: schoolId };
-    const data = {staffType,institute}
-    let pdfBuffer;
+    const data = { staffType, institute };
+
+    let filePath;
+
     // Call the generateReport function
-    if(role =="student"){
-      pdfBuffer  = await generateReport(queryObj);
-
+    if (role === "student") {
+      filePath = await generateReport(queryObj);
     }
-    if(role === 'staff'){
-      console.log("first")
-      pdfBuffer  = await generateStaffReport(queryObj,data);
-
+    if (role === "staff") {
+      filePath = await generateStaffReport(queryObj, data);
     }
 
     // Set headers to serve PDF as a response
     res.setHeader("Content-Type", "application/pdf");
-    res.setHeader("Content-Disposition", "attachment; filename=student_report.pdf");
+    res.setHeader("Content-Disposition", "attachment; filename=report.pdf");
 
-    // Send the PDF buffer as a response
-    res.send(pdfBuffer);
+    // Send the PDF as a file from the server
+    res.sendFile(filePath, (err) => {
+      if (err) {
+        console.error("Error sending the file:", err);
+        res.status(500).send("Error generating the report.");
+      } else {
+        // Optionally, remove the file after it's been sent to the client
+        fs.unlinkSync(filePath);
+      }
+    });
+
   } catch (error) {
     console.error("Error:", error);
     res.status(500).send("Error generating the report.");
   }
 });
+
 
 
 
