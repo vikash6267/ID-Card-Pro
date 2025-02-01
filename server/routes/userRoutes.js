@@ -414,7 +414,7 @@ async function generateReport(queryObj = {}) {
 
 async function generateStaffReport(queryObj = {}, data) {
   try {
-    const { schoolId, role } = queryObj;
+    
     const { staffType, institute } = data;
 
     const result = [];
@@ -462,7 +462,9 @@ async function generateStaffReport(queryObj = {}, data) {
       throw new Error("No data found for the report.");
     }
 
+    const schoolId = queryObj.school || "";
     const school = await School.findById(schoolId);
+    console.log(school)
     const schoolName = school ? school.name : "Unknown School";
     const templatePath = path.resolve(__dirname, "../template/staff_report_template.ejs");
     const html = await ejs.renderFile(templatePath, { schoolName, result, heading });
