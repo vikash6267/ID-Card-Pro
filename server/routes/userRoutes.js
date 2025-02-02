@@ -4,6 +4,14 @@ const Staff = require("../models/staffModel");
 const School = require("../models/schoolModel");
 
 const ejs = require("ejs");
+const cloudinary = require("cloudinary");
+
+cloudinary.v2.config({
+  cloud_name: "dubvmkr0l",
+  api_key: process.env.CLOUDINARY_PUBLIC_KEY,
+  api_secret: process.env.CLOUDINARY_SECRET_KEY,
+});
+
 
 const {
   ExcelUpload,
@@ -569,6 +577,70 @@ router.put("/update-classes", async (req, res) => {
       res.json({ success: true, message: "Classes updated successfully" });
   } catch (error) {
       res.status(500).json({ success: false, message: "Error updating classes" });
+  }
+});
+
+
+
+router.put("/remove-all-photos", async (req, res) => {
+  try {
+    const { schoolId } = req.body;
+
+    // Find all students of the given schoolId
+    const students = await Student.find({ school: schoolId });
+
+    if (!students || students.length === 0) {
+      return res.status(404).json({ message: "No students found" });
+    }
+
+    // Loop through each student to delete their photos from Cloudinary
+    for (const student of students) {
+      // Check if the avatar is hosted on Cloudinary
+      if (student.avatar && student.avatar.publicId) {
+        // Delete image from Cloudinary
+        await cloudinary.uploader.destroy(student.avatar.publicId);
+      }
+
+      // Reset the avatar to default image
+      student.avatar = {
+        publicId: "",
+        url: "https://cardpro.co.in/login.jpg", // default image URL
+      };
+
+      // Save the student record after resetting the avatar
+      await student.save();
+    }
+
+    res.json({ message: "All photos removed and reset to default image" });
+  } catch (error) {
+    console.error("Error removing photos:", error);
+    res.status(500).json({ message: "Error removing photos" });
+  }
+});
+
+// Route to delete class
+router.put("/delete-class", async (req, res) => {
+  try {
+    const { schoolId, className } = req.body;
+
+    // Find all students of the given class
+    const students = await Student.find({ school: schoolId, class: className });
+
+    // Loop through each student to delete their image from Cloudinary if it exists
+    for (const student of students) {
+      if (student.avatar.publicId) {
+        // Delete image from Cloudinary
+        await cloudinary.uploader.destroy(student.avatar.publicId);
+      }
+
+      // Delete the student from the database
+      await Student.deleteOne({ _id: student._id });
+    }
+
+    res.json({ message: "Class deleted successfully, students removed and images deleted" });
+  } catch (error) {
+    console.error("Error deleting class:", error);
+    res.status(500).json({ message: "Error deleting class" });
   }
 });
 
