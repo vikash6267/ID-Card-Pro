@@ -76,9 +76,12 @@ const SchoolList = () => {
                 </p>
               )}
               <div className="flex gap-4 mt-4">
-                <button className="bg-blue-500 text-sm text-white py-2 px-4 rounded-lg hover:bg-blue-600 focus:outline-none focus:ring focus:ring-blue-300 flex items-center gap-2">
+                <Link
+                  href={`/SchoolList/${school._id}`}
+                  className="bg-blue-500 text-sm text-white py-2 px-4 rounded-lg hover:bg-blue-600 focus:outline-none focus:ring focus:ring-blue-300 flex items-center gap-2"
+                >
                   <FaEdit /> Edit Vendor
-                </button>
+                </Link>
 
                 <button
                   className="bg-yellow-500 text-sm text-white py-2 px-4 rounded-lg hover:bg-yellow-600 focus:outline-none focus:ring focus:ring-yellow-300 flex items-center gap-2"
