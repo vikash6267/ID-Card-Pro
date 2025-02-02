@@ -1133,7 +1133,7 @@ const Viewdata = () => {
     <div>
       <Nav />
 
-      <section className="bg-white dark:bg-gray-900 py-10 ">
+      <section className="bg-white dark:bg-gray-900 py-10  ">
         {!submitted && (
           <div className="container flex flex-col items-center justify-center px-6 mx-auto">
             <div className="flex items-center justify-center mt-6">
@@ -1174,7 +1174,7 @@ const Viewdata = () => {
                     </div>
                   )}
 
-                  {submitted && !user?.school && (
+                  {submitted && !user?.school && currRole !== "staff" && (
                     <Link
                       href={`/powerclick?vendor=${currSchool}&role=${currRole}&class=${classNameValue}&section=${sectionValueSearch}&course=${courseValueSearch}&staffType=${staffValueSearch}&institute=${staffValueSearchInsi}`}
                       className={`px-4 py-2 mb-3 rounded-md font-medium  bg-blue-900 text-gray-100`}
@@ -1934,6 +1934,10 @@ const Viewdata = () => {
                 downloadSignature={downloadSignature}
               />
             )}
+
+
+         
+
             <button
               className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg shadow-lg"
               onClick={() => setShowPopup(true)}

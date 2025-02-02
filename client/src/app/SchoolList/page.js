@@ -1,15 +1,19 @@
 // Import necessary dependencies
 "use client";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import Nav from "../components/Nav";
 import { useDispatch, useSelector } from "react-redux";
 import Link from "next/link";
 import Swal from "sweetalert2";
 import { deletSchool } from "@/redux/actions/userAction";
+import ClassUpdater from "../Viewdata/Component/ClassUpadte";
+import { FaEdit, FaTrashAlt } from "react-icons/fa"; // Import React Icons
 
 const SchoolList = () => {
   const { schools, error } = useSelector((state) => state.user);
   const dispatch = useDispatch();
+  const [showClassModal, setShowClassModal] = useState(false);
+  const [currSchool, setCurrSchool] = useState("");
 
   // Handle delete with SweetAlert2 confirmation
   const handleDelete = (id) => {
@@ -35,7 +39,7 @@ const SchoolList = () => {
       <Nav />
       <div className="max-w-6xl mx-auto px-4 py-20">
         <h1 className="text-4xl font-bold text-gray-800 mb-6 text-center">
-          School List
+          Vendor List
         </h1>
         {error && (
           <p className="text-center text-red-500 font-medium mb-4">{error}</p>
@@ -45,8 +49,14 @@ const SchoolList = () => {
           {schools?.map((school) => (
             <div
               key={school._id}
-              className="bg-white rounded-lg shadow-lg p-6 border border-gray-200 hover:shadow-xl transition duration-200"
+              className="bg-white rounded-lg shadow-lg p-6 border border-gray-400 hover:shadow-xl transition duration-200 relative"
             >
+              <button
+                className="bg-red-500 absolute top-2  right-2 text-sm text-white py-2 px-2 rounded-full hover:bg-red-600 focus:outline-none focus:ring focus:ring-red-300 flex items-center gap-2"
+                onClick={() => handleDelete(school._id)}
+              >
+                <FaTrashAlt />
+              </button>
               <h2 className="text-2xl font-semibold text-gray-700 mb-4 truncate">
                 {school?.name}
               </h2>
@@ -66,22 +76,31 @@ const SchoolList = () => {
                 </p>
               )}
               <div className="flex gap-4 mt-4">
-                <Link
-                  href={`/SchoolList/${school._id}`}
-                  className="bg-blue-500 text-sm text-white py-2 px-4 rounded-lg hover:bg-blue-600 focus:outline-none focus:ring focus:ring-blue-300"
-                >
-                  Edit Vendor
-                </Link>
+                <button className="bg-blue-500 text-sm text-white py-2 px-4 rounded-lg hover:bg-blue-600 focus:outline-none focus:ring focus:ring-blue-300 flex items-center gap-2">
+                  <FaEdit /> Edit Vendor
+                </button>
+
                 <button
-                  className="bg-red-500 text-sm text-white py-2 px-4 rounded-lg hover:bg-red-600 focus:outline-none focus:ring focus:ring-red-300"
-                  onClick={() => handleDelete(school._id)}
+                  className="bg-yellow-500 text-sm text-white py-2 px-4 rounded-lg hover:bg-yellow-600 focus:outline-none focus:ring focus:ring-yellow-300 flex items-center gap-2"
+                  onClick={() => {
+                    setCurrSchool(school._id);
+                    setShowClassModal(true);
+                  }}
                 >
-                 Delete Vendor 
+                  Change Class
                 </button>
               </div>
             </div>
           ))}
         </div>
+
+        {showClassModal && (
+          <ClassUpdater
+            schoolId={currSchool}
+            isOpen={showClassModal}
+            onClose={setShowClassModal}
+          />
+        )}
         {schools?.length === 0 && (
           <p className="text-center text-gray-500 mt-10">
             No schools available. Add new schools to display here.

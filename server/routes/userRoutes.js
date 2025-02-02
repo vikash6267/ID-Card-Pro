@@ -537,4 +537,41 @@ router.get("/generate-report", async (req, res) => {
 
 
 
+router.get("/get-classes/:schoolId", async (req, res) => {
+  try {
+      const { schoolId } = req.params;
+
+      const school = await School.findById(schoolId).select("name");
+
+      if (!school) {
+          return res.status(404).json({ success: false, message: "School not found" });
+      }
+      const classes = await Student.distinct("class", { school: schoolId });
+
+      res.json({ success: true, classes,schoolName: school.name });
+  } catch (error) {
+      res.status(500).json({ success: false, message: "Error fetching classes" });
+  }
+});
+
+// Bulk update class names
+router.put("/update-classes", async (req, res) => {
+  try {
+      const { schoolId, classUpdates } = req.body; // classUpdates = { oldClassName: newClassName }
+
+      for (const oldClass in classUpdates) {
+          await Student.updateMany(
+              { school: schoolId, class: oldClass },
+              { $set: { class: classUpdates[oldClass] } }
+          );
+      }
+
+      res.json({ success: true, message: "Classes updated successfully" });
+  } catch (error) {
+      res.status(500).json({ success: false, message: "Error updating classes" });
+  }
+});
+
+
+
 module.exports = router;
