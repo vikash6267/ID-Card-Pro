@@ -570,7 +570,7 @@ router.put("/update-classes", async (req, res) => {
       for (const oldClass in classUpdates) {
           await Student.updateMany(
               { school: schoolId, class: oldClass },
-              { $set: { class: classUpdates[oldClass] } }
+              { $set: { class: classUpdates[oldClass],status:"Panding" } }
           );
       }
 
