@@ -61,6 +61,7 @@ function Page({ params }) {
         .get(`user/getschool/${schoolId}`)
         .then((response) => {
           setcurrschool(response.data.data); // Update the state with fetched data
+      
         })
         .catch((err) => {
           setError("Error fetching school data"); // Handle error if request fails

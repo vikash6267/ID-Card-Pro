@@ -254,7 +254,7 @@ console.log(institute)
     if (e.target.value === "") {
       return;
     }
-    console.log(e.target.value);
+
     setCurrSchool(e.target.value);
     const schoolId = e.target.value;
     if (schoolId) {
@@ -657,7 +657,7 @@ console.log(institute)
   };
 
   const redirectToStaffEdit = (id) => {
-    router.push(`/shareview/staffedit/${id}`);
+    router.push(`/shareview/staffedit/${id}?schoolid=${currSchool}`);
   };
 
   const [filterActive, setFilterActive] = useState(false);
