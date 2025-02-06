@@ -120,6 +120,8 @@ function Page({ params }) {
         setAadharCardNo(staffData?.adharNo); // New field
         setExtraField1(staffData?.extraField1); // New field
         setExtraField2(staffData?.extraField2); // New field
+        setExtraField2(staffData?.institute); // New field
+
         setExtraFieldsStaff(staffData?.extraFieldsStaff);
         if (staffData?.status === "Panding") {
           setIsPending(true);
@@ -180,6 +182,7 @@ function Page({ params }) {
       console.log(id);
       if (extraFieldsStaff) formData.extraFieldsStaff = extraFieldsStaff;
       if (SignatureData) formData.signatureImage = SignatureData;
+      if (extraField2) formData.institute = extraField2.trim();
 
       const response = await dispatch(editStaff(formData, id));
       if (response === "Staff updated successfully") {
