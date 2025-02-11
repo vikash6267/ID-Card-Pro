@@ -6,12 +6,14 @@ import { useDispatch, useSelector } from "react-redux";
 import { updateSchool } from "@/redux/actions/userAction";
 import { RiContactsBook2Line } from "react-icons/ri";
 import { FaRegAddressCard } from "react-icons/fa";
+import { FaUser, FaLock } from "react-icons/fa";
 
 import { FiUser } from "react-icons/fi"; // For Vendor Name icon
 import { AiOutlineMail } from "react-icons/ai"; // For Email icon
 import { MdCode } from "react-icons/md"; // For Code icon
 
 import "react-toastify/dist/ReactToastify.css";
+import SchoolLoginFields from "../component/SchoolSelect";
 
 const EditSchool = ({ params }) => {
   const [name, setName] = useState("");
@@ -22,6 +24,7 @@ const EditSchool = ({ params }) => {
   const [requiredFields, setRequiredFields] = useState(["Student Name"]);
   const [requiredFieldsStaff, setrequiredFieldsStaff] = useState(["Name"]);
 
+  const [loginDeatils,setLoginDetails]  = useState({})
   // Student For adddition
   const [extraFields, setExtraFields] = useState([]);
   const [newFieldName, setNewFieldName] = useState("");
@@ -32,16 +35,17 @@ const EditSchool = ({ params }) => {
   const router = useRouter();
   const dispatch = useDispatch();
   const schoolId = params ? params.id : null; // Assuming you have a route
-  console.log(schoolId);
+  // console.log(schoolId);
 
   // Assuming you have stored the school data in your Redux store
   const { schools, error } = useSelector((state) => state.user);
-  console.log(schools);
+  // console.log(schools);
 
   useEffect(() => {
     const schoolId = params ? params.id : null;
     if (schoolId) {
       let school = schools?.find((school) => school?._id == schoolId);
+      console.log(school?.studentLogin)
       if (school) {
         setName(school?.name);
         setEmail(school?.email);
@@ -52,6 +56,8 @@ const EditSchool = ({ params }) => {
         setrequiredFieldsStaff(school?.requiredFieldsStaff);
         setExtraFields(school?.extraFields);
         setExtraFieldsStaff(school?.extraFieldsStaff);
+        setLoginDetails(school?.studentLogin);
+
       }
     }
   }, [schools]);
@@ -451,6 +457,27 @@ const EditSchool = ({ params }) => {
                 </div>
               </div>
             </div>
+
+            <div className="max-w-md mx-auto bg-white shadow-lg rounded-lg p-6 border border-gray-200">
+      <h2 className="text-2xl font-semibold text-gray-800 mb-4">Student Login</h2>
+      
+      <div className="flex items-center gap-2 text-gray-700 mb-2">
+        <FaUser className="text-blue-500" />
+        <p className="font-medium">Username: <span className="font-semibold">{loginDeatils?.userName || "N/A"}</span></p>
+      </div>
+
+      <div className="flex items-center gap-2 text-gray-700 mb-2">
+        <FaLock className="text-red-500" />
+        <p className="font-medium">Password: <span className="font-semibold">{loginDeatils?.password || "******"}</span></p>
+      </div>
+
+      <p className={`mt-4 text-sm font-medium p-2 rounded-md ${loginDeatils?.customPassword ? "bg-yellow-200 text-yellow-900" : "bg-green-200 text-green-900"}`}>
+        {loginDeatils?.customPassword ? "This is a custom password" : "Using default password"}
+      </p>
+    </div>
+
+
+            <SchoolLoginFields schoolId={schoolId} setLoginDetails={setLoginDetails} />
             <button
               onClick={handleSubmit}
               className="w-full px-6 py-3 mt-6 text-sm font-medium tracking-wide text-white capitalize transition-colors duration-300 transform bg-blue-500 rounded-lg hover:bg-blue-400 focus:outline-none focus:ring focus:ring-blue-300 focus:ring-opacity-50"

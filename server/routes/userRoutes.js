@@ -646,4 +646,135 @@ router.put("/delete-class", async (req, res) => {
 
 
 
+
+router.get("/:schoolId/fields", async (req, res) => {
+  try {
+    const school = await School.findById(req.params.schoolId);
+    res.json({ requiredFields: school.requiredFields, extraFields: school.extraFields });
+  } catch (error) {
+    res.status(500).json({ error: "Error fetching fields" });
+  }
+});
+
+
+router.post("/:schoolId/save-login", async (req, res) => {
+  try {
+    const { userName, password, customPassword } = req.body;
+    const school = await School.findById(req.params.schoolId);
+    
+    console.log(req.body)
+    school.studentLogin = { userName, password, customPassword: !!customPassword };
+    await school.save();
+
+    res.json({ message: "Login fields saved successfully" });
+  } catch (error) {
+    console.log(error )
+    res.status(500).json({ error: "Error saving login fields" });
+  }
+});
+
+
+
+const sanitizeInput = (input) => {
+  return input.replace(/[-/.\s]/g, "").toLowerCase(); // Remove - / . space and convert to lowercase
+};
+
+router.post("/student-login", async (req, res) => {
+  try {
+    const { schoolId, userName, password } = req.body;
+
+    // School find karo
+    const school = await School.findById(schoolId);
+    if (!school) {
+      return res.status(404).json({ error: "School not found" });
+    }
+
+    // Username aur password ka field naam find karo
+    let usernameField = school.studentLogin.userName;
+    if (usernameField === "Student Name") {
+      usernameField = "Name";
+    }
+    usernameField = usernameField.toLowerCase();
+
+    const passwordField = school.studentLogin.password;
+
+    // Sanitized username and password
+    const sanitizedUserName = sanitizeInput(userName);
+    const sanitizedPassword = sanitizeInput(password);
+
+
+    const studentsList = await Student.find({ school: schoolId });
+
+
+    let student = null;
+    const foundStudent = studentsList.find((s) =>
+      sanitizeInput(s.name || "") === sanitizedUserName || 
+      sanitizeInput(s.extraFields?.name || "") === sanitizedUserName
+    );
+    
+    if (!foundStudent) {
+      console.log("No student found after manual match.");
+    } else {
+      console.log("Student found:", foundStudent);
+
+      student = foundStudent
+    }
+    
+
+
+    // Pehle normal fields me student find karo
+    // let student = await Student.findOne({
+    //   school: schoolId,
+    //   [usernameField]: { $regex: new RegExp(`^${sanitizedUserName}$`, "i") }, // Case-insensitive regex match
+    // });
+
+    // // Agar student nahi mila toh extraFields me check karo
+    // if (!student) {
+    //   student = await Student.findOne({
+    //     school: schoolId,
+    //     [`extraFields.${usernameField}`]: { $regex: new RegExp(`^${sanitizedUserName}$`, "i") },
+    //   });
+    // }
+
+    // Agar student nahi mila
+    if (!student) {
+      return res.status(404).json({ error: "Student not found" });
+    }
+
+    if(school.studentLogin.customPassword){
+     
+      
+      if(passwordField === password){
+        return res.json({
+          message: "Login successful",
+          success: true,
+          studentId: student._id, // 👈 Yahan se frontend ko student ki ID milegi
+        });
+      }
+    }
+
+    console.log(student.extraFields.get(passwordField));
+    console.log(password);
+
+    // Password check karo (normal field se)
+    if (
+      sanitizeInput(student[passwordField] || "") === sanitizedPassword ||
+      sanitizeInput(student.extraFields.get(passwordField) || "") === sanitizedPassword
+    ) {
+      return res.json({
+        message: "Login successful",
+        success: true,
+        studentId: student._id, // 👈 Yahan se frontend ko student ki ID milegi
+      });
+    }
+
+    return res.status(401).json({ error: "Invalid username or password" });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ error: "Error during login" });
+  }
+});
+
+
+
 module.exports = router;

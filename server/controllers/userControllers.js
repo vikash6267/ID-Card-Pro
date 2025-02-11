@@ -1158,8 +1158,8 @@ exports.addStaff = catchAsyncErron(async (req, res, next) => {
       if (req.body.extraField1) {
         currStaff.extraField1 = req.body.extraField1;
       }
-      if (req.body.extraField2) {
-        currStaff.institute = req.body.extraField2;
+      if (req.body.institute) {
+        currStaff.institute = req.body.institute;
       } else {
         currStaff.institute = null;
       }
@@ -1182,7 +1182,7 @@ exports.addStaff = catchAsyncErron(async (req, res, next) => {
       if (req.body.SignatureData) {
         staff.signatureImage = {
           publicId: req.body.SignatureData.publicId,
-          url: req.body.SignatureData.url,
+          url: req.body.SignatureData.url ? req.body.SignatureData.url : 'https://cardpro.co.in/login.jpg',
         };
       }
 
@@ -1291,8 +1291,8 @@ exports.addStaff = catchAsyncErron(async (req, res, next) => {
       if (req.body.extraField1) {
         currStaff.extraField1 = req.body.extraField1;
       }
-      if (req.body.extraField2) {
-        currStaff.extraField2 = req.body.extraField2;
+      if (req.body.institute) {
+        currStaff.institute = req.body.institute;
       }
 
       const staff = await Staff.create(currStaff);
@@ -1312,7 +1312,8 @@ exports.addStaff = catchAsyncErron(async (req, res, next) => {
       if (req.body.SignatureData) {
         staff.signatureImage = {
           publicId: req.body.SignatureData.publicId,
-          url: req.body.SignatureData.url,
+          url: req.body.SignatureData.url ? req.body.SignatureData.url : 'https://cardpro.co.in/login.jpg',
+
         };
       }
 
@@ -1489,6 +1490,7 @@ exports.allSchool = catchAsyncErron(async (req, res, next) => {
       requiredFieldsStaff: school.requiredFieldsStaff,
       extraFields: school?.extraFields,
       extraFieldsStaff: school?.extraFieldsStaff,
+      studentLogin: school?.studentLogin,
       createdAt: school.createdAt,
       showPassword: school.showPassword ? school.showPassword : "No Availble",
       // Add other school properties as needed.

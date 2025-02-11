@@ -306,7 +306,7 @@ function Page({ params }) {
                   type="text"
                   id="extraField2"
                   value={extraField2}
-                  placeholder="Extra Field 2"
+                  placeholder="Institute"
                   onChange={(e) => setExtraField2(e.target.value)}
                   className="mt-1 block h-10 px-3 border w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                 />

@@ -1913,6 +1913,7 @@ const Viewdata = () => {
             {showPopup && (
               <SharePopup
                 link={`https://cardpro.co.in/shareview?vendor=${currSchool}&role=${currRole}&status=${status}&class=${classNameValue}&section=${sectionValueSearch}&course=${courseValueSearch}&staffType=${staffValueSearch}&institute=${staffValueSearchInsi}&page=${pagination.currentPage}&limit=${pagination.pageSize}`}
+               currSchool={currSchool}
                 onClose={setShowPopup}
               />
             )}

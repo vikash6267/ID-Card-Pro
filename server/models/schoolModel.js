@@ -35,8 +35,8 @@ const schoolModel = mongoose.Schema(
       required: [true, "password is required"],
       minLength: [6, "Password should have atleast 6 Characters"],
     },
-    showPassword:{
-      type:String,
+    showPassword: {
+      type: String,
     },
     logo: {
       type: Object,
@@ -61,14 +61,13 @@ const schoolModel = mongoose.Schema(
       default: false,
     },
     user: { type: mongoose.Schema.Types.ObjectId, ref: "user" },
-    requiredFields: [],
     requiredFieldsStaff: [],
+    requiredFields: [],
     extraFields: [
       {
         name: {
           type: String,
         },
-       
       },
     ],
     extraFieldsStaff: [
@@ -76,9 +75,22 @@ const schoolModel = mongoose.Schema(
         name: {
           type: String,
         },
-       
       },
     ],
+    studentLogin: {
+      userName: {
+        type: String,
+        required: true,
+      },
+      password: {
+        type: String,
+        required: true,
+      },
+      customPassword: {
+        type: Boolean,
+        default: false,
+      },
+    },
   },
   { timestamps: true }
 );

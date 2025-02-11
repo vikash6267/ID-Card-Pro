@@ -158,7 +158,7 @@ const Adddata = () => {
     // Add values to formData only if they are not empty
     if (name) formData.name = name;
     if (staffType) formData.staffType = staffType;
-    if (extraField2) formData.extraField2 = extraField2;
+    if (extraField2) formData.institute = extraField2;
     if (extraFieldsStaff) formData.extraFieldsStaff = extraFieldsStaff;
     if (SignatureData) formData.SignatureData = SignatureData;
     // Add other staff fields here
