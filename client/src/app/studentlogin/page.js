@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import axios from "../../../axiosconfig";
 import { useRouter } from "next/navigation";
+import Nav from "../components/Nav";
 
 const StudentLogin = () => {
   const [userName, setUserName] = useState("");
@@ -58,7 +59,9 @@ const StudentLogin = () => {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100">
+ <div>
+ <Nav />
+     <div className="flex items-center justify-center min-h-screen bg-gray-100">
       {loading ? (
         // Loading Spinner
         <div className="flex flex-col items-center">
@@ -117,6 +120,7 @@ const StudentLogin = () => {
         </div>
       )}
     </div>
+ </div>
   );
 };
 
