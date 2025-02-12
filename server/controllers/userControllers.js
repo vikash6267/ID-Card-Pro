@@ -3365,7 +3365,7 @@ exports.StaffNewAvatarsDownload = catchAsyncErron(async (req, res, next) => {
     const staffAvatars = staffs.map((staff) => {
       const url = staff?.avatar?.url || "https://cardpro.co.in/login.jpg";
       const originalExt = path.extname(url).split("?")[0] || ".jpg";
-      const name = `${staff.photoNameUnuiq}${originalExt}`;
+      const name = `IMG${staff.photoNameUnuiq}${originalExt}`;
       return { url, name };
     });
 
