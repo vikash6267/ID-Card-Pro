@@ -80,11 +80,11 @@ const schoolModel = mongoose.Schema(
     studentLogin: {
       userName: {
         type: String,
-        required: true,
+      
       },
       password: {
         type: String,
-        required: true,
+       
       },
       customPassword: {
         type: Boolean,
