@@ -3907,9 +3907,9 @@ exports.ExcelDataStaff = catchAsyncErron(async (req, res, next) => {
         key: "extraField1",
         width: 20,
       },
-      requiredFieldsStaff.includes("Extra Field 2") && {
-        header: "EXTRA FIELD 2",
-        key: "extraField2",
+      requiredFieldsStaff.includes("Institute") && {
+        header: "Institute",
+        key: "institute",
         width: 20,
       },
     ];
@@ -3967,7 +3967,7 @@ exports.ExcelDataStaff = catchAsyncErron(async (req, res, next) => {
         jobStatus: staff.jobStatus,
         panCardNo: staff.panCardNo,
         extraField1: staff.extraField1,
-        extraField2: staff.extraField2,
+        institute: staff.institute,
       };
 
       // Add dynamic extra fields to each row, matching school fields
