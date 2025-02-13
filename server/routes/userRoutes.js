@@ -676,7 +676,8 @@ router.post("/:schoolId/save-login", async (req, res) => {
 
 
 const sanitizeInput = (input) => {
-  return input.replace(/[-/.\s]/g, "").toLowerCase(); // Remove - / . space and convert to lowercase
+
+  return input?.replace(/[-/.\s]/g, "").toLowerCase(); // Remove - / . space and convert to lowercase
 };
 
 router.post("/student-login", async (req, res) => {
@@ -715,28 +716,14 @@ router.post("/student-login", async (req, res) => {
     if (!foundStudent) {
       console.log("No student found after manual match.");
     } else {
-      console.log("Student found:", foundStudent);
+    
 
       student = foundStudent
     }
     
 
 
-    // Pehle normal fields me student find karo
-    // let student = await Student.findOne({
-    //   school: schoolId,
-    //   [usernameField]: { $regex: new RegExp(`^${sanitizedUserName}$`, "i") }, // Case-insensitive regex match
-    // });
-
-    // // Agar student nahi mila toh extraFields me check karo
-    // if (!student) {
-    //   student = await Student.findOne({
-    //     school: schoolId,
-    //     [`extraFields.${usernameField}`]: { $regex: new RegExp(`^${sanitizedUserName}$`, "i") },
-    //   });
-    // }
-
-    // Agar student nahi mila
+    
     if (!student) {
       return res.status(404).json({ error: "Student not found" });
     }
@@ -753,14 +740,14 @@ router.post("/student-login", async (req, res) => {
       }
     }
 
-    console.log(student.extraFields.get(passwordField));
-    console.log(password);
+
 
     // Password check karo (normal field se)
     if (
-      sanitizeInput(student[passwordField] || "") === sanitizedPassword ||
-      sanitizeInput(student.extraFields.get(passwordField) || "") === sanitizedPassword
+      sanitizeInput(student[passwordField]) === sanitizedPassword ||
+      sanitizeInput(student.extraFields.get(passwordField)) === sanitizedPassword
     ) {
+      console.log("first")
       return res.json({
         message: "Login successful",
         success: true,
