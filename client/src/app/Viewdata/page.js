@@ -215,26 +215,81 @@ const Viewdata = () => {
     }
   };
 
+
   const modeToReadytoprint = async (e) => {
     e.preventDefault();
-    if (currRole == "student") {
-      const response = await axios.post(
-        `/user/student/change-status/readyto/${currSchool}?`,
-        { studentIds },
-        config()
-      );
+    try {
+      let response;
+      let successMessage = "";
+      let skippedMessage = "";
+  
+      Swal.fire({
+        title: "Processing...",
+        text: "Please wait while the status is being updated.",
+        icon: "info",
+        showCancelButton: false,
+        allowOutsideClick: false,
+        didOpen: () => {
+          Swal.showLoading();
+        },
+      });
+  
+      if (currRole === "student") {
+        response = await axios.post(
+          `/user/student/change-status/readyto/${currSchool}?`,
+          { studentIds },
+          config()
+        );
+        setStudentIds([]);
+        successMessage = "Student status has been updated.";
+      } else if (currRole === "staff") {
+        response = await axios.post(
+          `/user/staff/change-status/readyto/${currSchool}?`,
+          { staffIds },
+          config()
+        );
+        setStaffIds([])
+        successMessage = "Staff status has been updated.";
+      }
+  
+      Swal.close(); // Close loading alert
+  
+      if (response?.data?.success) {
+        Swal.fire({
+          title: "Success!",
+          text: response.data.message || successMessage,
+          icon: "success",
+          confirmButtonText: "OK",
+        });
+      }
+  
+      if (response?.data?.skippedStudents?.length > 0) {
+        skippedMessage = response.data.skippedStudents
+          .map(
+            (student) => `<b>${student.name}:</b> ${student.reason.join(", ")}`
+          )
+          .join("<br>");
+  
+        Swal.fire({
+          title: "Some Entries Were Skipped!",
+          html: skippedMessage,
+          icon: "warning",
+          confirmButtonText: "OK",
+        });
+      }
+  
       handleFormSubmit(e);
-      setStudentIds([]);
-    }
-    if (currRole == "staff") {
-      const response = await axios.post(
-        `/user/staff/change-status/readyto/${currSchool}?`,
-        { staffIds },
-        config()
-      );
-      handleFormSubmit(e);
+    } catch (error) {
+      Swal.fire({
+        title: "Error!",
+        text: error.response?.data?.message || "Something went wrong!",
+        icon: "error",
+        confirmButtonText: "OK",
+      });
     }
   };
+  
+  
 
   const modeToPrinted = async (e) => {
     e.preventDefault();
@@ -973,6 +1028,7 @@ const Viewdata = () => {
     window.open(shareUrl, "_blank");
   };
 
+
   const moveReadySingle = async (studentId) => {
     try {
       // Show loading spinner
@@ -986,51 +1042,66 @@ const Viewdata = () => {
           Swal.showLoading(); // Display loading spinner
         },
       });
-
-      if (currRole == "student") {
-        // Make the API call
-        const response = await axios.post(
+  
+      let response;
+  
+      if (currRole === "student") {
+        response = await axios.post(
           `/user/student/change-status/readyto/${currSchool}?`,
           { studentIds: [studentId] }, // Wrap studentId in an array
           config()
         );
-
-        // Fetch updated student list
-        handleFormSubmit();
-        setStudentIds([]);
-        // Close the loading spinner and show success message
-        Swal.fire({
-          title: "Success!",
-          text: "Student status has been updated.",
-          icon: "success",
-        });
-      }
-
-      if (currRole == "staff") {
-        const response = await axios.post(
+      } else if (currRole === "staff") {
+        response = await axios.post(
           `/user/staff/change-status/readyto/${currSchool}?`,
           { staffIds: [studentId] },
           config()
         );
-        handleFormSubmit();
-        setStudentIds([]);
+      }
+  
+      handleFormSubmit();
+      setStudentIds([]);
+  
+      if (response.data.success) {
         Swal.fire({
           title: "Success!",
-          text: "Student status has been updated.",
+          text: response.data.message,
           icon: "success",
+          confirmButtonText: "OK",
+        });
+      }
+  
+      // If any student was skipped, show details
+      if (response.data.skippedStudents?.length > 0) {
+        let skippedMessage = response.data.skippedStudents
+          .map(
+            (student) => `<b>${student.name}:</b> ${student.reason.join(", ")}`
+          )
+          .join("<br>");
+  
+        Swal.fire({
+          title: "Some Students Were Skipped!",
+          html: skippedMessage,
+          icon: "warning",
+          confirmButtonText: "OK",
         });
       }
     } catch (error) {
       console.error("Error updating status:", error);
-
-      // Close the loading spinner and show error message
+  let err = "Server Error"
+      if(error.response?.data?.message==="No students were updated due to missing required fields or empty extraFields values."   || error.response?.data?.message === "No staff members were updated due to missing required fields or empty extraFields values."){
+        console.log("enterrrrrrr")
+        err = "Please Put Values And Try Again"
+      }
       Swal.fire({
         title: "Error!",
-        text: "Failed to update student status. Please try again later.",
+        text: err || "Failed to update student status. Please try again later.",
         icon: "error",
+        confirmButtonText: "OK",
       });
     }
   };
+  
 
   const moveBackPendingSingle = async (studentId) => {
     try {

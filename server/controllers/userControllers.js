@@ -1907,55 +1907,128 @@ exports.getAllStaffInSchool = catchAsyncErron(async (req, res, next) => {
 });
 
 // ---------------------StatusReaduToPrint----------------
-
 exports.updateStudentStatusToPrint = catchAsyncErron(async (req, res, next) => {
   const schoolID = req.params.id;
-  let { studentIds } = req.body; // Assuming both are passed in the request body
+  let { studentIds } = req.body;
 
   if (typeof studentIds === "string") {
     try {
       studentIds = JSON.parse(`[${studentIds}]`);
     } catch (error) {
-      // If JSON.parse fails, split the string by commas and manually remove quotes
-      studentIds = studentIds
-        .split(",")
-        .map((id) => id.trim().replace(/^"|"$/g, ""));
+      studentIds = studentIds.split(",").map((id) => id.trim().replace(/^"|"$/g, ""));
     }
   }
 
-  // Validate inputs (schoolId and studentIds)
   if (!schoolID || !studentIds) {
     return res.status(400).json({
       success: false,
-      message:
-        "Invalid request. Please provide a school ID and a list of student IDs.",
+      message: "Invalid request. Please provide a school ID and a list of student IDs.",
     });
   }
 
-  // Update status of students
-  const updated = await Student.updateMany(
-    {
-      _id: { $in: studentIds }, // Filter documents by student IDs
-      school: schoolID, // Ensure the students belong to the specified school
-    },
-    {
-      $set: { status: "Ready to print" }, // Set the status to "Ready to print"
-    }
-  );
+  // Fetch school details
+  const schoolDetails = await School.findById(schoolID);
 
-  // If no documents were updated, it could mean invalid IDs were provided or they don't match the school ID
-  if (updated.matchedCount === 0) {
+  if (!schoolDetails) {
+    return res.status(404).json({
+      success: false,
+      message: "School not found.",
+    });
+  }
+
+  const requiredFields = schoolDetails.requiredFields || [];
+  if (!requiredFields.length) {
+    return res.status(400).json({
+      success: false,
+      message: "No required fields are defined for this school.",
+    });
+  }
+
+  // Fetch all students
+  const students = await Student.find({ _id: { $in: studentIds }, school: schoolID });
+
+  if (!students.length) {
     return res.status(404).json({
       success: false,
       message: "No matching students found for the provided IDs and school ID.",
     });
   }
 
+  let validStudentIds = [];
+  let skippedStudents = []; // Store skipped students with reasons
+
+
+students.forEach((student) => {
+    let isValid = true;
+    let reason = [];
+
+    // ✅ Step 1: Check Required Fields (Student's Basic Info)
+    requiredFields.forEach((field) => {
+        if (
+            (field === "Student Name" && !student.name) ||
+            (field === "Class" && !student.class) ||
+            (field === "Section" && !student.section) ||
+            (field === "Course" && !student.course)
+        ) {
+            isValid = false;
+            reason.push(`${field} is missing`);
+        }
+    });
+
+    // ✅ Step 2: Validate Extra Fields (Based on School Requirements)
+    if (isValid && schoolDetails.extraFields && schoolDetails.extraFields.length > 0) {
+        let requiredExtraFields = schoolDetails.extraFields.map((field) => field.name); // Extract names from array
+        let studentExtraFields = student.extraFields ? Array.from(student.extraFields.keys()) : [];
+
+        // ✅ If student has no extraFields but school requires them, fail validation
+        if (studentExtraFields.length === 0) {
+            isValid = false;
+            reason.push(`Student is missing all required extra fields: ${requiredExtraFields.join(", ")}`);
+        } else {
+            // ✅ Check if student has all required fields & they are not empty
+            requiredExtraFields.forEach((field) => {
+                if (!student.extraFields.has(field) || !student.extraFields.get(field)) {
+                    isValid = false;
+                    reason.push(`Extra field '${field}' is missing or empty`);
+                }
+            });
+        }
+    }
+
+    // ✅ Step 3: Final Decision (Update or Skip)
+    if (isValid) {
+        validStudentIds.push(student._id);
+    } else {
+        skippedStudents.push({ studentId: student._id, name: student.name, reason });
+    }
+});
+
+
+
+
+  if (!validStudentIds.length) {
+    return res.status(400).json({
+      success: false,
+      message: "No students were updated due to missing required fields or empty extraFields values.",
+      skippedStudents,
+    });
+  }
+
+  // Update valid students
+  const updated = await Student.updateMany(
+    { _id: { $in: validStudentIds }, school: schoolID },
+    { $set: { status: "Ready to print" } }
+  );
+
   res.status(200).json({
     success: true,
     message: `${updated.modifiedCount} students' status updated to "Ready to print"`,
+    skippedStudents,
   });
 });
+
+
+
 
 // ---------------------StatusPending------------
 
@@ -2109,56 +2182,173 @@ exports.deleteStudents = catchAsyncErron(async (req, res, next) => {
   });
 });
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // ---------------------StatusReaduToPrint Staff----------------
 
 exports.updateStaffStatusToPrint = catchAsyncErron(async (req, res, next) => {
   const schoolID = req.params.id;
-  let { staffIds } = req.body; // Assuming both are passed in the request body
+  let { staffIds } = req.body;
 
   if (typeof staffIds === "string") {
     try {
       staffIds = JSON.parse(`[${staffIds}]`);
     } catch (error) {
-      // If JSON.parse fails, split the string by commas and manually remove quotes
-      staffIds = staffIds
-        .split(",")
-        .map((id) => id.trim().replace(/^"|"$/g, ""));
+      staffIds = staffIds.split(",").map((id) => id.trim().replace(/^"|"$/g, ""));
     }
   }
 
-  // Validate inputs (schoolId and studentIds)
   if (!schoolID || !staffIds) {
     return res.status(400).json({
       success: false,
-      message:
-        "Invalid request. Please provide a school ID and a list of student IDs.",
+      message: "Invalid request. Please provide a school ID and a list of staff IDs.",
     });
   }
 
-  // Update status of students
-  const updated = await Staff.updateMany(
-    {
-      _id: { $in: staffIds }, // Filter documents by student IDs
-      school: schoolID, // Ensure the students belong to the specified school
-    },
-    {
-      $set: { status: "Ready to print" }, // Set the status to "Ready to print"
-    }
-  );
-
-  // If no documents were updated, it could mean invalid IDs were provided or they don't match the school ID
-  if (updated.matchedCount === 0) {
+  // Fetch school details
+  const schoolDetails = await School.findById(schoolID);
+  if (!schoolDetails) {
     return res.status(404).json({
       success: false,
-      message: "No matching students found for the provided IDs and school ID.",
+      message: "School not found.",
     });
   }
+
+  const requiredFields = schoolDetails.requiredFieldsStaff || [];
+  if (!requiredFields.length) {
+    return res.status(400).json({
+      success: false,
+      message: "No required fields are defined for this school.",
+    });
+  }
+
+  // Fetch all staff members
+  const staffMembers = await Staff.find({ _id: { $in: staffIds }, school: schoolID });
+
+  if (!staffMembers.length) {
+    return res.status(404).json({
+      success: false,
+      message: "No matching staff members found for the provided IDs and school ID.",
+    });
+  }
+
+  let validStaffIds = [];
+  let skippedStaff = []; // Store skipped staff members with reasons
+
+  // Check each staff member
+  staffMembers.forEach((staff) => {
+    let isValid = true;
+    let reason = [];
+
+    // ✅ Step 1: Check Required Fields (Staff's Basic Info)
+    requiredFields.forEach((field) => {
+        if (
+            (field === "Name" && !staff.name) ||
+            (field === "Staff Type" && !staff.staffType) ||
+            (field === "Institute" && !staff.institute)
+        ) {
+            isValid = false;
+            reason.push(`${field} is missing`);
+        }
+    });
+
+    // ✅ Step 2: Validate Extra Fields (Based on School Requirements)
+    if (isValid && schoolDetails.extraFieldsStaff && schoolDetails.extraFieldsStaff.length > 0) {
+        let requiredExtraFields = schoolDetails.extraFieldsStaff.map((field) => field.name); // Extract names from array
+        let staffExtraFields = staff.extraFieldsStaff ? Array.from(staff.extraFieldsStaff.keys()) : [];
+
+        // ✅ If staff has no extraFields but school requires them, fail validation
+        if (staffExtraFields.length === 0) {
+            isValid = false;
+            reason.push(`Staff member is missing all required extra fields: ${requiredExtraFields.join(", ")}`);
+        } else {
+            // ✅ Check if staff has all required fields & they are not empty
+            requiredExtraFields.forEach((field) => {
+                if (!staff.extraFieldsStaff.has(field) || !staff.extraFieldsStaff.get(field)) {
+                    isValid = false;
+                    reason.push(`Extra field '${field}' is missing or empty`);
+                }
+            });
+        }
+    }
+
+    // ✅ Step 3: Final Decision (Update or Skip)
+    if (isValid) {
+        validStaffIds.push(staff._id);
+    } else {
+        skippedStaff.push({ staffId: staff._id, name: staff.name, reason });
+    }
+});
+
+
+  if (!validStaffIds.length) {
+    return res.status(400).json({
+      success: false,
+      message: "No staff members were updated due to missing required fields or empty extraFields values.",
+      skippedStaff,
+    });
+  }
+
+  // Update valid staff members
+  const updated = await Staff.updateMany(
+    { _id: { $in: validStaffIds }, school: schoolID },
+    { $set: { status: "Ready to print" } }
+  );
 
   res.status(200).json({
     success: true,
-    message: `${updated.modifiedCount} students' status updated to "Ready to print"`,
+    message: `${updated.modifiedCount} staff members' status updated to "Ready to print"`,
+    skippedStaff,
   });
 });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 // ---------------------StatusPending  Staff------------
 
