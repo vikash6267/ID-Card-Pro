@@ -1994,7 +1994,11 @@ students.forEach((student) => {
             });
         }
     }
-
+   // ✅ Step 3: Check Avatar (Ensure it's not the default)
+   if (isValid && student.avatar && (student.avatar.url === "https://cardpro.co.in/login.jpg" || student.avatar.url === "https://plus.unsplash.com/premium_photo-1699534403319-978d740f9297?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D")) {
+    isValid = false;
+    reason.push("Default avatar is not allowed. Please upload a profile picture.");
+}
     // ✅ Step 3: Final Decision (Update or Skip)
     if (isValid) {
         validStudentIds.push(student._id);
@@ -2281,7 +2285,7 @@ exports.updateStaffStatusToPrint = catchAsyncErron(async (req, res, next) => {
     if (isValid && schoolDetails.extraFieldsStaff && schoolDetails.extraFieldsStaff.length > 0) {
         let requiredExtraFields = schoolDetails.extraFieldsStaff.map((field) => field.name); // Extract names from array
         let staffExtraFields = staff.extraFieldsStaff ? Array.from(staff.extraFieldsStaff.keys()) : [];
-
+console.log(schoolDetails.extraFieldsStaff)
         // ✅ If staff has no extraFields but school requires them, fail validation
         if (staffExtraFields.length === 0) {
             isValid = false;
@@ -2296,8 +2300,19 @@ exports.updateStaffStatusToPrint = catchAsyncErron(async (req, res, next) => {
             });
         }
     }
+   // ✅ Step 3: Check Avatar (Ensure it's not the default)
+   if (isValid && staff.avatar && (staff.avatar.url === "https://cardpro.co.in/login.jpg" || staff.avatar.url === "https://plus.unsplash.com/premium_photo-1699534403319-978d740f9297?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D")) {
+    isValid = false;
+    reason.push("Default avatar is not allowed. Please upload a profile picture.");
+}
 
-    // ✅ Step 3: Final Decision (Update or Skip)
+if(requiredFields.includes("Signature Name") && staff.signatureImage && (staff.signatureImage.url === "https://cardpro.co.in/login.jpg" || staff.signatureImage.url === "https://plus.unsplash.com/premium_photo-1699534403319-978d740f9297?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D")){
+  isValid = false;
+  reason.push("Default Signature is not allowed. Please upload a Signature picture.");
+}
+
+
+    // ✅ Step 4: Final Decision (Update or Skip)
     if (isValid) {
         validStaffIds.push(staff._id);
     } else {

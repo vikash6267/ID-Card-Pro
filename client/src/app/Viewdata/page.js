@@ -1088,11 +1088,12 @@ const Viewdata = () => {
       }
     } catch (error) {
       console.error("Error updating status:", error);
-  let err = "Server Error"
+  let err = error.response?.data?.message
       if(error.response?.data?.message==="No students were updated due to missing required fields or empty extraFields values."   || error.response?.data?.message === "No staff members were updated due to missing required fields or empty extraFields values."){
-        console.log("enterrrrrrr")
+       
         err = "Please Put Values And Try Again"
       }
+
       Swal.fire({
         title: "Error!",
         text: err || "Failed to update student status. Please try again later.",
