@@ -3725,14 +3725,15 @@ exports.ExcelData = catchAsyncErron(async (req, res, next) => {
 
       worksheet.addRow(row);
     });
-
+    const modifiedName = school.name.replace(/[\s,]+/g, "_");
+    console.log(modifiedName);
     // Set headers for file download
     res.setHeader(
       "Content-Type",
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     );
    
-    res.setHeader("Content-Disposition", `attachment; filename=${school.name}_students.xlsx`);
+    res.setHeader("Content-Disposition", `attachment; filename=${modifiedName}_students.xlsx`);
 
     // Write the Excel file to the response
     await workbook.xlsx.write(res);
@@ -3967,12 +3968,17 @@ exports.ExcelDataStaff = catchAsyncErron(async (req, res, next) => {
       worksheet.addRow(row);
     });
 
+
+    const modifiedName = school.name.replace(/[\s,]+/g, "_");
+    console.log(modifiedName);
+    
+    
     // Set headers for file download
     res.setHeader(
       "Content-Type",
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     );
-    res.setHeader("Content-Disposition", `attachment; filename=${school.name}_staff.xlsx`);
+    res.setHeader("Content-Disposition", `attachment; filename=${modifiedName}_staff.xlsx`);
 
     // Write the Excel file to the response
     await workbook.xlsx.write(res);
