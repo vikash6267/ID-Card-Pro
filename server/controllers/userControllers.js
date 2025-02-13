@@ -3313,7 +3313,7 @@ exports.StaffAvatarsDownload = catchAsyncErron(async (req, res, next) => {
     }
 
     // Create a ZIP file
-    const zipFileName = `${school.name.replace(/ /g, "_")}_avatars.zip`;
+    const zipFileName = `${school.name.replace(/ /g, "_")}_student-images.zip`;
     const zipFilePath = path.join(__dirname, zipFileName);
     const output = fs.createWriteStream(zipFilePath);
     const archive = archiver("zip", { zlib: { level: 9 } });
@@ -3389,7 +3389,7 @@ exports.StaffNewAvatarsDownload = catchAsyncErron(async (req, res, next) => {
       }
     }
 
-    const zipFileName = `${school.name.replace(/ /g, "_")}_avatars.zip`;
+    const zipFileName = `${school.name.replace(/ /g, "_")}_staff_images.zip`;
     const zipFilePath = path.join(__dirname, zipFileName);
     const output = fs.createWriteStream(zipFilePath);
     const archive = archiver("zip", { zlib: { level: 9 } });
@@ -3514,26 +3514,7 @@ exports.StaffSignatureDownload = catchAsyncErron(async (req, res, next) => {
   }
 });
 
-// exports.StaffNewAvatarsDownload = catchAsyncErron(async (req, res, next) => {
-//   const schoolId = req.params.id;
-//   let {status} = req.body;
 
-//   try {
-//     // Fetch students' avatars from the database based on school id and status
-//     const students = await Staff.find({school: schoolId, status: status});
-//     const studentAvatars = students.map((student) => student.avatar.url);
-//     console.log(studentAvatars);
-
-//     res.status(200).json({
-//       success: true,
-//       role: "Staff",
-//       staffImages: studentAvatars,
-//     });
-//   } catch (error) {
-//     console.error("Error downloading student avatars:", error);
-//     res.status(500).send("Error downloading student avatars");
-//   }
-// });
 
 exports.ExcelData = catchAsyncErron(async (req, res, next) => {
   const schoolId = req.params.id;
@@ -3750,7 +3731,8 @@ exports.ExcelData = catchAsyncErron(async (req, res, next) => {
       "Content-Type",
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     );
-    res.setHeader("Content-Disposition", "attachment; filename=users.xlsx");
+   
+    res.setHeader("Content-Disposition", `attachment; filename=${school.name}_students.xlsx`);
 
     // Write the Excel file to the response
     await workbook.xlsx.write(res);
@@ -3770,6 +3752,8 @@ exports.ExcelDataStaff = catchAsyncErron(async (req, res, next) => {
   try {
     // Fetch the school data to get the dynamic extra fields
     const school = await School.findById(schoolId);
+
+    console.log(school.name)
     if (!school) {
       return res.status(404).json({ message: "School not found" });
     }
@@ -3790,8 +3774,13 @@ exports.ExcelDataStaff = catchAsyncErron(async (req, res, next) => {
     const staticColumnsAll = [
       { header: "SR NO.", key: "srno", width: 15 },
       { header: "PHOTO NO.", key: "photoNameUnuiq", width: 20 },
-      { header: "Signature Photo NO.", key: "signatureNo", width: 20 },
+      requiredFieldsStaff.includes("Signature Name") && {
+        header: "Signature Photo NO.",
+        key: "signatureNo",
+        width: 20,
+      },
       { header: "Name", key: "name", width: 20 },
+    
       requiredFieldsStaff.includes("Father's Name") && {
         header: "FATHER'S NAME",
         key: "fatherName",
@@ -3983,7 +3972,7 @@ exports.ExcelDataStaff = catchAsyncErron(async (req, res, next) => {
       "Content-Type",
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     );
-    res.setHeader("Content-Disposition", "attachment; filename=staff.xlsx");
+    res.setHeader("Content-Disposition", `attachment; filename=${school.name}_staff.xlsx`);
 
     // Write the Excel file to the response
     await workbook.xlsx.write(res);

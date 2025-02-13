@@ -471,6 +471,8 @@ const Viewdata = () => {
   // Helper function to reset state
 
   const downloadExcel = async () => {
+
+   
     try {
       if (currRole == "student") {
         try {
@@ -483,12 +485,24 @@ const Viewdata = () => {
               responseType: "blob", // Set response type to blob for file download
             }
           );
+          const contentDisposition = response.headers['content-disposition'];
+
+          let filename = "Student_Data.xlsx"
+          if (contentDisposition) {
+            // Regular expression se filename extract karna
+            const filenameMatch = contentDisposition.match(/filename="?([^"]+)"?/);
+             filename = filenameMatch ? filenameMatch[1] : 'default_filename.xlsx';
+      
+            console.log(filename); // Output: Test_staff.xlsx
+          } else {
+            console.log('Filename not found in headers');
+          }
 
           const url =
             window.URL.createObjectURL(new Blob([response.data])) || null;
           const link = document.createElement("a");
           link.href = url;
-          link.setAttribute("download", "Student_Data.xlsx");
+          link.setAttribute("download", filename);
           document.body.appendChild(link);
           link.click();
         } catch (error) {
@@ -505,6 +519,7 @@ const Viewdata = () => {
       }
       if (currRole == "staff") {
         try {
+          console.log("Hello")
           const response = await axios.get(
             `/user/staff/excel/data/${currSchool}?status=${status}`,
             {
@@ -514,12 +529,25 @@ const Viewdata = () => {
               responseType: "blob", // Set response type to blob for file download
             }
           );
+          const contentDisposition = response.headers['content-disposition'];
+
+          let filename = "Staff.xlsx"
+          if (contentDisposition) {
+            // Regular expression se filename extract karna
+            const filenameMatch = contentDisposition.match(/filename="?([^"]+)"?/);
+             filename = filenameMatch ? filenameMatch[1] : 'default_filename.xlsx';
+      
+            console.log(filename); // Output: Test_staff.xlsx
+          } else {
+            console.log('Filename not found in headers');
+          }
+
 
           const url =
             window.URL.createObjectURL(new Blob([response.data])) || null;
           const link = document.createElement("a");
           link.href = url;
-          link.setAttribute("download", "Student_Data.xlsx");
+          link.setAttribute("download", filename);
           document.body.appendChild(link);
           link.click();
         } catch (error) {
