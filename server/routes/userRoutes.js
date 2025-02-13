@@ -697,7 +697,7 @@ router.post("/student-login", async (req, res) => {
     }
     usernameField = usernameField.toLowerCase();
 
-    const passwordField = school.studentLogin.password;
+    let passwordField = school.studentLogin.password;
 
     // Sanitized username and password
     const sanitizedUserName = sanitizeInput(userName);
@@ -729,7 +729,7 @@ router.post("/student-login", async (req, res) => {
     }
 
     if(school.studentLogin.customPassword){
-     
+     console.log("helllo")
       
       if(passwordField === password){
         return res.json({
@@ -743,6 +743,11 @@ router.post("/student-login", async (req, res) => {
 
 
     // Password check karo (normal field se)
+
+    console.log(passwordField)
+    if(passwordField === "Student Name"){
+      passwordField = "name"
+    }
     if (
       sanitizeInput(student[passwordField]) === sanitizedPassword ||
       sanitizeInput(student.extraFields.get(passwordField)) === sanitizedPassword
