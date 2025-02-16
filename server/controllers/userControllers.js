@@ -1491,6 +1491,7 @@ exports.allSchool = catchAsyncErron(async (req, res, next) => {
       extraFields: school?.extraFields,
       extraFieldsStaff: school?.extraFieldsStaff,
       studentLogin: school?.studentLogin,
+      staffLogin: school?.staffLogin,
       createdAt: school.createdAt,
       showPassword: school.showPassword ? school.showPassword : "No Availble",
       // Add other school properties as needed.

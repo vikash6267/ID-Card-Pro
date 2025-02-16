@@ -25,13 +25,13 @@ const SharePopup = ({ link, onClose,currSchool }) => {
   };
 
 
-  const handleShare2 = () => {
+  const handleShare2 = (type) => {
     if (navigator.share) {
       navigator
         .share({
           title: "Check this out!",
           text: "Here's the link:",
-          url: `https://cardpro.co.in/studentlogin?schoolid=${currSchool}`,
+          url: `https://cardpro.co.in/studentlogin?schoolid=${currSchool}&type=${type}`,
         })
         .then(() => console.log("Shared successfully"))
         .catch((error) => console.error("Error sharing:", error));
@@ -53,10 +53,16 @@ const SharePopup = ({ link, onClose,currSchool }) => {
             Share
           </button>
           <button
-            onClick={handleShare2}
+            onClick={()=>handleShare2("student")}
             className="mt-2 bg-blue-500 text-white px-4 py-2 rounded"
           >
            Student Login Share
+          </button>
+          <button
+               onClick={()=>handleShare2("student")}
+            className="mt-2 bg-blue-500 text-white px-4 py-2 rounded"
+          >
+           Staff Login Share
           </button>
         </div>
         <div className="relative">

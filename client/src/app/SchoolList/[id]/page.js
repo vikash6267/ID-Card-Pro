@@ -25,6 +25,7 @@ const EditSchool = ({ params }) => {
   const [requiredFieldsStaff, setrequiredFieldsStaff] = useState(["Name"]);
 
   const [loginDeatils,setLoginDetails]  = useState({})
+  const [staffLoginDeatils,setStaffLoginDetails]  = useState({})
   // Student For adddition
   const [extraFields, setExtraFields] = useState([]);
   const [newFieldName, setNewFieldName] = useState("");
@@ -57,6 +58,7 @@ const EditSchool = ({ params }) => {
         setExtraFields(school?.extraFields);
         setExtraFieldsStaff(school?.extraFieldsStaff);
         setLoginDetails(school?.studentLogin);
+        setStaffLoginDetails(school?.staffLogin);
 
       }
     }
@@ -476,8 +478,27 @@ const EditSchool = ({ params }) => {
       </p>
     </div>
 
+    <div className="max-w-md mx-auto bg-white shadow-lg rounded-lg p-6 border border-gray-200">
+      <h2 className="text-2xl font-semibold text-gray-800 mb-4">Staff Login</h2>
+      
+      <div className="flex items-center gap-2 text-gray-700 mb-2">
+        <FaUser className="text-blue-500" />
+        <p className="font-medium">Username: <span className="font-semibold">{staffLoginDeatils?.userName || "N/A"}</span></p>
+      </div>
 
-            <SchoolLoginFields schoolId={schoolId} setLoginDetails={setLoginDetails} />
+      <div className="flex items-center gap-2 text-gray-700 mb-2">
+        <FaLock className="text-red-500" />
+        <p className="font-medium">Password: <span className="font-semibold">{staffLoginDeatils?.password || "******"}</span></p>
+      </div>
+
+      <p className={`mt-4 text-sm font-medium p-2 rounded-md ${loginDeatils?.customPassword ? "bg-yellow-200 text-yellow-900" : "bg-green-200 text-green-900"}`}>
+        {staffLoginDeatils?.customPassword ? "This is a custom password" : "Using default password"}
+      </p>
+    </div>
+
+
+
+            <SchoolLoginFields schoolId={schoolId} studentLogin={loginDeatils} staffLogin={staffLoginDeatils}  setLoginDetails={setLoginDetails} setStaffLoginDetails={setStaffLoginDetails} />
             <button
               onClick={handleSubmit}
               className="w-full px-6 py-3 mt-6 text-sm font-medium tracking-wide text-white capitalize transition-colors duration-300 transform bg-blue-500 rounded-lg hover:bg-blue-400 focus:outline-none focus:ring focus:ring-blue-300 focus:ring-opacity-50"
