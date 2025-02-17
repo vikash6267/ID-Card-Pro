@@ -7,14 +7,14 @@ import Swal from "sweetalert2";
 import { FaFilePdf, FaDownload, FaSpinner } from "react-icons/fa"; // Importing icons
 import Nav from "../components/Nav";
 
-function page() {
+function Page() {  // Renamed from "page" to "Page"
   const { user } = useSelector((state) => state.user);
 
-  // useEffect(() => {
-  //   if (!user) {
-  //     redirect("/");
-  //   }
-  // }, [user]);
+  useEffect(() => {
+    if (!user) {
+      redirect("/"); // This is commented out, you can uncomment if necessary
+    }
+  }, [user]);
 
   const [loading, setLoading] = useState(false);
 
@@ -105,4 +105,4 @@ function page() {
   );
 }
 
-export default page;
+export default Page;  // Renamed to "Page"
