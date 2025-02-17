@@ -12,17 +12,21 @@ const UsersSchoolsData = () => {
   const [openUserId, setOpenUserId] = useState(null); // State to track open/close user data
 
   useEffect(() => {
-    axios
-      .get("/user/users-data")
-      .then((response) => {
+    const fetchData = async () => {
+      try {
+        const response = await axios.get("/user/users-data");
+        
         setData(response.data.data);
         setLoading(false);
-      })
-      .catch((err) => {
+      } catch (err) {
         setError(err.message);
         setLoading(false);
-      });
+      }
+    };
+  
+    fetchData();
   }, []);
+  
 
   if (loading)
     return (

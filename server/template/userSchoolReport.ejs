@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>School Report</title>
+  <style>
+    /* General Page Setup */
+    @page {
+      size: A4 landscape; /* Landscape format */
+      margin: 20mm;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f4f4f4;
+    }
+
+    .header {
+      background-color: #4CAF50;
+      color: white;
+      padding: 20px;
+      text-align: center;
+      border-radius: 5px;
+      margin-bottom: 20px;
+    }
+
+    .header h1 {
+      margin: 0;
+      font-size: 24px;
+    }
+
+    .content {
+      padding: 20px;
+      background-color: white;
+      border-radius: 5px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .school-info {
+      margin-top: 20px;
+      border: 1px solid #ddd;
+      padding: 15px;
+      margin-bottom: 20px;
+      border-radius: 5px;
+      background-color: #f9f9f9;
+    }
+
+    .school-info h3 {
+      margin: 0;
+      color: #333;
+      font-size: 20px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      border: 1px solid #ddd;
+    }
+
+    table th, table td {
+      padding: 12px;
+      text-align: left;
+      font-size: 14px;
+      border: 1px solid #ddd;
+    }
+
+    table th {
+      background-color: #f2f2f2;
+      color: #333;
+    }
+
+    table td {
+      background-color: #ffffff;
+      color: #555;
+    }
+
+    table tr:nth-child(even) td {
+      background-color: #f9f9f9;
+    }
+
+    .grand-total {
+      font-weight: bold;
+      background-color: #e9e9e9;
+    }
+
+    /* Styling for Printing */
+    @media print {
+      body {
+        background-color: white;
+      }
+
+      .content {
+        box-shadow: none;
+      }
+
+      .header {
+        border-radius: 0;
+        padding: 10px;
+        font-size: 18px;
+      }
+
+      .school-info h3 {
+        font-size: 16px;
+      }
+
+      table th, table td {
+        font-size: 12px;
+        padding: 10px;
+      }
+
+      table {
+        margin-bottom: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>School Data Report</h1>
+    <p class="user-info">User: <%= userName %> (Email: <%= userEmail %>)</p>
+  </div>
+
+  <div class="content">
+    <% schools.forEach(school => { %>
+      <div class="school-info">
+        <h3><%= school.schoolName %> (Status: <%= school.schoolStatus %>)</h3>
+
+        <!-- School Data Table -->
+        <table>
+          <thead>
+            <tr>
+              <th>School Name</th>
+              <th>Student | Subtotal</th>
+              <th>Staff | Subtotal</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Pending</td>
+              <td><%= school.studentStatusCount["Panding"] %></td>
+              <td><%= school.staffStatusCount["Panding"] %></td>
+            </tr>
+            <tr>
+              <td>Ready to Print</td>
+              <td><%= school.studentStatusCount["Ready to print"] %></td>
+              <td><%= school.staffStatusCount["Ready to print"] %></td>
+            </tr>
+            <tr>
+              <td>Printed</td>
+              <td><%= school.studentStatusCount["Printed"] %></td>
+              <td><%= school.staffStatusCount["Printed"] %></td>
+            </tr>
+            <tr class="grand-total">
+              <td><strong>Grand Total</strong></td>
+              <td><strong><%= school.studentStatusCount["Panding"] + school.studentStatusCount["Ready to print"] + school.studentStatusCount["Printed"] %></strong></td>
+              <td><strong><%= school.staffStatusCount["Panding"] + school.staffStatusCount["Ready to print"] + school.staffStatusCount["Printed"] %></strong></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    <% }); %>
+  </div>
+</body>
+</html>

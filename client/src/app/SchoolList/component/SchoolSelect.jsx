@@ -93,7 +93,7 @@ useEffect(() => {
         className="bg-blue-600 text-white px-5 py-2 rounded-md flex items-center gap-2 hover:bg-blue-700 transition"
       >
         <FaUser />
-        {isStudentLogin ? "Open Student Login Fields" : "Open Staff Login Fields"}
+        {isStudentLogin ? "Open  Login Fields" : "Open  Login Fields"}
       </button>
 
       {isModalOpen && (

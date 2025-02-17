@@ -21,6 +21,9 @@ const yazl = require("yazl");
 const bcrypt = require("bcrypt");
 const archiver = require("archiver");
 const axios = require("axios");
+const puppeteer = require('puppeteer');
+const ejs = require('ejs');
+
 
 // var nodeExcel = require('excel-export');
 // const generateTokens = require("../utils/generateTokens");
@@ -3970,3 +3973,168 @@ exports.getUsersSchoolsData = async (req, res) => {
     return res.status(500).json({ success: false, message: "Error fetching data", error });
   }
 };
+
+
+
+exports.generateUserSchoolPdf = async (req, res) => {
+  try {
+    const userId = req.id; // User ID from URL
+
+    // Ensure uploads directory exists
+    const uploadsDir = path.join(__dirname, '..', 'uploads');
+    if (!fs.existsSync(uploadsDir)) {
+      fs.mkdirSync(uploadsDir, { recursive: true });
+    }
+
+    // Find the user by ID
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    // Get schools related to this user
+    const schools = await School.find({ user: user._id });
+    if (!schools.length) {
+      return res.status(404).json({
+        success: false,
+        message: "No schools found for this user",
+      });
+    }
+
+    const schoolDataArray = await Promise.all(
+      schools.map(async (school) => {
+        const schoolId = school._id;
+
+        // Aggregations for student and staff counts
+        const studentAggregation = await Student.aggregate([
+          { $match: { school: schoolId } },
+          { $group: { _id: "$status", count: { $sum: 1 } } },
+        ]);
+
+        const staffAggregation = await Staff.aggregate([
+          { $match: { school: schoolId } },
+          { $group: { _id: "$status", count: { $sum: 1 } } },
+        ]);
+
+        const formatAggregationData = (aggregation) => {
+          return aggregation.reduce((acc, curr) => {
+            acc[curr._id] = curr.count;
+            return acc;
+          }, { Panding: 0, "Ready to print": 0, Printed: 0 });
+        };
+
+        return {
+          schoolId: schoolId,
+          schoolName: school.name,
+          studentStatusCount: formatAggregationData(studentAggregation),
+          staffStatusCount: formatAggregationData(staffAggregation),
+        };
+      })
+    );
+
+    // Create a new Excel workbook
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('School Data Report', {
+      pageSetup: {
+        paperSize: 9, // A4
+        orientation: 'landscape', // Landscape mode
+      },
+    });
+
+    // Define the headers
+    worksheet.columns = [
+      { header: 'School Name', key: 'schoolName', width: 30 },
+      { header: 'Student Pending', key: 'studentPending', width: 15 },
+      { header: 'Student Ready to Print', key: 'studentReady', width: 20 },
+      { header: 'Student Printed', key: 'studentPrinted', width: 15 },
+      { header: 'Student Subtotal', key: 'studentSubtotal', width: 20 },
+      { header: 'Staff Pending', key: 'staffPending', width: 15 },
+      { header: 'Staff Ready to Print', key: 'staffReady', width: 20 },
+      { header: 'Staff Printed', key: 'staffPrinted', width: 15 },
+      { header: 'Staff Subtotal', key: 'staffSubtotal', width: 20 },
+    ];
+
+    // Add data for each school
+    let grandTotal = {
+      studentPending: 0,
+      studentReady: 0,
+      studentPrinted: 0,
+      studentSubtotal: 0,
+      staffPending: 0,
+      staffReady: 0,
+      staffPrinted: 0,
+      staffSubtotal: 0,
+    };
+
+    schoolDataArray.forEach((school) => {
+      const studentSubtotal =
+        school.studentStatusCount['Panding'] +
+        school.studentStatusCount['Ready to print'] +
+        school.studentStatusCount['Printed'];
+      const staffSubtotal =
+        school.staffStatusCount['Panding'] +
+        school.staffStatusCount['Ready to print'] +
+        school.staffStatusCount['Printed'];
+
+      worksheet.addRow({
+        schoolName: school.schoolName,
+        studentPending: school.studentStatusCount['Panding'],
+        studentReady: school.studentStatusCount['Ready to print'],
+        studentPrinted: school.studentStatusCount['Printed'],
+        studentSubtotal: studentSubtotal,
+        staffPending: school.staffStatusCount['Panding'],
+        staffReady: school.staffStatusCount['Ready to print'],
+        staffPrinted: school.staffStatusCount['Printed'],
+        staffSubtotal: staffSubtotal,
+      });
+
+      // Update grand total
+      grandTotal.studentPending += school.studentStatusCount['Panding'];
+      grandTotal.studentReady += school.studentStatusCount['Ready to print'];
+      grandTotal.studentPrinted += school.studentStatusCount['Printed'];
+      grandTotal.studentSubtotal += studentSubtotal;
+
+      grandTotal.staffPending += school.staffStatusCount['Panding'];
+      grandTotal.staffReady += school.staffStatusCount['Ready to print'];
+      grandTotal.staffPrinted += school.staffStatusCount['Printed'];
+      grandTotal.staffSubtotal += staffSubtotal;
+    });
+
+    // Add grand total row
+    worksheet.addRow({
+      schoolName: 'Grand Total',
+      studentPending: grandTotal.studentPending,
+      studentReady: grandTotal.studentReady,
+      studentPrinted: grandTotal.studentPrinted,
+      studentSubtotal: grandTotal.studentSubtotal,
+      staffPending: grandTotal.staffPending,
+      staffReady: grandTotal.staffReady,
+      staffPrinted: grandTotal.staffPrinted,
+      staffSubtotal: grandTotal.staffSubtotal,
+    });
+
+    // Generate the Excel file
+    const filePath = path.join(uploadsDir, 'school_report.xlsx');
+    await workbook.xlsx.writeFile(filePath);
+
+    // Send the file to the client
+    res.download(filePath, 'school_report.xlsx', (err) => {
+      if (err) {
+        console.error('Error sending file:', err);
+        res.status(500).json({ success: false, message: 'Error generating report' });
+      }
+
+      // Delete the file after download
+      fs.unlink(filePath, (unlinkErr) => {
+        if (unlinkErr) {
+          console.error('Error deleting file:', unlinkErr);
+        }
+      });
+    });
+
+  } catch (error) {
+    console.error('Error generating Excel:', error);
+    res.status(500).json({ success: false, message: 'Error generating Excel', error });
+  }
+};
+

@@ -66,6 +66,7 @@ const {
   StaffSignature,
   StaffSignatureDownload,
   getUsersSchoolsData,
+  generateUserSchoolPdf,
 } = require("../controllers/userControllers");
 const isAuthenticated = require("../middlewares/auth");
 const router = express.Router();
@@ -167,6 +168,7 @@ router.post("/staff/images/:id", isAuthenticated, StaffNewAvatarsDownload);
 router.post("/staff/signatureNew/:id", isAuthenticated, StaffSignatureDownload);
 
 router.get("/search/student/:id", isAuthenticated, SerchStudent);
+router.get("/userdata", isAuthenticated, generateUserSchoolPdf);
 router.get("/users-data",  getUsersSchoolsData);
 
 // router.post("student/avatars", upload , isAuthenticated ,StudentsAvatars);
