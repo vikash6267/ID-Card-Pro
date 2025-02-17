@@ -1247,7 +1247,7 @@ const Viewdata = () => {
     <div>
       <Nav />
 
-      <section className="bg-white dark:bg-gray-900 py-10  ">
+      <section className="bg-white min-h-screen dark:bg-gray-900 py-10  ">
         {!submitted && (
           <div className="container flex flex-col items-center justify-center px-6 mx-auto">
             <div className="flex items-center justify-center mt-6">

@@ -4043,7 +4043,7 @@ exports.generateUserSchoolPdf = async (req, res) => {
 
     // Define the headers
     worksheet.columns = [
-      { header: 'School Name', key: 'schoolName', width: 30 },
+      { header: 'Vendor Name', key: 'schoolName', width: 30 },
       { header: 'Student Pending', key: 'studentPending', width: 15 },
       { header: 'Student Ready to Print', key: 'studentReady', width: 20 },
       { header: 'Student Printed', key: 'studentPrinted', width: 15 },
@@ -4053,6 +4053,18 @@ exports.generateUserSchoolPdf = async (req, res) => {
       { header: 'Staff Printed', key: 'staffPrinted', width: 15 },
       { header: 'Staff Subtotal', key: 'staffSubtotal', width: 20 },
     ];
+
+    // Add header row with background color, bold text, and larger font size
+    worksheet.getRow(1).font = { bold: true, size: 16 }; // Bold and larger font size
+    worksheet.getRow(1).eachCell((cell) => {
+      cell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FF4CAF50' }, // Green background
+      };
+      cell.alignment = { horizontal: 'center', vertical: 'middle' }; // Center alignment
+      cell.font = { color: { argb: 'FFFFFFFF' } }; // White text color
+    });
 
     // Add data for each school
     let grandTotal = {
@@ -4100,7 +4112,7 @@ exports.generateUserSchoolPdf = async (req, res) => {
       grandTotal.staffSubtotal += staffSubtotal;
     });
 
-    // Add grand total row
+    // Add subtotal and grand total row with color
     worksheet.addRow({
       schoolName: 'Grand Total',
       studentPending: grandTotal.studentPending,
@@ -4113,6 +4125,42 @@ exports.generateUserSchoolPdf = async (req, res) => {
       staffSubtotal: grandTotal.staffSubtotal,
     });
 
+    worksheet.getRow(worksheet.lastRow.number).font = { bold: true, size: 12 };
+    worksheet.getRow(worksheet.lastRow.number).eachCell((cell) => {
+      cell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFFFC107' }, // Yellow background for grand total
+      };
+      cell.alignment = { horizontal: 'center', vertical: 'middle' };
+    });
+
+    // Apply distinct background color for subtotal columns with updated visibility
+    worksheet.getColumn(5).eachCell((cell) => {
+      cell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFFFEB3B' }, // Brighter yellow for subtotal
+      };
+      cell.font = { color: { argb: 'FF000000' } }; // Dark text for better contrast
+    });
+
+    worksheet.getColumn(9).eachCell((cell) => {
+      cell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FFFFEB3B' }, // Brighter yellow for subtotal
+      };
+      cell.font = { color: { argb: 'FF000000' } }; // Dark text for better contrast
+    });
+
+    // Apply center alignment to all cells
+    worksheet.eachRow((row) => {
+      row.eachCell((cell) => {
+        cell.alignment = { horizontal: 'center', vertical: 'middle' };
+      });
+    });
+
     // Generate the Excel file
     const filePath = path.join(uploadsDir, 'school_report.xlsx');
     await workbook.xlsx.writeFile(filePath);
@@ -4122,14 +4170,18 @@ exports.generateUserSchoolPdf = async (req, res) => {
       if (err) {
         console.error('Error sending file:', err);
         res.status(500).json({ success: false, message: 'Error generating report' });
+      } else {
+        // After file is downloaded, delete it from the server
+        setTimeout(() => {
+          fs.unlink(filePath, (deleteErr) => {
+            if (deleteErr) {
+              console.error('Error deleting file:', deleteErr);
+            } else {
+              console.log('File deleted successfully.');
+            }
+          });
+        }, 5000); // 5 seconds delay before deletion
       }
-
-      // Delete the file after download
-      fs.unlink(filePath, (unlinkErr) => {
-        if (unlinkErr) {
-          console.error('Error deleting file:', unlinkErr);
-        }
-      });
     });
 
   } catch (error) {
@@ -4137,4 +4189,6 @@ exports.generateUserSchoolPdf = async (req, res) => {
     res.status(500).json({ success: false, message: 'Error generating Excel', error });
   }
 };
+
+
 

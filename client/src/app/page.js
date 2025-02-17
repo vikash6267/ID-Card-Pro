@@ -15,6 +15,7 @@ import {
 } from "react-icons/fa"; // Example icons
 import { FaFileExcel, FaUser } from "react-icons/fa";
 import { FaEnvelope } from "react-icons/fa"; // Importing React Icons
+import { LiaSolarPanelSolid } from "react-icons/lia";
 
 export default function Home() {
   const router = useRouter();
@@ -246,6 +247,16 @@ export default function Home() {
                         className="lg:text-2xl text-xl font-semibold hover:text-white rounded-full py-1.5 px-6 cursor-pointer bg-gray-900 bg-opacity-90 flex items-center justify-center gap-2"
                       >
                         <FaFileExcel /> Import Data
+                      </Link>
+                    </div>
+                  )}
+                  {user?.role !== "school" && (
+                    <div>
+                      <Link
+                        href="/dpanel"
+                        className="lg:text-2xl text-xl font-semibold hover:text-white rounded-full py-1.5 px-6 cursor-pointer bg-gray-900 bg-opacity-90 flex items-center justify-center gap-2"
+                      >
+                        <LiaSolarPanelSolid  /> D Panel
                       </Link>
                     </div>
                   )}
