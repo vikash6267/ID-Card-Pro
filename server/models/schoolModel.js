@@ -61,8 +61,7 @@ const schoolModel = mongoose.Schema(
       default: false,
     },
     user: { type: mongoose.Schema.Types.ObjectId, ref: "user" },
-    cardTemplate: { type: mongoose.Schema.Types.Mixed, default: {} } // Allows any object structure
-,
+    cardTemplate: { type: mongoose.Schema.Types.Mixed, default: {} }, // Allows any object structure
     requiredFieldsStaff: [],
     requiredFields: [],
     extraFields: [
@@ -82,11 +81,9 @@ const schoolModel = mongoose.Schema(
     studentLogin: {
       userName: {
         type: String,
-      
       },
       password: {
         type: String,
-       
       },
       customPassword: {
         type: Boolean,
@@ -96,11 +93,9 @@ const schoolModel = mongoose.Schema(
     staffLogin: {
       userName: {
         type: String,
-      
       },
       password: {
         type: String,
-       
       },
       customPassword: {
         type: Boolean,

@@ -425,35 +425,7 @@ exports.userLongOut = catchAsyncErron(async (req, res, next) => {
   });
 });
 
-// exports.refresh = catchAsyncErron(async (req, res, next) => {
-//   const token =
-//     req.cookies?.refreshToken ||
-//     req.header("Authorization")?.replace("Bearer ", "");
 
-//   if (!token) {
-//     return next(new errorHandler("Unauthorized request", 401));
-//   }
-
-//   // check user in cache
-//   const session = await redis.get(decoded._id);
-//   if (!session) {
-//     return next(new errorHandler("Could Not Refresh Token", 400));
-//   }
-
-//   const user = JSON.parse(session);
-// });
-
-// exports.addSchool = catchAsyncErron(async (req, res, next) => {
-//   const id = req.id;
-//   const schoolName = req.body.schoolName;
-
-//   res.status(200)
-//     .json({
-//       succcess: true,
-//       message: "successfully Added Name",
-//       user: user
-//     });
-// });
 
 exports.userAvatar = catchAsyncErron(async (req, res, next) => {
   const file = req.file;
@@ -2512,71 +2484,6 @@ exports.deleteStaff = catchAsyncErron(async (req, res, next) => {
   });
 });
 
-// exports.studentListExcel = catchAsyncErron(async (req, res, next) => {
-//   const schoolID = req.params.id;
-
-//   try {
-//       // Find all students belonging to the specified school
-//       const students = await Student.find({ school: schoolID });
-
-//       if (students.length === 0) {
-//           return res.status(404).send("No students found for the provided school ID.");
-//       }
-
-//       // Format student data into an array of arrays (rows)
-//       const rows = students.map(student => [
-//           student.name,
-//           student.fatherName,
-//           student.motherName,
-//           student.class,
-//           student.section,
-//           student.contact,
-//           student.address,
-//           // Add other fields as needed
-//       ]);
-
-//       // Add headers for each column
-//       const headers = [
-//           "Student Name",
-//           "Father's Name",
-//           "Mother's Name",
-//           "Class",
-//           "Section",
-//           "Contact",
-//           "Address",
-//           // Add other headers as needed
-//       ];
-
-//       // Insert headers as the first row
-//       rows.unshift(headers);
-
-//       // Create a new workbook
-//       const wb = xlsx.utils.book_new();
-
-//       // Add a worksheet to the workbook
-//       const ws = xlsx.utils.aoa_to_sheet(rows);
-
-//       // Add the worksheet to the workbook
-//       xlsx.utils.book_append_sheet(wb, ws, "Students");
-
-//       // Write the workbook to a file
-//       const fileName = `students_${schoolID}.xlsx`;
-//       const filePath = `./${fileName}`;
-//       xlsx.writeFile(wb, filePath);
-//       console.log(fileName)
-//       console.log(filePath)
-
-//       // Send the file to the user as an attachment
-//       res.download(filePath, fileName, () => {
-//           // After the file is sent, delete it from the server
-//           fs.unlinkSync(filePath);
-//       });
-
-//   } catch (err) {
-//       console.error("Error downloading students:", err);
-//       return res.status(500).send("Error downloading students.");
-//   }
-// });
 
 exports.studentListExcel = catchAsyncErron(async (req, res, next) => {
   const schoolID = req.params.id;
@@ -2847,53 +2754,6 @@ exports.GraphData = catchAsyncErron(async (req, res, next) => {
   }
 });
 
-// exports.StudentsAvatars = catchAsyncErron(async (req, res, next) => {
-//   const studentId = req.params.id;
-
-//   const school = await Student.findById(studentId);
-
-//   const files = req.files;
-//   const students = await files.map(async (file) => {
-//     const fileName = path.parse(file.originalname).name;
-//     console.log(fileName);
-//     const currStudent = await Student.findOne({
-//       school: studentId,
-//       photoName: fileName,
-//     });
-//     console.log(currStudent);
-//     if (currStudent) {
-//       if (currStudent.avatar.publicId !== "") {
-//         await cloudinary.v2.uploader.destroy(
-//           currStudent.avatar.publicId,
-//           (error, result) => {
-//             if (error) {
-//               console.error("Error deleting file from Cloudinary:", error);
-//             } else {
-//               console.log("File deleted successfully:", result);
-//             }
-//           }
-//         );
-//       }
-//       const fileUri = getDataUri(file);
-//       const myavatar = await cloudinary.v2.uploader.upload(fileUri.content);
-
-//       currStudent.avatar = {
-//         publicId: myavatar.public_id,
-//         url: myavatar.url,
-//       };
-//       await currStudent.save();
-//       console.log(currStudent)
-//       return currStudent;
-//     }
-//   });
-//   console.log(students)
-//   // Respond with the updated student information.
-//   res.status(200).json({
-//     success: true,
-//     message: "send photos",
-//     students
-//   });
-// });
 
 exports.StudentsAvatars = catchAsyncErron(async (req, res, next) => {
   console.log("enter");
@@ -3199,274 +3059,6 @@ exports.StaffSignature = catchAsyncErron(async (req, res, next) => {
     res.end();
   }
 });
-
-// exports.StaffAvatars = catchAsyncErron(async (req, res, next) => {
-//   const studentId = req.params.id;
-
-//   // const school = await Student.findById(studentId);
-
-//   const files = req.files;
-//   console.log(files);
-//   const staffs = await Promise.all(
-//     files.map(async (file) => {
-//       const fileName = path.parse(file.originalname).name;
-//       console.log(fileName);
-//       const currStaff = await Staff.findOne({
-//         school: studentId,
-//         photoName: fileName,
-//       });
-//       console.log(currStaff);
-//       if (currStaff) {
-//         if (currStaff.avatar.publicId !== "") {
-//           await cloudinary.v2.uploader.destroy(
-//             currStaff.avatar.publicId,
-//             (error, result) => {
-//               if (error) {
-//                 console.error("Error deleting file from Cloudinary:", error);
-//               } else {
-//                 console.log("File deleted successfully:", result);
-//               }
-//             }
-//           );
-//         }
-//         const fileUri = getDataUri(file);
-//         const myavatar = await cloudinary.v2.uploader.upload(fileUri.content);
-
-//         currStaff.avatar = {
-//           publicId: myavatar.public_id,
-//           url: myavatar.secure_url,
-//         };
-//         await currStaff.save();
-//         console.log(currStaff);
-//         return currStaff;
-//       }
-//     })
-//   );
-//   console.log(staffs);
-//   // Respond with the updated student information.
-//   res.status(200).json({
-//     success: true,
-//     message: "send photos",
-//     staffs,
-//   });
-// });
-
-// exports.ExcelStudentData = catchAsyncErron(async (req, res, next) => {
-//   try {
-//     console.log("hit")
-//     let schoolID = req.params.id
-//     let { status } = req.query;
-//     console.log(status)
-//     // Fetch all users from the database
-//     const users = await Student.find({status:status,school:schoolID});
-//     // console.log(users)
-
-//     // Create a new workbook and worksheet
-//     const workbook = new ExcelJS.Workbook();
-//     const worksheet = workbook.addWorksheet('Users');
-
-//     // Define worksheet headers
-//     worksheet.columns = [
-//       { header: 'Name', key: 'name', width: 20 },
-//       { header: 'Father Name', key: 'fatherName', width: 20 },
-//       { header: 'Mother Name', key: 'motherName', width: 20 },
-//       { header: 'Date of Birth', key: 'dob', width: 15 },
-//       { header: 'Contact', key: 'contact', width: 15 },
-//       { header: 'Email', key: 'email', width: 20 },
-//       { header: 'Address', key: 'address', width: 30 },
-//       { header: 'Roll No', key: 'rollNo', width: 30 },
-//       { header: 'Class', key: 'class', width: 30 },
-//       { header: 'Session', key: 'session', width: 30 },
-//       { header: 'AdmissionNo', key: 'admissionNo', width: 30 },
-//       { header: 'Bus No', key: 'busNo', width: 30 },
-//       { header: 'BloodGroup', key: 'bloodGroup', width: 30 },
-//       { header: 'Student ID', key: 'studentID', width: 30 },
-//       { header: 'Aadhar No', key: 'aadharNo', width: 30 },
-//       { header: 'Ribbion Colour', key: 'ribbionColour', width: 30 },
-//       { header: 'Route No', key: 'routeNo', width: 30 },
-//       // Add more columns as needed
-//     ];
-
-//     // Populate worksheet with user data
-//     users.forEach(user => {
-//       console.log("run loop")
-//       worksheet.addRow({
-//         name: user.name,
-//         fatherName: user.fatherName,
-//         motherName: user.motherName,
-//         dob: user.dob,
-//         contact: user.contact,
-//         email: user.email,
-//         address: user.address,
-//         address: user.address,
-//         rollNo: user.rollNo,
-//         class: user.class,
-//         session: user.session,
-//         admissionNo: user.admissionNo,
-//         busNo: user.busNo,
-//         bloodGroup: user.bloodGroup,
-//         studentID: user.studentID,
-//         aadharNo: user.aadharNo,
-//         ribbionColour: user.ribbionColour,
-//         routeNo: user.routeNo,
-//         // Add more fields as needed
-//       });
-//     });
-
-//     // Set response headers
-//     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-//     res.setHeader('Content-Disposition', 'attachment; filename="student.xlsx"');
-
-//     // Serialize workbook to response
-//     await workbook.xlsx.write(res);
-
-//     res.end(workbook);
-
-//     // End response
-//     // res.send({message:"genetea suceess"})
-//   } catch (error) {
-//     console.error('Error downloading users:', error);
-//     res.status(500).send('Error downloading users');
-//   }
-// });
-
-// exports.ExcelStudentData = catchAsyncErron(async (req, res, next) => {
-//   try {
-//     console.log("hit")
-//     let schoolID = req.params.id;
-//     let { status } = req.body; // Extract status from request body
-//     console.log(status);
-
-//     // Fetch all users from the database
-//     const users = await Student.find({ status: status, school: schoolID });
-
-//     // Create a new workbook and worksheet
-//     const workbook = new ExcelJS.Workbook();
-//     const worksheet = workbook.addWorksheet('Users');
-
-//     // Define worksheet headers
-//     worksheet.columns = [
-//       { header: 'Name', key: 'name', width: 20 },
-//       { header: 'Father Name', key: 'fatherName', width: 20 },
-//       { header: 'Mother Name', key: 'motherName', width: 20 },
-//       { header: 'Date of Birth', key: 'dob', width: 15 },
-//       { header: 'Contact', key: 'contact', width: 15 },
-//       { header: 'Email', key: 'email', width: 20 },
-//       { header: 'Address', key: 'address', width: 30 },
-//       { header: 'Roll No', key: 'rollNo', width: 30 },
-//       { header: 'Class', key: 'class', width: 30 },
-//       { header: 'Session', key: 'session', width: 30 },
-//       { header: 'AdmissionNo', key: 'admissionNo', width: 30 },
-//       { header: 'Bus No', key: 'busNo', width: 30 },
-//       { header: 'BloodGroup', key: 'bloodGroup', width: 30 },
-//       { header: 'Student ID', key: 'studentID', width: 30 },
-//       { header: 'Aadhar No', key: 'aadharNo', width: 30 },
-//       { header: 'Ribbion Colour', key: 'ribbionColour', width: 30 },
-//       { header: 'Route No', key: 'routeNo', width: 30 },
-//       // Add more columns as needed
-//     ];
-
-//     // Populate worksheet with user data
-//     users.forEach(user => {
-//       console.log("run loop")
-//       worksheet.addRow({
-//         name: user.name,
-//         fatherName: user.fatherName,
-//         motherName: user.motherName,
-//         dob: user.dob,
-//         contact: user.contact,
-//         email: user.email,
-//         address: user.address,
-//         address: user.address,
-//         rollNo: user.rollNo,
-//         class: user.class,
-//         session: user.session,
-//         admissionNo: user.admissionNo,
-//         busNo: user.busNo,
-//         bloodGroup: user.bloodGroup,
-//         studentID: user.studentID,
-//         aadharNo: user.aadharNo,
-//         ribbionColour: user.ribbionColour,
-//         routeNo: user.routeNo,
-//         // Add more fields as needed
-//       });
-//     });
-
-//     // Set response headers
-//     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-//     res.setHeader('Content-Disposition', 'attachment; filename="users.xlsx"');
-
-//     // Serialize workbook to response
-//     await workbook.xlsx.write(res);
-
-//     // End response
-//     res.end();
-//   } catch (error) {
-//     console.error('Error downloading users:', error);
-//     res.status(500).send('Error downloading users');
-//   }
-// });
-
-//
-
-// exports.StaffAvatarsDownload = catchAsyncErron(async (req, res, next) => {
-//   const studentId = req.params.id;
-//   let { status } = req.body;
-
-//   const studetsImages = await Student.find({school:studentId, status:status});
-
-//     // Extract avatars from the results
-//     const avatars = studentsAvatars.map(student => student.avatar);
-
-//     // Set response headers
-//     res.setHeader('Content-Type', 'application/json');
-
-//     // Send avatars in the response
-//     res.status(200).json(avatars);
-// });
-
-// exports.StaffAvatarsDownload = catchAsyncErron(async (req, res, next) => {
-//   console.log("hit");
-//   const studentId = req.params.id;
-//   let { status } = req.body;
-//   console.log(status);
-
-//   try {
-//     // Fetch students' avatars from the database based on school id and status
-//     const studentsAvatars = await Student.find({
-//       school: studentId,
-//       status: status,
-//     }).select("avatar");
-//     console.log(studentsAvatars);
-
-//     // Set response headers
-//     res.setHeader("Content-Type", "application/zip");
-//     res.setHeader("Content-Disposition", 'attachment; filename="avatars.zip"');
-
-//     // Create a writable stream to zip the images
-//     const zipStream = new yazl.ZipFile();
-
-//     // Add each avatar to the zip file
-//     studentsAvatars.forEach((student) => {
-//       // Assuming the avatar is stored as a URL, you may need to adjust this part based on how avatars are stored
-//       const imageUrl = student.avatar.url;
-//       const imageName = student._id + ".jpg"; // Naming the image file with student ID
-
-//       // Download the image and add it to the zip file
-//       const imageStream = request.get(imageUrl); // Use request module to download the image (you may need to install it)
-//       zipStream.addReadStream(imageStream, imageName);
-//     });
-
-//     // Pipe the zip file to the response
-//     zipStream.outputStream.pipe(res);
-
-//     // End the zip stream
-//     zipStream.end();
-//   } catch (error) {
-//     console.error("Error downloading student avatars:", error);
-//     res.status(500).send("Error downloading student avatars");
-//   }
-// });
 
 //stuednt
 exports.StaffAvatarsDownload = catchAsyncErron(async (req, res, next) => {
@@ -4312,3 +3904,69 @@ exports.getSchoolById = async (req, res) => {
 
 
 
+exports.getUsersSchoolsData = async (req, res) => {
+  try {
+    const users = await User.find();
+    if (!users.length) {
+      return res.status(404).json({ success: false, message: "No users found" });
+    }
+
+    const userDataArray = await Promise.all(
+      users.map(async (user) => {
+        const schools = await School.find({ user: user._id });
+
+        if (!schools.length) {
+          return {
+            userId: user._id,
+            userName: user.name,
+            userEmail: user.email,
+            message: "No schools found for this user",
+          };
+        }
+
+        const schoolDataArray = await Promise.all(
+          schools.map(async (school) => {
+            const schoolId = school._id;
+
+            const studentAggregation = await Student.aggregate([
+              { $match: { school: schoolId } },
+              { $group: { _id: "$status", count: { $sum: 1 } } },
+            ]);
+
+            const staffAggregation = await Staff.aggregate([
+              { $match: { school: schoolId } },
+              { $group: { _id: "$status", count: { $sum: 1 } } },
+            ]);
+
+            const formatAggregationData = (aggregation) => {
+              return aggregation.reduce((acc, curr) => {
+                acc[curr._id] = curr.count;
+                return acc;
+              }, { Panding: 0, "Ready to print": 0, Printed: 0 });
+            };
+
+            return {
+              schoolId: schoolId,
+              schoolName: school.name,
+              schoolStatus: school.status,
+              studentStatusCount: formatAggregationData(studentAggregation),
+              staffStatusCount: formatAggregationData(staffAggregation),
+            };
+          })
+        );
+
+        return {
+          userId: user._id,
+          userName: user.name,
+          userEmail: user.email,
+          schools: schoolDataArray,
+        };
+      })
+    );
+
+    return res.status(200).json({ success: true, data: userDataArray });
+  } catch (error) {
+    console.error("Error fetching users and schools data:", error);
+    return res.status(500).json({ success: false, message: "Error fetching data", error });
+  }
+};

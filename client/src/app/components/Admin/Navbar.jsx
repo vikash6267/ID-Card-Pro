@@ -10,8 +10,8 @@ const navigation = [
   { name: "Dashboard", href: "/Admin/Dashbord", current: false },
   { name: "Distributors", href: "/Admin/Distributors", current: false },
   { name: "Schools", href: "/Admin/Schools", current: false },
-  { name: "Students", href: "/Admin/Students", current: false },
-  { name: "Staff", href: "/Admin/Staff", current: false },
+  { name: "Distributors Report", href: "/Admin/report", current: false },
+  // { name: "Staff", href: "/Admin/Staff", current: false },
   { name: "Change Limits", href: "/Admin/ChangeLimits", current: false },
 ];
 

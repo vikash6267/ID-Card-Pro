@@ -2,7 +2,7 @@ const express = require("express");
 const Student = require("../models/studentModel");
 const Staff = require("../models/staffModel");
 const School = require("../models/schoolModel");
-
+const User = require("../models/userModel")
 const ejs = require("ejs");
 const cloudinary = require("cloudinary");
 
@@ -65,6 +65,7 @@ const {
   getSchoolById,
   StaffSignature,
   StaffSignatureDownload,
+  getUsersSchoolsData,
 } = require("../controllers/userControllers");
 const isAuthenticated = require("../middlewares/auth");
 const router = express.Router();
@@ -166,6 +167,7 @@ router.post("/staff/images/:id", isAuthenticated, StaffNewAvatarsDownload);
 router.post("/staff/signatureNew/:id", isAuthenticated, StaffSignatureDownload);
 
 router.get("/search/student/:id", isAuthenticated, SerchStudent);
+router.get("/users-data",  getUsersSchoolsData);
 
 // router.post("student/avatars", upload , isAuthenticated ,StudentsAvatars);
 
@@ -943,6 +945,8 @@ router.post('/save-template', async (req, res) => {
     res.status(500).json({ message: 'Error saving template', error });
   }
 });
+
+
 
 
 

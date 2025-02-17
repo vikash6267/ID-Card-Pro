@@ -1,116 +1,12 @@
 "use client";
 import React, { useEffect, useState } from "react";
 
-import { FaRegUser } from "react-icons/fa";
-import { LiaProductHunt } from "react-icons/lia";
-import { FiShoppingCart } from "react-icons/fi";
-import { FaSchool } from "react-icons/fa";
-import { IoIosSchool } from "react-icons/io";
+
 import axios from "../../../../axiosconfig"
-import {
-  ResponsiveContainer,
-  BarChart,
-  CartesianGrid,
-  XAxis,
-  YAxis,
-  Tooltip,
-  Legend,
-  Bar,
-} from "recharts";
+
 import Layout from "@/app/components/Admin/Layout";
-import Image from "next/image";
 
-const sampleUsers = [
-  {
-    name: "Alice Johnson",
-    email: "alice.johnson@example.com",
-    contact: "1234567890",
-    city: "New York",
-    district: "Manhattan",
-    state: "New York",
-    companyName: "ABC Inc.",
-    password: "password123",
-    isVerified: true,
-    isAdmin: false,
-    schoolLimit: 1,
-    studentLimit: 2500,
-    staffLimit: 500,
-    exportExcel: true,
-  },
-  {
-    name: "Bob Smith",
-    email: "bob.smith@example.com",
-    contact: "9876543210",
-    city: "Los Angeles",
-    district: "Downtown",
-    state: "California",
-    companyName: "XYZ Corp.",
-    password: "password456",
-    isVerified: true,
-    isAdmin: false,
-    schoolLimit: 2,
-    studentLimit: 3000,
-    staffLimit: 600,
-    exportExcel: false,
-  },
-  {
-    name: "Eva Martinez",
-    email: "eva.martinez@example.com",
-    contact: "5555555555",
-    city: "Chicago",
-    district: "Loop",
-    state: "Illinois",
-    companyName: "EFG Ltd.",
-    password: "password789",
-    isVerified: true,
-    isAdmin: false,
-    schoolLimit: 1,
-    studentLimit: 2000,
-    staffLimit: 400,
-    exportExcel: true,
-  },
-  {
-    name: "David Brown",
-    email: "david.brown@example.com",
-    contact: "4444444444",
-    city: "Houston",
-    district: "Downtown",
-    state: "Texas",
-    companyName: "LMN Corporation",
-    password: "passwordabc",
-    isVerified: true,
-    isAdmin: false,
-    schoolLimit: 3,
-    studentLimit: 3500,
-    staffLimit: 700,
-    exportExcel: false,
-  },
-  {
-    name: "Grace Lee",
-    email: "grace.lee@example.com",
-    contact: "7777777777",
-    city: "San Francisco",
-    district: "Financial District",
-    state: "California",
-    companyName: "PQR Enterprises",
-    password: "passwordxyz",
-    isVerified: true,
-    isAdmin: false,
-    schoolLimit: 2,
-    studentLimit: 2800,
-    staffLimit: 550,
-    exportExcel: true,
-  },
-];
 
-const data = [
-  { date: "Day 1", users: 10, productsSold: 5 },
-  { date: "Day 2", users: 15, productsSold: 8 },
-  { date: "Day 3", users: 20, productsSold: 10 },
-  { date: "Day 4", users: 18, productsSold: 7 },
-  { date: "Day 5", users: 25, productsSold: 12 },
-  { date: "Day 6", users: 22, productsSold: 9 },
-];
 
 function Distributors() {
   const [users,setUsers] = useState();

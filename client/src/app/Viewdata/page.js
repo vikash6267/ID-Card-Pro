@@ -93,8 +93,6 @@ const Viewdata = () => {
     if (user?.role == "school") {
       const schoolId = user?.school?._id;
 
-
-      
       if (schoolId) {
         // Fetch school data by schoolId from backend
         axios
@@ -103,16 +101,18 @@ const Viewdata = () => {
             setSchoolData(response.data.data);
             const studentCountByStatus = response.data.studentCountByStatus;
             const staffCountByStatus = response.data.staffCountByStatus;
-            
+
             if (true) {
               // Check if student data exists, else use staff data
               if (studentCountByStatus && studentCountByStatus.length > 0) {
                 setSatusCount(studentCountByStatus);
                 setCurrRole("student");
-                
+
                 // Map to extract statuses for students
-                const studentStatuses = studentCountByStatus.map(item => item._id);
-                
+                const studentStatuses = studentCountByStatus.map(
+                  (item) => item._id
+                );
+
                 // Set status based on available statuses for students
                 if (studentStatuses.includes("Panding")) {
                   setstatus("Panding");
@@ -126,10 +126,12 @@ const Viewdata = () => {
               } else if (staffCountByStatus && staffCountByStatus.length > 0) {
                 setSatusCount(staffCountByStatus);
                 setCurrRole("staff");
-                
+
                 // Map to extract statuses for staff
-                const staffStatuses = staffCountByStatus.map(item => item._id);
-                
+                const staffStatuses = staffCountByStatus.map(
+                  (item) => item._id
+                );
+
                 // Set status based on available statuses for staff
                 if (staffStatuses.includes("Panding")) {
                   setstatus("Panding");
@@ -147,9 +149,6 @@ const Viewdata = () => {
                 setstatus("Panding"); // Default to "Pending" if no data is found
               }
             }
-            
-  
-            
           })
           .catch((err) => {
             console.log("Error fetching Vendor data"); // Handle error if request fails
@@ -204,6 +203,7 @@ const Viewdata = () => {
       );
       handleFormSubmit(e);
       setStudentIds([]);
+      setStaffIds([]);
     }
     if (currRole == "staff") {
       const response = await axios.post(
@@ -212,9 +212,10 @@ const Viewdata = () => {
         config()
       );
       handleFormSubmit(e);
+      setStudentIds([]);
+      setStaffIds([]);
     }
   };
-
 
   const modeToReadytoprint = async (e) => {
     e.preventDefault();
@@ -222,7 +223,7 @@ const Viewdata = () => {
       let response;
       let successMessage = "";
       let skippedMessage = "";
-  
+
       Swal.fire({
         title: "Processing...",
         text: "Please wait while the status is being updated.",
@@ -233,7 +234,7 @@ const Viewdata = () => {
           Swal.showLoading();
         },
       });
-  
+
       if (currRole === "student") {
         response = await axios.post(
           `/user/student/change-status/readyto/${currSchool}?`,
@@ -241,6 +242,7 @@ const Viewdata = () => {
           config()
         );
         setStudentIds([]);
+        setStaffIds([]);
         successMessage = "Student status has been updated.";
       } else if (currRole === "staff") {
         response = await axios.post(
@@ -248,12 +250,13 @@ const Viewdata = () => {
           { staffIds },
           config()
         );
-        setStaffIds([])
+        setStudentIds([]);
+        setStaffIds([]);
         successMessage = "Staff status has been updated.";
       }
-  
+
       Swal.close(); // Close loading alert
-  
+
       if (response?.data?.success) {
         Swal.fire({
           title: "Success!",
@@ -262,14 +265,14 @@ const Viewdata = () => {
           confirmButtonText: "OK",
         });
       }
-  
+
       if (response?.data?.skippedStudents?.length > 0) {
         skippedMessage = response.data.skippedStudents
           .map(
             (student) => `<b>${student.name}:</b> ${student.reason.join(", ")}`
           )
           .join("<br>");
-  
+
         Swal.fire({
           title: "Some Entries Were Skipped!",
           html: skippedMessage,
@@ -277,7 +280,7 @@ const Viewdata = () => {
           confirmButtonText: "OK",
         });
       }
-  
+
       handleFormSubmit(e);
     } catch (error) {
       Swal.fire({
@@ -288,8 +291,6 @@ const Viewdata = () => {
       });
     }
   };
-  
-  
 
   const modeToPrinted = async (e) => {
     e.preventDefault();
@@ -301,6 +302,7 @@ const Viewdata = () => {
       );
       handleFormSubmit(e);
       setStudentIds([]);
+      setStaffIds([]);
     }
     if (currRole == "staff") {
       const response = await axios.post(
@@ -309,6 +311,8 @@ const Viewdata = () => {
         config()
       );
       handleFormSubmit(e);
+      setStudentIds([]);
+      setStaffIds([]);
     }
   };
 
@@ -361,16 +365,18 @@ const Viewdata = () => {
           setSchoolData(response.data.data);
           const studentCountByStatus = response.data.studentCountByStatus;
           const staffCountByStatus = response.data.staffCountByStatus;
-          
+
           if (true) {
             // Check if student data exists, else use staff data
             if (studentCountByStatus && studentCountByStatus.length > 0) {
               setSatusCount(studentCountByStatus);
               setCurrRole("student");
-              
+
               // Map to extract statuses for students
-              const studentStatuses = studentCountByStatus.map(item => item._id);
-              
+              const studentStatuses = studentCountByStatus.map(
+                (item) => item._id
+              );
+
               // Set status based on available statuses for students
               if (studentStatuses.includes("Panding")) {
                 setstatus("Panding");
@@ -384,10 +390,10 @@ const Viewdata = () => {
             } else if (staffCountByStatus && staffCountByStatus.length > 0) {
               setSatusCount(staffCountByStatus);
               setCurrRole("staff");
-              
+
               // Map to extract statuses for staff
-              const staffStatuses = staffCountByStatus.map(item => item._id);
-              
+              const staffStatuses = staffCountByStatus.map((item) => item._id);
+
               // Set status based on available statuses for staff
               if (staffStatuses.includes("Panding")) {
                 setstatus("Panding");
@@ -405,9 +411,6 @@ const Viewdata = () => {
               setstatus("Panding"); // Default to "Pending" if no data is found
             }
           }
-          
-
-          
         })
         .catch((err) => {
           console.log("Error fetching Vendor data"); // Handle error if request fails
@@ -526,8 +529,6 @@ const Viewdata = () => {
   // Helper function to reset state
 
   const downloadExcel = async () => {
-
-   
     try {
       if (currRole == "student") {
         try {
@@ -540,17 +541,20 @@ const Viewdata = () => {
               responseType: "blob", // Set response type to blob for file download
             }
           );
-          const contentDisposition = response.headers['content-disposition'];
+          const contentDisposition = response.headers["content-disposition"];
 
-          let filename = "Student_Data.xlsx"
+          let filename = "Student_Data.xlsx";
           if (contentDisposition) {
             // Regular expression se filename extract karna
-            const filenameMatch = contentDisposition.match(/filename="?([^"]+)"?/);
-             filename = filenameMatch ? filenameMatch[1] : 'default_filename.xlsx';
-      
+            const filenameMatch =
+              contentDisposition.match(/filename="?([^"]+)"?/);
+            filename = filenameMatch
+              ? filenameMatch[1]
+              : "default_filename.xlsx";
+
             console.log(filename); // Output: Test_staff.xlsx
           } else {
-            console.log('Filename not found in headers');
+            console.log("Filename not found in headers");
           }
 
           const url =
@@ -574,7 +578,7 @@ const Viewdata = () => {
       }
       if (currRole == "staff") {
         try {
-          console.log("Hello")
+          console.log("Hello");
           const response = await axios.get(
             `/user/staff/excel/data/${currSchool}?status=${status}`,
             {
@@ -584,19 +588,21 @@ const Viewdata = () => {
               responseType: "blob", // Set response type to blob for file download
             }
           );
-          const contentDisposition = response.headers['content-disposition'];
+          const contentDisposition = response.headers["content-disposition"];
 
-          let filename = "Staff.xlsx"
+          let filename = "Staff.xlsx";
           if (contentDisposition) {
             // Regular expression se filename extract karna
-            const filenameMatch = contentDisposition.match(/filename="?([^"]+)"?/);
-             filename = filenameMatch ? filenameMatch[1] : 'default_filename.xlsx';
-      
+            const filenameMatch =
+              contentDisposition.match(/filename="?([^"]+)"?/);
+            filename = filenameMatch
+              ? filenameMatch[1]
+              : "default_filename.xlsx";
+
             console.log(filename); // Output: Test_staff.xlsx
           } else {
-            console.log('Filename not found in headers');
+            console.log("Filename not found in headers");
           }
-
 
           const url =
             window.URL.createObjectURL(new Blob([response.data])) || null;
@@ -817,6 +823,8 @@ const Viewdata = () => {
       }
 
       handleFormSubmit();
+      setStudentIds([]);
+      setStaffIds([]);
     } catch (error) {
       // Handle error
       Swal.fire({
@@ -1028,7 +1036,6 @@ const Viewdata = () => {
     window.open(shareUrl, "_blank");
   };
 
-
   const moveReadySingle = async (studentId) => {
     try {
       // Show loading spinner
@@ -1042,9 +1049,9 @@ const Viewdata = () => {
           Swal.showLoading(); // Display loading spinner
         },
       });
-  
+
       let response;
-  
+
       if (currRole === "student") {
         response = await axios.post(
           `/user/student/change-status/readyto/${currSchool}?`,
@@ -1058,10 +1065,10 @@ const Viewdata = () => {
           config()
         );
       }
-  
+
       handleFormSubmit();
       setStudentIds([]);
-  
+      setStaffIds([]);
       if (response.data.success) {
         Swal.fire({
           title: "Success!",
@@ -1070,7 +1077,7 @@ const Viewdata = () => {
           confirmButtonText: "OK",
         });
       }
-  
+
       // If any student was skipped, show details
       if (response.data.skippedStudents?.length > 0) {
         let skippedMessage = response.data.skippedStudents
@@ -1078,7 +1085,7 @@ const Viewdata = () => {
             (student) => `<b>${student.name}:</b> ${student.reason.join(", ")}`
           )
           .join("<br>");
-  
+
         Swal.fire({
           title: "Some Students Were Skipped!",
           html: skippedMessage,
@@ -1088,10 +1095,14 @@ const Viewdata = () => {
       }
     } catch (error) {
       console.error("Error updating status:", error);
-  let err = error.response?.data?.message
-      if(error.response?.data?.message==="No students were updated due to missing required fields or empty extraFields values."   || error.response?.data?.message === "No staff members were updated due to missing required fields or empty extraFields values."){
-       
-        err = "Please Put Values And Try Again"
+      let err = error.response?.data?.message;
+      if (
+        error.response?.data?.message ===
+          "No students were updated due to missing required fields or empty extraFields values." ||
+        error.response?.data?.message ===
+          "No staff members were updated due to missing required fields or empty extraFields values."
+      ) {
+        err = "Please Put Values And Try Again";
       }
 
       Swal.fire({
@@ -1102,7 +1113,6 @@ const Viewdata = () => {
       });
     }
   };
-  
 
   const moveBackPendingSingle = async (studentId) => {
     try {
@@ -1129,6 +1139,7 @@ const Viewdata = () => {
         // Fetch updated student list
         handleFormSubmit();
         setStudentIds([]);
+        setStaffIds([]);
         // Close the loading spinner and show success message
         Swal.fire({
           title: "Success!",
@@ -1145,6 +1156,7 @@ const Viewdata = () => {
         );
         handleFormSubmit();
         setStudentIds([]);
+        setStaffIds([]);
         Swal.fire({
           title: "Success!",
           text: "Student status has been updated.",
@@ -1188,6 +1200,7 @@ const Viewdata = () => {
         // Fetch updated student list
         handleFormSubmit();
         setStudentIds([]);
+        setStaffIds([]);
         // Close the loading spinner and show success message
         Swal.fire({
           title: "Success!",
@@ -1204,6 +1217,7 @@ const Viewdata = () => {
         );
         handleFormSubmit();
         setStudentIds([]);
+        setStaffIds([]);
         Swal.fire({
           title: "Success!",
           text: "Student status has been updated.",
@@ -2013,7 +2027,7 @@ const Viewdata = () => {
             {showPopup && (
               <SharePopup
                 link={`https://cardpro.co.in/shareview?vendor=${currSchool}&role=${currRole}&status=${status}&class=${classNameValue}&section=${sectionValueSearch}&course=${courseValueSearch}&staffType=${staffValueSearch}&institute=${staffValueSearchInsi}&page=${pagination.currentPage}&limit=${pagination.pageSize}`}
-               currSchool={currSchool}
+                currSchool={currSchool}
                 onClose={setShowPopup}
               />
             )}
@@ -2035,9 +2049,6 @@ const Viewdata = () => {
                 downloadSignature={downloadSignature}
               />
             )}
-
-
-         
 
             <button
               className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg shadow-lg"
