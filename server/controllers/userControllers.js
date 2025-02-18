@@ -21,9 +21,8 @@ const yazl = require("yazl");
 const bcrypt = require("bcrypt");
 const archiver = require("archiver");
 const axios = require("axios");
-const puppeteer = require('puppeteer');
-const ejs = require('ejs');
-
+const puppeteer = require("puppeteer");
+const ejs = require("ejs");
 
 // var nodeExcel = require('excel-export');
 // const generateTokens = require("../utils/generateTokens");
@@ -428,8 +427,6 @@ exports.userLongOut = catchAsyncErron(async (req, res, next) => {
   });
 });
 
-
-
 exports.userAvatar = catchAsyncErron(async (req, res, next) => {
   const file = req.file;
 
@@ -484,6 +481,7 @@ exports.addSchool = catchAsyncErron(async (req, res, next) => {
       requiredFieldsStaff,
       extraFields,
       extraFieldsStaff,
+      photoType = "Passport",
     } = req.body;
 
     if (!name) return next(new errorHandler("School name is Required"));
@@ -517,6 +515,7 @@ exports.addSchool = catchAsyncErron(async (req, res, next) => {
       requiredFieldsStaff,
       extraFields,
       extraFieldsStaff,
+      photoType,
     });
 
     console.log(currSchool);
@@ -679,7 +678,6 @@ exports.ChangeActive = catchAsyncErron(async (req, res, next) => {
 
 exports.addStudent = catchAsyncErron(async (req, res, next) => {
   const id = req.id;
-console.log(req.params.id)
 
   const user = await User.findById(id);
   if (user) {
@@ -688,115 +686,41 @@ console.log(req.params.id)
 
     if (!currSchool) return next(new errorHandler("invalidate School ID"));
 
-    const { name } = req.body;
+    const { name, extraFields, class: studentClass, section, session, course } = req.body;
 
     console.log(req.body);
     if (!name) return next(new errorHandler("name is Required"));
 
-    // if (!fatherName) return next(new errorHandler("fathername is Required"));
-
     let currStudent = {
-      name,
+      name: name.toUpperCase(),
     };
 
-    if (req.body.fatherName) {
-      currStudent.fatherName = req.body.fatherName;
+    if (extraFields) {
+      // Convert all values inside extraFields to uppercase
+      currStudent.extraFields = Object.fromEntries(
+        Object.entries(extraFields).map(([key, value]) => [key, value.toUpperCase()])
+      );
     }
-    if (req.body.extraFields) {
-      currStudent.extraFields = req.body.extraFields;
-    }
-
-    if (req.body.motherName) {
-      currStudent.motherName = req.body.motherName;
-    }
-    if (req.body.gender) {
-      currStudent.gender = req.body.gender;
-    }
-    if (req.body.dob) {
-      currStudent.dob = req.body.dob;
-    }
-    if (req.body.contact) {
-      currStudent.contact = req.body.contact;
-    }
-    if (req.body.email) {
-      currStudent.email = req.body.email;
-    }
-    if (req.body.address) {
-      currStudent.address = req.body.address;
-    }
-    if (req.body.rollNo) {
-      currStudent.rollNo = req.body.rollNo;
-    }
-    if (req.body.class) {
-      currStudent.class = req.body.class;
+    if (studentClass) {
+      currStudent.class = studentClass.toUpperCase();
     } else {
       currStudent.class = null;
     }
-    if (req.body.section) {
-      currStudent.section = req.body.section;
+    if (section) {
+      currStudent.section = section.toUpperCase();
     } else {
       currStudent.section = null;
     }
-    if (req.body.session) {
-      currStudent.session = req.body.session;
+    if (session) {
+      currStudent.session = session.toUpperCase();
     }
-    if (req.body.admissionNo) {
-      currStudent.admissionNo = req.body.admissionNo;
-    }
-    if (req.body.busNo) {
-      currStudent.busNo = req.body.busNo;
-    }
-    if (req.body.bloodGroup) {
-      currStudent.bloodGroup = req.body.bloodGroup;
-    }
-    if (req.body.studentID) {
-      currStudent.studentID = req.body.studentID;
-    }
-    if (req.body.aadharNo) {
-      currStudent.aadharNo = req.body.aadharNo;
-    }
-    if (req.body.ribbionColour) {
-      currStudent.ribbionColour = req.body.ribbionColour;
-    }
-    if (req.body.routeNo) {
-      currStudent.routeNo = req.body.routeNo;
-    }
-    if (req.body.aadharNo) {
-      currStudent.aadharNo = req.body.aadharNo;
-    }
-
-    // Additional fields
-    if (req.body.houseName) {
-      currStudent.houseName = req.body.houseName;
-    }
-    if (req.body.validUpTo) {
-      currStudent.validUpTo = req.body.validUpTo; // Ensure date format validation if needed
-    }
-    if (req.body.course) {
-      currStudent.course = req.body.course;
+    if (course) {
+      currStudent.course = course.toUpperCase();
     } else {
       currStudent.course = null;
     }
-    if (req.body.batch) {
-      currStudent.batch = req.body.batch;
-    }
-    if (req.body.idNo) {
-      currStudent.idNo = req.body.idNo;
-    }
-    if (req.body.regNo) {
-      currStudent.regNo = req.body.regNo;
-    }
-    if (req.body.extraField1) {
-      currStudent.extraField1 = req.body.extraField1;
-    }
-    if (req.body.extraField2) {
-      currStudent.extraField2 = req.body.extraField2;
-    }
 
     const student = await Student.create(currStudent);
-    // if(req.body.avatar){
-
-    // }
 
     student.school = currSchool._id;
     student.user = id;
@@ -808,7 +732,6 @@ console.log(req.params.id)
       publicId: publicId || null, // Default to `null` if no `publicId` is provided
       url: url || "https://cardpro.co.in/login.jpg", // Default URL
     };
-    
 
     student.save();
 
@@ -821,7 +744,7 @@ console.log(req.params.id)
   }
 
   const school = await School.findById(req.params.id);
-  console.log(school)
+  console.log(school);
 
   if (school) {
     const schoolID = req.params.id;
@@ -829,114 +752,41 @@ console.log(req.params.id)
 
     if (!currSchool) return next(new errorHandler("invalidate School ID"));
 
-    const { name, fatherName } = req.body;
+    const { name, extraFields, class: studentClass, section, session, course } = req.body;
 
     console.log(req.body);
     if (!name) return next(new errorHandler("name is Required"));
 
     let currStudent = {
-      name,
+      name: name.toUpperCase(),
     };
 
-    if (req.body.fatherName) {
-      currStudent.fatherName = req.body.fatherName;
+    if (extraFields) {
+      // Convert all values inside extraFields to uppercase
+      currStudent.extraFields = Object.fromEntries(
+        Object.entries(extraFields).map(([key, value]) => [key, value.toUpperCase()])
+      );
     }
-    if (req.body.extraFields) {
-      currStudent.extraFields = req.body.extraFields;
-    }
-
-    if (req.body.motherName) {
-      currStudent.motherName = req.body.motherName;
-    }
-    if (req.body.gender) {
-      currStudent.gender = req.body.gender;
-    }
-    if (req.body.dob) {
-      currStudent.dob = req.body.dob;
-    }
-    if (req.body.contact) {
-      currStudent.contact = req.body.contact;
-    }
-    if (req.body.email) {
-      currStudent.email = req.body.email;
-    }
-    if (req.body.address) {
-      currStudent.address = req.body.address;
-    }
-    if (req.body.rollNo) {
-      currStudent.rollNo = req.body.rollNo;
-    }
-    if (req.body.class) {
-      currStudent.class = req.body.class;
+    if (studentClass) {
+      currStudent.class = studentClass.toUpperCase();
     } else {
       currStudent.class = null;
     }
-    if (req.body.section) {
-      currStudent.section = req.body.section;
+    if (section) {
+      currStudent.section = section.toUpperCase();
     } else {
       currStudent.section = null;
     }
-    if (req.body.session) {
-      currStudent.session = req.body.session;
+    if (session) {
+      currStudent.session = session.toUpperCase();
     }
-    if (req.body.admissionNo) {
-      currStudent.admissionNo = req.body.admissionNo;
-    }
-    if (req.body.busNo) {
-      currStudent.busNo = req.body.busNo;
-    }
-    if (req.body.bloodGroup) {
-      currStudent.bloodGroup = req.body.bloodGroup;
-    }
-    if (req.body.studentID) {
-      currStudent.studentID = req.body.studentID;
-    }
-    if (req.body.aadharNo) {
-      currStudent.aadharNo = req.body.aadharNo;
-    }
-    if (req.body.ribbionColour) {
-      currStudent.ribbionColour = req.body.ribbionColour;
-    }
-    if (req.body.routeNo) {
-      currStudent.routeNo = req.body.routeNo;
-    }
-    if (req.body.aadharNo) {
-      currStudent.aadharNo = req.body.aadharNo;
-    }
-
-    // Additional fields
-    if (req.body.houseName) {
-      currStudent.houseName = req.body.houseName;
-    }
-    if (req.body.validUpTo) {
-      currStudent.validUpTo = req.body.validUpTo; // Ensure date format validation if needed
-    }
-    if (req.body.course) {
-      currStudent.course = req.body.course;
+    if (course) {
+      currStudent.course = course.toUpperCase();
     } else {
       currStudent.course = null;
     }
-    if (req.body.batch) {
-      currStudent.batch = req.body.batch;
-    }
-    if (req.body.idNo) {
-      currStudent.idNo = req.body.idNo;
-    }
-    if (req.body.regNo) {
-      currStudent.regNo = req.body.regNo;
-    }
-    if (req.body.extraField1) {
-      currStudent.extraField1 = req.body.extraField1;
-    }
-    if (req.body.extraField2) {
-      currStudent.extraField2 = req.body.extraField2;
-    }
 
-    console.log(currStudent)
     const student = await Student.create(currStudent);
-    // if(req.body.avatar){
-
-    // }
 
     student.school = currSchool._id;
     student.user = school.user;
@@ -957,16 +807,32 @@ console.log(req.params.id)
       student: student,
     });
   }
-
-
 });
+
 
 exports.editStudent = catchAsyncErron(async (req, res, next) => {
   try {
     const studentId = req.params.id;
     console.log(studentId);
-    const updates = req.body; // The updates from the request body.
+    let updates = req.body; // The updates from the request body.
     console.log(updates);
+
+    // Convert all fields to uppercase if they are present in the update
+    Object.keys(updates).forEach((key) => {
+      if (key !== "avatar") {
+        // Skip 'avatar' field
+        if (typeof updates[key] === "string") {
+          updates[key] = updates[key].toUpperCase();
+        } else if (typeof updates[key] === "object" && updates[key] !== null) {
+          // Handle nested objects like 'extraFields'
+          Object.keys(updates[key]).forEach((nestedKey) => {
+            if (typeof updates[key][nestedKey] === "string") {
+              updates[key][nestedKey] = updates[key][nestedKey].toUpperCase();
+            }
+          });
+        }
+      }
+    });
 
     const updatedStudent = await Student.findByIdAndUpdate(studentId, updates, {
       new: true,
@@ -974,7 +840,7 @@ exports.editStudent = catchAsyncErron(async (req, res, next) => {
 
     if (req.body.name) {
       let nameStudent = await Student.findById(req.id);
-      updatedStudent.name = req.body.name;
+      updatedStudent.name = req.body.name.toUpperCase(); // Force name to be uppercase
       await updatedStudent.save();
     }
 
@@ -1034,9 +900,6 @@ exports.editStudent = catchAsyncErron(async (req, res, next) => {
 exports.addStaff = catchAsyncErron(async (req, res, next) => {
   try {
     const id = req.id;
-    let file = null;
-
-    console.log(req.body);
 
     const user = await User.findById(id);
 
@@ -1046,100 +909,30 @@ exports.addStaff = catchAsyncErron(async (req, res, next) => {
 
       if (!currSchool) return next(new errorHandler("Invalid School ID"));
 
-      const { name, fatherName } = req.body;
+      const { name, extraFieldsStaff, staffType, institute, SignatureData } = req.body;
 
       console.log(req.body);
       if (!name) return next(new errorHandler("Name is Required"));
 
-      let currStaff = { name };
+      let currStaff = {
+        name: name.toUpperCase() // Ensure name is converted to uppercase
+      };
 
-      if (req.body.fatherName) {
-        currStaff.fatherName = req.body.fatherName;
-      }
-      if (req.body.extraFieldsStaff) {
-        currStaff.extraFieldsStaff = req.body.extraFieldsStaff;
-      }
-      if (req.body.husbandName) {
-        currStaff.husbandName = req.body.husbandName;
-      }
-      if (req.body.dob) {
-        currStaff.dob = req.body.dob;
-      }
-      if (req.body.contact) {
-        currStaff.contact = req.body.contact;
-      }
-      if (req.body.email) {
-        currStaff.email = req.body.email;
-      }
-      if (req.body.address) {
-        currStaff.address = req.body.address;
-      }
-      if (req.body.qualification) {
-        currStaff.qualification = req.body.qualification;
-      }
-      if (req.body.designation) {
-        currStaff.designation = req.body.designation;
-      }
-      if (req.body.staffType) {
-        currStaff.staffType = req.body.staffType;
-      }
-      if (req.body.doj) {
-        currStaff.doj = req.body.doj;
-      }
-      if (req.body.uid) {
-        currStaff.uid = req.body.uid;
-      }
-      if (req.body.staffID) {
-        currStaff.staffID = req.body.staffID;
-      }
-      if (req.body.udiseCode) {
-        currStaff.udiseCode = req.body.udiseCode;
-      }
-      if (req.body.schoolName) {
-        currStaff.schoolName = req.body.schoolName;
-      }
-      if (req.body.bloodGroup) {
-        currStaff.bloodGroup = req.body.bloodGroup;
-      }
-      if (req.body.dispatchNo) {
-        currStaff.dispatchNo = req.body.dispatchNo;
-      }
-      if (req.body.dateOfissue) {
-        currStaff.dateOfissue = req.body.dateOfissue;
-      }
-      if (req.body.ihrmsNo) {
-        currStaff.ihrmsNo = req.body.ihrmsNo;
-      }
-      if (req.body.beltNo) {
-        currStaff.beltNo = req.body.beltNo;
+      // Convert extraFieldsStaff to uppercase if it exists
+      if (extraFieldsStaff) {
+        currStaff.extraFieldsStaff = Object.fromEntries(
+          Object.entries(extraFieldsStaff).map(([key, value]) => [key, value.toUpperCase()])
+        );
       }
 
-      if (req.body.jobStatus) {
-        currStaff.jobStatus = req.body.jobStatus;
+      if (staffType) {
+        currStaff.staffType = staffType.toUpperCase();
       }
-      if (req.body.licenceNo) {
-        currStaff.licenceNo = req.body.licenceNo;
-      }
-      if (req.body.panCardNo) {
-        currStaff.panCardNo = req.body.panCardNo;
-      }
-      if (req.body.adharNo) {
-        currStaff.adharNo = req.body.adharNo;
-      }
-      if (req.body.idNo) {
-        currStaff.idNo = req.body.idNo;
-      }
-      // Extra fields
-      if (req.body.extraField1) {
-        currStaff.extraField1 = req.body.extraField1;
-      }
-      if (req.body.institute) {
-        currStaff.institute = req.body.institute;
+      if (institute) {
+        currStaff.institute = institute.toUpperCase();
       } else {
         currStaff.institute = null;
       }
-
-      console.log(currStaff);
 
       const staff = await Staff.create(currStaff);
 
@@ -1154,10 +947,10 @@ exports.addStaff = catchAsyncErron(async (req, res, next) => {
         publicId: publicId,
         url: url,
       };
-      if (req.body.SignatureData) {
+      if (SignatureData) {
         staff.signatureImage = {
-          publicId: req.body.SignatureData.publicId,
-          url: req.body.SignatureData.url ? req.body.SignatureData.url : 'https://cardpro.co.in/login.jpg',
+          publicId: SignatureData.publicId,
+          url: SignatureData.url || "https://cardpro.co.in/login.jpg",
         };
       }
 
@@ -1169,105 +962,36 @@ exports.addStaff = catchAsyncErron(async (req, res, next) => {
         user: user,
         staff: staff,
       });
-    }
-
-    const school = await School.findById(req.params.id);
-    if (school) {
+    } else {
+      // Fallback for the school-related code
       const schoolID = req.params.id;
       const currSchool = await School.findById(schoolID);
 
       if (!currSchool) return next(new errorHandler("Invalid School ID"));
 
-      const { name, fatherName } = req.body;
+      const { name, fatherName, extraFieldsStaff, staffType, institute, SignatureData } = req.body;
 
       console.log(req.body);
       if (!name) return next(new errorHandler("Name is Required"));
 
-      let currStaff = { name };
+      let currStaff = {
+        name: name.toUpperCase() // Ensure name is converted to uppercase here too
+      };
 
-      if (req.body.fatherName) {
-        currStaff.fatherName = req.body.fatherName;
+      // Convert extraFieldsStaff to uppercase if it exists
+      if (extraFieldsStaff) {
+        currStaff.extraFieldsStaff = Object.fromEntries(
+          Object.entries(extraFieldsStaff).map(([key, value]) => [key, value.toUpperCase()])
+        );
       }
 
-      if (req.body.extraFieldsStaff) {
-        currStaff.extraFieldsStaff = req.body.extraFieldsStaff;
+      if (staffType) {
+        currStaff.staffType = staffType.toUpperCase();
       }
-
-      if (req.body.husbandName) {
-        currStaff.husbandName = req.body.husbandName;
-      }
-      if (req.body.dob) {
-        currStaff.dob = req.body.dob;
-      }
-      if (req.body.contact) {
-        currStaff.contact = req.body.contact;
-      }
-      if (req.body.email) {
-        currStaff.email = req.body.email;
-      }
-      if (req.body.address) {
-        currStaff.address = req.body.address;
-      }
-      if (req.body.qualification) {
-        currStaff.qualification = req.body.qualification;
-      }
-      if (req.body.designation) {
-        currStaff.designation = req.body.designation;
-      }
-      if (req.body.staffType) {
-        currStaff.staffType = req.body.staffType;
-      }
-      if (req.body.doj) {
-        currStaff.doj = req.body.doj;
-      }
-      if (req.body.uid) {
-        currStaff.uid = req.body.uid;
-      }
-      if (req.body.staffID) {
-        currStaff.staffID = req.body.staffID;
-      }
-      if (req.body.udiseCode) {
-        currStaff.udiseCode = req.body.udiseCode;
-      }
-      if (req.body.schoolName) {
-        currStaff.schoolName = req.body.schoolName;
-      }
-      if (req.body.bloodGroup) {
-        currStaff.bloodGroup = req.body.bloodGroup;
-      }
-      if (req.body.dispatchNo) {
-        currStaff.dispatchNo = req.body.dispatchNo;
-      }
-      if (req.body.dateOfissue) {
-        currStaff.dateOfissue = req.body.dateOfissue;
-      }
-      if (req.body.ihrmsNo) {
-        currStaff.ihrmsNo = req.body.ihrmsNo;
-      }
-      if (req.body.beltNo) {
-        currStaff.beltNo = req.body.beltNo;
-      }
-      if (req.body.jobStatus) {
-        currStaff.jobStatus = req.body.jobStatus;
-      }
-      if (req.body.licenceNo) {
-        currStaff.licenceNo = req.body.licenceNo;
-      }
-      if (req.body.panCardNo) {
-        currStaff.panCardNo = req.body.panCardNo;
-      }
-      if (req.body.adharNo) {
-        currStaff.adharNo = req.body.adharNo;
-      }
-      if (req.body.idNo) {
-        currStaff.idNo = req.body.idNo;
-      }
-      // Extra fields
-      if (req.body.extraField1) {
-        currStaff.extraField1 = req.body.extraField1;
-      }
-      if (req.body.institute) {
-        currStaff.institute = req.body.institute;
+      if (institute) {
+        currStaff.institute = institute.toUpperCase();
+      } else {
+        currStaff.institute = null;
       }
 
       const staff = await Staff.create(currStaff);
@@ -1277,18 +1001,16 @@ exports.addStaff = catchAsyncErron(async (req, res, next) => {
 
       const { publicId, url } = req.body;
       staff.photoNameUnuiq = await getNextSequenceValue("staffName");
-          staff.signatureNameUnuiq = await getNextSequenceValue("staffSignature");
+      staff.signatureNameUnuiq = await getNextSequenceValue("staffSignature");
 
-    
       staff.avatar = {
         publicId: publicId,
         url: url,
       };
-      if (req.body.SignatureData) {
+      if (SignatureData) {
         staff.signatureImage = {
-          publicId: req.body.SignatureData.publicId,
-          url: req.body.SignatureData.url ? req.body.SignatureData.url : 'https://cardpro.co.in/login.jpg',
-
+          publicId: SignatureData.publicId,
+          url: SignatureData.url || "https://cardpro.co.in/login.jpg",
         };
       }
 
@@ -1306,12 +1028,31 @@ exports.addStaff = catchAsyncErron(async (req, res, next) => {
   }
 });
 
+
+
 exports.editStaff = catchAsyncErron(async (req, res, next) => {
   const staffId = req.params.id;
   console.log(req.body);
-  const updates = req.body; // The updates from the request body.
+  let updates = req.body; // The updates from the request body.
 
-  const updatedStudent = await Staff.findByIdAndUpdate(staffId, updates, {
+  // Convert all fields to uppercase except avatar
+  const fieldsToUppercase = ['name', 'staffType', 'institute'];
+
+  fieldsToUppercase.forEach(field => {
+    if (updates[field]) {
+      updates[field] = updates[field].toUpperCase();
+    }
+  });
+
+  // If extraFieldsStaff exists, convert its values to uppercase
+  if (updates.extraFieldsStaff) {
+    updates.extraFieldsStaff = Object.fromEntries(
+      Object.entries(updates.extraFieldsStaff).map(([key, value]) => [key, value.toUpperCase()])
+    );
+  }
+
+  // Update the staff record with the new data
+  const updatedStaff = await Staff.findByIdAndUpdate(staffId, updates, {
     new: true,
   });
 
@@ -1323,10 +1064,10 @@ exports.editStaff = catchAsyncErron(async (req, res, next) => {
   console.log(file);
 
   if (file) {
-    const currStudent = await Staff.findById(staffId);
-    if (currStudent.avatar.publicId !== "") {
+    const currStaff = await Staff.findById(staffId);
+    if (currStaff.avatar.publicId !== "") {
       await cloudinary.v2.uploader.destroy(
-        currStudent.avatar.publicId,
+        currStaff.avatar.publicId,
         (error, result) => {
           if (error) {
             console.error("Error deleting file from Cloudinary:", error);
@@ -1340,26 +1081,27 @@ exports.editStaff = catchAsyncErron(async (req, res, next) => {
     const fileUri = getDataUri(file);
     const myavatar = await cloudinary.v2.uploader.upload(fileUri.content);
 
-    currStudent.avatar = {
+    currStaff.avatar = {
       publicId: myavatar.public_id,
       url: myavatar.secure_url,
     };
-    currStudent.save();
+    await currStaff.save();
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       message: "Staff updated successfully",
-      student: currStudent,
+      staff: currStaff,
     });
   }
 
-  // Respond with the updated student information.
+  // Respond with the updated staff information.
   res.status(200).json({
     success: true,
     message: "Staff updated successfully",
-    student: updatedStudent,
+    staff: updatedStaff,
   });
 });
+
 
 exports.changeStudentAvatar = catchAsyncErron(async (req, res, next) => {
   const id = req.id;
@@ -1461,6 +1203,7 @@ exports.allSchool = catchAsyncErron(async (req, res, next) => {
       address: school.address,
       logo: school.logo,
       code: school.code,
+      photoType: school?.photoType || null,
       requiredFields: school.requiredFields,
       requiredFieldsStaff: school.requiredFieldsStaff,
       extraFields: school?.extraFields,
@@ -1499,7 +1242,7 @@ exports.getAllStudentsInSchool = catchAsyncErron(async (req, res, next) => {
     console.log(course);
     let queryObj = { school: new mongoose.Types.ObjectId(schoolId) };
     const SchoolData = await School.findById(schoolId);
-    let statusObj =  { school: new mongoose.Types.ObjectId(schoolId)  }
+    let statusObj = { school: new mongoose.Types.ObjectId(schoolId) };
 
     const uniqueStudents = await Student.distinct("class", queryObj);
     // Replace "studentID" with the field you consider unique
@@ -1643,8 +1386,6 @@ exports.getAllStudentsInSchool = catchAsyncErron(async (req, res, next) => {
       .skip((page - 1) * limit) // Skip the results based on the page number
       .limit(limit); // Limit the number of results per page
 
-  
-
     const studentsWithRole = students.map((student) => {
       return {
         ...student.toObject(),
@@ -1672,14 +1413,12 @@ exports.getAllStudentsInSchool = catchAsyncErron(async (req, res, next) => {
       console.log(error);
     }
 
-
     if (!students || students.length === 0) {
       return res.json({
         success: false,
         role: "student",
         message: "No students found for the provided school ID",
-      staffCountByStatus,
-
+        staffCountByStatus,
       });
     }
     // Respond with the list of students and pagination info
@@ -1891,14 +1630,17 @@ exports.updateStudentStatusToPrint = catchAsyncErron(async (req, res, next) => {
     try {
       studentIds = JSON.parse(`[${studentIds}]`);
     } catch (error) {
-      studentIds = studentIds.split(",").map((id) => id.trim().replace(/^"|"$/g, ""));
+      studentIds = studentIds
+        .split(",")
+        .map((id) => id.trim().replace(/^"|"$/g, ""));
     }
   }
 
   if (!schoolID || !studentIds) {
     return res.status(400).json({
       success: false,
-      message: "Invalid request. Please provide a school ID and a list of student IDs.",
+      message:
+        "Invalid request. Please provide a school ID and a list of student IDs.",
     });
   }
 
@@ -1921,7 +1663,10 @@ exports.updateStudentStatusToPrint = catchAsyncErron(async (req, res, next) => {
   }
 
   // Fetch all students
-  const students = await Student.find({ _id: { $in: studentIds }, school: schoolID });
+  const students = await Student.find({
+    _id: { $in: studentIds },
+    school: schoolID,
+  });
 
   if (!students.length) {
     return res.status(404).json({
@@ -1933,63 +1678,87 @@ exports.updateStudentStatusToPrint = catchAsyncErron(async (req, res, next) => {
   let validStudentIds = [];
   let skippedStudents = []; // Store skipped students with reasons
 
-
-students.forEach((student) => {
+  students.forEach((student) => {
     let isValid = true;
     let reason = [];
 
     // ✅ Step 1: Check Required Fields (Student's Basic Info)
     requiredFields.forEach((field) => {
-        if (
-            (field === "Student Name" && !student.name) ||
-            (field === "Class" && !student.class) ||
-            (field === "Section" && !student.section) ||
-            (field === "Course" && !student.course)
-        ) {
-            isValid = false;
-            reason.push(`${field} is missing`);
-        }
+      if (
+        (field === "Student Name" && !student.name) ||
+        (field === "Class" && !student.class) ||
+        (field === "Section" && !student.section) ||
+        (field === "Course" && !student.course)
+      ) {
+        isValid = false;
+        reason.push(`${field} is missing`);
+      }
     });
 
     // ✅ Step 2: Validate Extra Fields (Based on School Requirements)
-    if (isValid && schoolDetails.extraFields && schoolDetails.extraFields.length > 0) {
-        let requiredExtraFields = schoolDetails.extraFields.map((field) => field.name); // Extract names from array
-        let studentExtraFields = student.extraFields ? Array.from(student.extraFields.keys()) : [];
+    if (
+      isValid &&
+      schoolDetails.extraFields &&
+      schoolDetails.extraFields.length > 0
+    ) {
+      let requiredExtraFields = schoolDetails.extraFields.map(
+        (field) => field.name
+      ); // Extract names from array
+      let studentExtraFields = student.extraFields
+        ? Array.from(student.extraFields.keys())
+        : [];
 
-        // ✅ If student has no extraFields but school requires them, fail validation
-        if (studentExtraFields.length === 0) {
+      // ✅ If student has no extraFields but school requires them, fail validation
+      if (studentExtraFields.length === 0) {
+        isValid = false;
+        reason.push(
+          `Student is missing all required extra fields: ${requiredExtraFields.join(
+            ", "
+          )}`
+        );
+      } else {
+        // ✅ Check if student has all required fields & they are not empty
+        requiredExtraFields.forEach((field) => {
+          if (
+            !student.extraFields.has(field) ||
+            !student.extraFields.get(field)
+          ) {
             isValid = false;
-            reason.push(`Student is missing all required extra fields: ${requiredExtraFields.join(", ")}`);
-        } else {
-            // ✅ Check if student has all required fields & they are not empty
-            requiredExtraFields.forEach((field) => {
-                if (!student.extraFields.has(field) || !student.extraFields.get(field)) {
-                    isValid = false;
-                    reason.push(`Extra field '${field}' is missing or empty`);
-                }
-            });
-        }
+            reason.push(`Extra field '${field}' is missing or empty`);
+          }
+        });
+      }
     }
-   // ✅ Step 3: Check Avatar (Ensure it's not the default)
-   if (isValid && student.avatar && (student.avatar.url === "https://cardpro.co.in/login.jpg" || student.avatar.url === "https://plus.unsplash.com/premium_photo-1699534403319-978d740f9297?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D")) {
-    isValid = false;
-    reason.push("Default avatar is not allowed. Please upload a profile picture.");
-}
+    // ✅ Step 3: Check Avatar (Ensure it's not the default)
+    if (
+      isValid &&
+      student.avatar &&
+      (student.avatar.url === "https://cardpro.co.in/login.jpg" ||
+        student.avatar.url ===
+          "https://plus.unsplash.com/premium_photo-1699534403319-978d740f9297?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D")
+    ) {
+      isValid = false;
+      reason.push(
+        "Default avatar is not allowed. Please upload a profile picture."
+      );
+    }
     // ✅ Step 3: Final Decision (Update or Skip)
     if (isValid) {
-        validStudentIds.push(student._id);
+      validStudentIds.push(student._id);
     } else {
-        skippedStudents.push({ studentId: student._id, name: student.name, reason });
+      skippedStudents.push({
+        studentId: student._id,
+        name: student.name,
+        reason,
+      });
     }
-});
-
-
-
+  });
 
   if (!validStudentIds.length) {
     return res.status(400).json({
       success: false,
-      message: "No students were updated due to missing required fields or empty extraFields values.",
+      message:
+        "No students were updated due to missing required fields or empty extraFields values.",
       skippedStudents,
     });
   }
@@ -2006,9 +1775,6 @@ students.forEach((student) => {
     skippedStudents,
   });
 });
-
-
-
 
 // ---------------------StatusPending------------
 
@@ -2162,33 +1928,6 @@ exports.deleteStudents = catchAsyncErron(async (req, res, next) => {
   });
 });
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 // ---------------------StatusReaduToPrint Staff----------------
 
 exports.updateStaffStatusToPrint = catchAsyncErron(async (req, res, next) => {
@@ -2199,14 +1938,17 @@ exports.updateStaffStatusToPrint = catchAsyncErron(async (req, res, next) => {
     try {
       staffIds = JSON.parse(`[${staffIds}]`);
     } catch (error) {
-      staffIds = staffIds.split(",").map((id) => id.trim().replace(/^"|"$/g, ""));
+      staffIds = staffIds
+        .split(",")
+        .map((id) => id.trim().replace(/^"|"$/g, ""));
     }
   }
 
   if (!schoolID || !staffIds) {
     return res.status(400).json({
       success: false,
-      message: "Invalid request. Please provide a school ID and a list of staff IDs.",
+      message:
+        "Invalid request. Please provide a school ID and a list of staff IDs.",
     });
   }
 
@@ -2228,12 +1970,16 @@ exports.updateStaffStatusToPrint = catchAsyncErron(async (req, res, next) => {
   }
 
   // Fetch all staff members
-  const staffMembers = await Staff.find({ _id: { $in: staffIds }, school: schoolID });
+  const staffMembers = await Staff.find({
+    _id: { $in: staffIds },
+    school: schoolID,
+  });
 
   if (!staffMembers.length) {
     return res.status(404).json({
       success: false,
-      message: "No matching staff members found for the provided IDs and school ID.",
+      message:
+        "No matching staff members found for the provided IDs and school ID.",
     });
   }
 
@@ -2247,60 +1993,90 @@ exports.updateStaffStatusToPrint = catchAsyncErron(async (req, res, next) => {
 
     // ✅ Step 1: Check Required Fields (Staff's Basic Info)
     requiredFields.forEach((field) => {
-        if (
-            (field === "Name" && !staff.name) ||
-            (field === "Staff Type" && !staff.staffType) ||
-            (field === "Institute" && !staff.institute)
-        ) {
-            isValid = false;
-            reason.push(`${field} is missing`);
-        }
+      if (
+        (field === "Name" && !staff.name) ||
+        (field === "Staff Type" && !staff.staffType) ||
+        (field === "Institute" && !staff.institute)
+      ) {
+        isValid = false;
+        reason.push(`${field} is missing`);
+      }
     });
 
     // ✅ Step 2: Validate Extra Fields (Based on School Requirements)
-    if (isValid && schoolDetails.extraFieldsStaff && schoolDetails.extraFieldsStaff.length > 0) {
-        let requiredExtraFields = schoolDetails.extraFieldsStaff.map((field) => field.name); // Extract names from array
-        let staffExtraFields = staff.extraFieldsStaff ? Array.from(staff.extraFieldsStaff.keys()) : [];
-console.log(schoolDetails.extraFieldsStaff)
-        // ✅ If staff has no extraFields but school requires them, fail validation
-        if (staffExtraFields.length === 0) {
+    if (
+      isValid &&
+      schoolDetails.extraFieldsStaff &&
+      schoolDetails.extraFieldsStaff.length > 0
+    ) {
+      let requiredExtraFields = schoolDetails.extraFieldsStaff.map(
+        (field) => field.name
+      ); // Extract names from array
+      let staffExtraFields = staff.extraFieldsStaff
+        ? Array.from(staff.extraFieldsStaff.keys())
+        : [];
+      console.log(schoolDetails.extraFieldsStaff);
+      // ✅ If staff has no extraFields but school requires them, fail validation
+      if (staffExtraFields.length === 0) {
+        isValid = false;
+        reason.push(
+          `Staff member is missing all required extra fields: ${requiredExtraFields.join(
+            ", "
+          )}`
+        );
+      } else {
+        // ✅ Check if staff has all required fields & they are not empty
+        requiredExtraFields.forEach((field) => {
+          if (
+            !staff.extraFieldsStaff.has(field) ||
+            !staff.extraFieldsStaff.get(field)
+          ) {
             isValid = false;
-            reason.push(`Staff member is missing all required extra fields: ${requiredExtraFields.join(", ")}`);
-        } else {
-            // ✅ Check if staff has all required fields & they are not empty
-            requiredExtraFields.forEach((field) => {
-                if (!staff.extraFieldsStaff.has(field) || !staff.extraFieldsStaff.get(field)) {
-                    isValid = false;
-                    reason.push(`Extra field '${field}' is missing or empty`);
-                }
-            });
-        }
+            reason.push(`Extra field '${field}' is missing or empty`);
+          }
+        });
+      }
     }
-   // ✅ Step 3: Check Avatar (Ensure it's not the default)
-   if (isValid && staff.avatar && (staff.avatar.url === "https://cardpro.co.in/login.jpg" || staff.avatar.url === "https://plus.unsplash.com/premium_photo-1699534403319-978d740f9297?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D")) {
-    isValid = false;
-    reason.push("Default avatar is not allowed. Please upload a profile picture.");
-}
+    // ✅ Step 3: Check Avatar (Ensure it's not the default)
+    if (
+      isValid &&
+      staff.avatar &&
+      (staff.avatar.url === "https://cardpro.co.in/login.jpg" ||
+        staff.avatar.url ===
+          "https://plus.unsplash.com/premium_photo-1699534403319-978d740f9297?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D")
+    ) {
+      isValid = false;
+      reason.push(
+        "Default avatar is not allowed. Please upload a profile picture."
+      );
+    }
 
-if(requiredFields.includes("Signature Name") && staff.signatureImage && (staff.signatureImage.url === "https://cardpro.co.in/login.jpg" || staff.signatureImage.url === "https://plus.unsplash.com/premium_photo-1699534403319-978d740f9297?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D")){
-  isValid = false;
-  reason.push("Default Signature is not allowed. Please upload a Signature picture.");
-}
-
+    if (
+      requiredFields.includes("Signature Name") &&
+      staff.signatureImage &&
+      (staff.signatureImage.url === "https://cardpro.co.in/login.jpg" ||
+        staff.signatureImage.url ===
+          "https://plus.unsplash.com/premium_photo-1699534403319-978d740f9297?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D")
+    ) {
+      isValid = false;
+      reason.push(
+        "Default Signature is not allowed. Please upload a Signature picture."
+      );
+    }
 
     // ✅ Step 4: Final Decision (Update or Skip)
     if (isValid) {
-        validStaffIds.push(staff._id);
+      validStaffIds.push(staff._id);
     } else {
-        skippedStaff.push({ staffId: staff._id, name: staff.name, reason });
+      skippedStaff.push({ staffId: staff._id, name: staff.name, reason });
     }
-});
-
+  });
 
   if (!validStaffIds.length) {
     return res.status(400).json({
       success: false,
-      message: "No staff members were updated due to missing required fields or empty extraFields values.",
+      message:
+        "No staff members were updated due to missing required fields or empty extraFields values.",
       skippedStaff,
     });
   }
@@ -2317,29 +2093,6 @@ if(requiredFields.includes("Signature Name") && staff.signatureImage && (staff.s
     skippedStaff,
   });
 });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 // ---------------------StatusPending  Staff------------
 
@@ -2486,7 +2239,6 @@ exports.deleteStaff = catchAsyncErron(async (req, res, next) => {
     message: `${updated.modifiedCount} students' status updated to "Printed"`,
   });
 });
-
 
 exports.studentListExcel = catchAsyncErron(async (req, res, next) => {
   const schoolID = req.params.id;
@@ -2756,7 +2508,6 @@ exports.GraphData = catchAsyncErron(async (req, res, next) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
-
 
 exports.StudentsAvatars = catchAsyncErron(async (req, res, next) => {
   console.log("enter");
@@ -3071,18 +2822,22 @@ exports.StaffAvatarsDownload = catchAsyncErron(async (req, res, next) => {
   try {
     const school = await School.findById(schoolId);
     if (!school) {
-      return res.status(404).json({ success: false, message: "School not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "School not found" });
     }
 
     const students = await Student.find({ school: schoolId, status });
     if (!students.length) {
-      return res.status(404).json({ success: false, message: "No students found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "No students found" });
     }
 
     // Extracting avatar URLs and preserving original extensions
     const studentAvatars = students.map((student) => {
       const url = student?.avatar?.url || "https://cardpro.co.in/login.jpg";
-      console.log(url)
+      console.log(url);
       const originalExt = path.extname(url).split("?")[0] || ".jpg"; // Extract extension
       const name = `${student.photoNameUnuiq}${originalExt}`; // Preserve extension
 
@@ -3098,7 +2853,11 @@ exports.StaffAvatarsDownload = catchAsyncErron(async (req, res, next) => {
     // Download images and save with original extensions
     for (let { url, name } of studentAvatars) {
       try {
-        const response = await axios({ url, method: "GET", responseType: "stream" });
+        const response = await axios({
+          url,
+          method: "GET",
+          responseType: "stream",
+        });
 
         const filePath = path.join(tempDir, name.replace(/ /g, "_"));
         const writer = fs.createWriteStream(filePath);
@@ -3133,7 +2892,10 @@ exports.StaffAvatarsDownload = catchAsyncErron(async (req, res, next) => {
     fs.rmSync(tempDir, { recursive: true, force: true });
 
     // Send the ZIP file
-    res.setHeader("Content-Disposition", `attachment; filename="${zipFileName}"`);
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${zipFileName}"`
+    );
     res.setHeader("Content-Type", "application/zip");
     const readStream = fs.createReadStream(zipFilePath);
     readStream.pipe(res);
@@ -3155,12 +2917,16 @@ exports.StaffNewAvatarsDownload = catchAsyncErron(async (req, res, next) => {
   try {
     const school = await School.findById(schoolId);
     if (!school) {
-      return res.status(404).json({ success: false, message: "School not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "School not found" });
     }
 
     const staffs = await Staff.find({ school: schoolId, status });
     if (!staffs.length) {
-      return res.status(404).json({ success: false, message: "No staff found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "No staff found" });
     }
 
     const staffAvatars = staffs.map((staff) => {
@@ -3177,7 +2943,11 @@ exports.StaffNewAvatarsDownload = catchAsyncErron(async (req, res, next) => {
 
     for (let { url, name } of staffAvatars) {
       try {
-        const response = await axios({ url, method: "GET", responseType: "stream" });
+        const response = await axios({
+          url,
+          method: "GET",
+          responseType: "stream",
+        });
         const filePath = path.join(tempDir, name.replace(/ /g, "_"));
         const writer = fs.createWriteStream(filePath);
         response.data.pipe(writer);
@@ -3205,7 +2975,10 @@ exports.StaffNewAvatarsDownload = catchAsyncErron(async (req, res, next) => {
 
     fs.rmSync(tempDir, { recursive: true, force: true });
 
-    res.setHeader("Content-Disposition", `attachment; filename="${zipFileName}"`);
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${zipFileName}"`
+    );
     res.setHeader("Content-Type", "application/zip");
     const readStream = fs.createReadStream(zipFilePath);
     readStream.pipe(res);
@@ -3240,9 +3013,7 @@ exports.StaffSignatureDownload = catchAsyncErron(async (req, res, next) => {
     }
 
     const studentAvatars = students.map((student, index) => ({
-      url:
-        student.signatureImage?.url ||
-        "https://cardpro.co.in/login.jpg",
+      url: student.signatureImage?.url || "https://cardpro.co.in/login.jpg",
       name: `SIG${student.signatureNameUnuiq}`,
     }));
 
@@ -3314,8 +3085,6 @@ exports.StaffSignatureDownload = catchAsyncErron(async (req, res, next) => {
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 });
-
-
 
 exports.ExcelData = catchAsyncErron(async (req, res, next) => {
   const schoolId = req.params.id;
@@ -3533,8 +3302,11 @@ exports.ExcelData = catchAsyncErron(async (req, res, next) => {
       "Content-Type",
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     );
-   
-    res.setHeader("Content-Disposition", `attachment; filename=${modifiedName}_students.xlsx`);
+
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=${modifiedName}_students.xlsx`
+    );
 
     // Write the Excel file to the response
     await workbook.xlsx.write(res);
@@ -3555,7 +3327,7 @@ exports.ExcelDataStaff = catchAsyncErron(async (req, res, next) => {
     // Fetch the school data to get the dynamic extra fields
     const school = await School.findById(schoolId);
 
-    console.log(school.name)
+    console.log(school.name);
     if (!school) {
       return res.status(404).json({ message: "School not found" });
     }
@@ -3582,7 +3354,7 @@ exports.ExcelDataStaff = catchAsyncErron(async (req, res, next) => {
         width: 20,
       },
       { header: "Name", key: "name", width: 20 },
-    
+
       requiredFieldsStaff.includes("Father's Name") && {
         header: "FATHER'S NAME",
         key: "fatherName",
@@ -3769,17 +3541,18 @@ exports.ExcelDataStaff = catchAsyncErron(async (req, res, next) => {
       worksheet.addRow(row);
     });
 
-
     const modifiedName = school.name.replace(/[\s,]+/g, "_");
     console.log(modifiedName);
-    
-    
+
     // Set headers for file download
     res.setHeader(
       "Content-Type",
       "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     );
-    res.setHeader("Content-Disposition", `attachment; filename=${modifiedName}_staff.xlsx`);
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=${modifiedName}_staff.xlsx`
+    );
 
     // Write the Excel file to the response
     await workbook.xlsx.write(res);
@@ -3850,9 +3623,7 @@ exports.getSchoolById = async (req, res) => {
     const { id } = req.params; // Get the schoolId from URL params
     const school = await School.findById(id); // Fetch school from database
 
-  
     let queryObj = { school: new mongoose.Types.ObjectId(id) };
-
 
     if (!school) {
       return res
@@ -3860,10 +3631,9 @@ exports.getSchoolById = async (req, res) => {
         .json({ success: false, message: "School not found" });
     }
 
-
     let staffCountByStatus = {};
     let studentCountByStatus = {};
-    
+
     try {
       // Aggregating staff count by status
       staffCountByStatus = await Staff.aggregate([
@@ -3877,7 +3647,7 @@ exports.getSchoolById = async (req, res) => {
           },
         },
       ]);
-    
+
       // Aggregating student count by status
       studentCountByStatus = await Student.aggregate([
         {
@@ -3894,8 +3664,14 @@ exports.getSchoolById = async (req, res) => {
       console.log(error);
     }
 
-
-    return res.status(200).json({ success: true, data: school,staffCountByStatus,studentCountByStatus });
+    return res
+      .status(200)
+      .json({
+        success: true,
+        data: school,
+        staffCountByStatus,
+        studentCountByStatus,
+      });
   } catch (err) {
     console.error("Error fetching school data:", err);
     return res
@@ -3904,14 +3680,13 @@ exports.getSchoolById = async (req, res) => {
   }
 };
 
-
-
-
 exports.getUsersSchoolsData = async (req, res) => {
   try {
     const users = await User.find();
     if (!users.length) {
-      return res.status(404).json({ success: false, message: "No users found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "No users found" });
     }
 
     const userDataArray = await Promise.all(
@@ -3942,10 +3717,13 @@ exports.getUsersSchoolsData = async (req, res) => {
             ]);
 
             const formatAggregationData = (aggregation) => {
-              return aggregation.reduce((acc, curr) => {
-                acc[curr._id] = curr.count;
-                return acc;
-              }, { Panding: 0, "Ready to print": 0, Printed: 0 });
+              return aggregation.reduce(
+                (acc, curr) => {
+                  acc[curr._id] = curr.count;
+                  return acc;
+                },
+                { Panding: 0, "Ready to print": 0, Printed: 0 }
+              );
             };
 
             return {
@@ -3970,18 +3748,18 @@ exports.getUsersSchoolsData = async (req, res) => {
     return res.status(200).json({ success: true, data: userDataArray });
   } catch (error) {
     console.error("Error fetching users and schools data:", error);
-    return res.status(500).json({ success: false, message: "Error fetching data", error });
+    return res
+      .status(500)
+      .json({ success: false, message: "Error fetching data", error });
   }
 };
-
-
 
 exports.generateUserSchoolPdf = async (req, res) => {
   try {
     const userId = req.id; // User ID from URL
 
     // Ensure uploads directory exists
-    const uploadsDir = path.join(__dirname, '..', 'uploads');
+    const uploadsDir = path.join(__dirname, "..", "uploads");
     if (!fs.existsSync(uploadsDir)) {
       fs.mkdirSync(uploadsDir, { recursive: true });
     }
@@ -3989,7 +3767,9 @@ exports.generateUserSchoolPdf = async (req, res) => {
     // Find the user by ID
     const user = await User.findById(userId);
     if (!user) {
-      return res.status(404).json({ success: false, message: "User not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
     }
 
     // Get schools related to this user
@@ -4017,10 +3797,13 @@ exports.generateUserSchoolPdf = async (req, res) => {
         ]);
 
         const formatAggregationData = (aggregation) => {
-          return aggregation.reduce((acc, curr) => {
-            acc[curr._id] = curr.count;
-            return acc;
-          }, { Panding: 0, "Ready to print": 0, Printed: 0 });
+          return aggregation.reduce(
+            (acc, curr) => {
+              acc[curr._id] = curr.count;
+              return acc;
+            },
+            { Panding: 0, "Ready to print": 0, Printed: 0 }
+          );
         };
 
         return {
@@ -4034,36 +3817,36 @@ exports.generateUserSchoolPdf = async (req, res) => {
 
     // Create a new Excel workbook
     const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('School Data Report', {
+    const worksheet = workbook.addWorksheet("School Data Report", {
       pageSetup: {
         paperSize: 9, // A4
-        orientation: 'landscape', // Landscape mode
+        orientation: "landscape", // Landscape mode
       },
     });
 
     // Define the headers
     worksheet.columns = [
-      { header: 'Vendor Name', key: 'schoolName', width: 30 },
-      { header: 'Student Pending', key: 'studentPending', width: 15 },
-      { header: 'Student Ready to Print', key: 'studentReady', width: 20 },
-      { header: 'Student Printed', key: 'studentPrinted', width: 15 },
-      { header: 'Student Subtotal', key: 'studentSubtotal', width: 20 },
-      { header: 'Staff Pending', key: 'staffPending', width: 15 },
-      { header: 'Staff Ready to Print', key: 'staffReady', width: 20 },
-      { header: 'Staff Printed', key: 'staffPrinted', width: 15 },
-      { header: 'Staff Subtotal', key: 'staffSubtotal', width: 20 },
+      { header: "Vendor Name", key: "schoolName", width: 30 },
+      { header: "Student Pending", key: "studentPending", width: 15 },
+      { header: "Student Ready to Print", key: "studentReady", width: 20 },
+      { header: "Student Printed", key: "studentPrinted", width: 15 },
+      { header: "Student Subtotal", key: "studentSubtotal", width: 20 },
+      { header: "Staff Pending", key: "staffPending", width: 15 },
+      { header: "Staff Ready to Print", key: "staffReady", width: 20 },
+      { header: "Staff Printed", key: "staffPrinted", width: 15 },
+      { header: "Staff Subtotal", key: "staffSubtotal", width: 20 },
     ];
 
     // Add header row with background color, bold text, and larger font size
     worksheet.getRow(1).font = { bold: true, size: 16 }; // Bold and larger font size
     worksheet.getRow(1).eachCell((cell) => {
       cell.fill = {
-        type: 'pattern',
-        pattern: 'solid',
-        fgColor: { argb: 'FF4CAF50' }, // Green background
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FF4CAF50" }, // Green background
       };
-      cell.alignment = { horizontal: 'center', vertical: 'middle' }; // Center alignment
-      cell.font = { color: { argb: 'FFFFFFFF' } }; // White text color
+      cell.alignment = { horizontal: "center", vertical: "middle" }; // Center alignment
+      cell.font = { color: { argb: "FFFFFFFF" } }; // White text color
     });
 
     // Add data for each school
@@ -4080,41 +3863,41 @@ exports.generateUserSchoolPdf = async (req, res) => {
 
     schoolDataArray.forEach((school) => {
       const studentSubtotal =
-        school.studentStatusCount['Panding'] +
-        school.studentStatusCount['Ready to print'] +
-        school.studentStatusCount['Printed'];
+        school.studentStatusCount["Panding"] +
+        school.studentStatusCount["Ready to print"] +
+        school.studentStatusCount["Printed"];
       const staffSubtotal =
-        school.staffStatusCount['Panding'] +
-        school.staffStatusCount['Ready to print'] +
-        school.staffStatusCount['Printed'];
+        school.staffStatusCount["Panding"] +
+        school.staffStatusCount["Ready to print"] +
+        school.staffStatusCount["Printed"];
 
       worksheet.addRow({
         schoolName: school.schoolName,
-        studentPending: school.studentStatusCount['Panding'],
-        studentReady: school.studentStatusCount['Ready to print'],
-        studentPrinted: school.studentStatusCount['Printed'],
+        studentPending: school.studentStatusCount["Panding"],
+        studentReady: school.studentStatusCount["Ready to print"],
+        studentPrinted: school.studentStatusCount["Printed"],
         studentSubtotal: studentSubtotal,
-        staffPending: school.staffStatusCount['Panding'],
-        staffReady: school.staffStatusCount['Ready to print'],
-        staffPrinted: school.staffStatusCount['Printed'],
+        staffPending: school.staffStatusCount["Panding"],
+        staffReady: school.staffStatusCount["Ready to print"],
+        staffPrinted: school.staffStatusCount["Printed"],
         staffSubtotal: staffSubtotal,
       });
 
       // Update grand total
-      grandTotal.studentPending += school.studentStatusCount['Panding'];
-      grandTotal.studentReady += school.studentStatusCount['Ready to print'];
-      grandTotal.studentPrinted += school.studentStatusCount['Printed'];
+      grandTotal.studentPending += school.studentStatusCount["Panding"];
+      grandTotal.studentReady += school.studentStatusCount["Ready to print"];
+      grandTotal.studentPrinted += school.studentStatusCount["Printed"];
       grandTotal.studentSubtotal += studentSubtotal;
 
-      grandTotal.staffPending += school.staffStatusCount['Panding'];
-      grandTotal.staffReady += school.staffStatusCount['Ready to print'];
-      grandTotal.staffPrinted += school.staffStatusCount['Printed'];
+      grandTotal.staffPending += school.staffStatusCount["Panding"];
+      grandTotal.staffReady += school.staffStatusCount["Ready to print"];
+      grandTotal.staffPrinted += school.staffStatusCount["Printed"];
       grandTotal.staffSubtotal += staffSubtotal;
     });
 
     // Add subtotal and grand total row with color
     worksheet.addRow({
-      schoolName: 'Grand Total',
+      schoolName: "Grand Total",
       studentPending: grandTotal.studentPending,
       studentReady: grandTotal.studentReady,
       studentPrinted: grandTotal.studentPrinted,
@@ -4128,67 +3911,67 @@ exports.generateUserSchoolPdf = async (req, res) => {
     worksheet.getRow(worksheet.lastRow.number).font = { bold: true, size: 12 };
     worksheet.getRow(worksheet.lastRow.number).eachCell((cell) => {
       cell.fill = {
-        type: 'pattern',
-        pattern: 'solid',
-        fgColor: { argb: 'FFFFC107' }, // Yellow background for grand total
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FFFFC107" }, // Yellow background for grand total
       };
-      cell.alignment = { horizontal: 'center', vertical: 'middle' };
+      cell.alignment = { horizontal: "center", vertical: "middle" };
     });
 
     // Apply distinct background color for subtotal columns with updated visibility
     worksheet.getColumn(5).eachCell((cell) => {
       cell.fill = {
-        type: 'pattern',
-        pattern: 'solid',
-        fgColor: { argb: 'FFFFEB3B' }, // Brighter yellow for subtotal
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FFFFEB3B" }, // Brighter yellow for subtotal
       };
-      cell.font = { color: { argb: 'FF000000' } }; // Dark text for better contrast
+      cell.font = { color: { argb: "FF000000" } }; // Dark text for better contrast
     });
 
     worksheet.getColumn(9).eachCell((cell) => {
       cell.fill = {
-        type: 'pattern',
-        pattern: 'solid',
-        fgColor: { argb: 'FFFFEB3B' }, // Brighter yellow for subtotal
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FFFFEB3B" }, // Brighter yellow for subtotal
       };
-      cell.font = { color: { argb: 'FF000000' } }; // Dark text for better contrast
+      cell.font = { color: { argb: "FF000000" } }; // Dark text for better contrast
     });
 
     // Apply center alignment to all cells
     worksheet.eachRow((row) => {
       row.eachCell((cell) => {
-        cell.alignment = { horizontal: 'center', vertical: 'middle' };
+        cell.alignment = { horizontal: "center", vertical: "middle" };
       });
     });
 
     // Generate the Excel file
-    const filePath = path.join(uploadsDir, 'school_report.xlsx');
+    const filePath = path.join(uploadsDir, "school_report.xlsx");
     await workbook.xlsx.writeFile(filePath);
 
     // Send the file to the client
-    res.download(filePath, 'school_report.xlsx', (err) => {
+    res.download(filePath, "school_report.xlsx", (err) => {
       if (err) {
-        console.error('Error sending file:', err);
-        res.status(500).json({ success: false, message: 'Error generating report' });
+        console.error("Error sending file:", err);
+        res
+          .status(500)
+          .json({ success: false, message: "Error generating report" });
       } else {
         // After file is downloaded, delete it from the server
         setTimeout(() => {
           fs.unlink(filePath, (deleteErr) => {
             if (deleteErr) {
-              console.error('Error deleting file:', deleteErr);
+              console.error("Error deleting file:", deleteErr);
             } else {
-              console.log('File deleted successfully.');
+              console.log("File deleted successfully.");
             }
           });
         }, 5000); // 5 seconds delay before deletion
       }
     });
-
   } catch (error) {
-    console.error('Error generating Excel:', error);
-    res.status(500).json({ success: false, message: 'Error generating Excel', error });
+    console.error("Error generating Excel:", error);
+    res
+      .status(500)
+      .json({ success: false, message: "Error generating Excel", error });
   }
 };
-
-
-

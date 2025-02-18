@@ -23,6 +23,7 @@ const EditSchool = ({ params }) => {
   const [code, setCode] = useState("");
   const [requiredFields, setRequiredFields] = useState(["Student Name"]);
   const [requiredFieldsStaff, setrequiredFieldsStaff] = useState(["Name"]);
+  const [photoType, setPhotoType] = useState("Passport");
 
   const [loginDeatils,setLoginDetails]  = useState({})
   const [staffLoginDeatils,setStaffLoginDetails]  = useState({})
@@ -59,6 +60,7 @@ const EditSchool = ({ params }) => {
         setExtraFieldsStaff(school?.extraFieldsStaff);
         setLoginDetails(school?.studentLogin);
         setStaffLoginDetails(school?.staffLogin);
+        setPhotoType(school?.photoType);
 
       }
     }
@@ -76,6 +78,7 @@ const EditSchool = ({ params }) => {
       extraFieldsStaff,
       requiredFields,
       requiredFieldsStaff,
+      photoType
     };
     // Dispatch action to update school data
     const response = await dispatch(updateSchool(updatedSchoolData, schoolId));
@@ -260,7 +263,19 @@ const EditSchool = ({ params }) => {
                 onChange={(e) => setCode(e.target.value)}
               />
             </div>
+            <div>
+            <h2 className="text-lg font-bold mb-4">Select Photo Type</h2>
+      
+      <select
+        value={photoType}
+        onChange={(e) => setPhotoType(e.target.value)}
+        className="border p-2 rounded mb-4"
+      >
+        <option value="Passport">Passport</option>
+        <option value="Square">Square</option>
+      </select>
 
+            </div>
             <h2 className="mt-5 font-semibold text-xl ">Student Required</h2>
             <div className="mt-1 flex flex-col space-x-4">
               <label

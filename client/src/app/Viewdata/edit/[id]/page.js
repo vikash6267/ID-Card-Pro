@@ -41,6 +41,7 @@ const EditStudent = ({ params }) => {
   const [routeNo, setRouteNo] = useState("");
   const [modeOfTransport, setmodeOfTransport] = useState("");
   const [ID, setID] = useState("");
+  const [schoolID, setSchoolID] = useState("");
   const [houseName, setHouseName] = useState("");
   const [validUpTo, setValidUpTo] = useState("");
   const [course, setCourse] = useState("");
@@ -78,6 +79,7 @@ const EditStudent = ({ params }) => {
       console.log(temuser);
       if (temuser) {
         setID(temuser?._id);
+        setSchoolID(temuser?.school);
         setName(temuser?.name);
         setFatherName(temuser?.fatherName);
         setMotherName(temuser?.motherName);
@@ -125,14 +127,37 @@ const EditStudent = ({ params }) => {
       }
       if (user?.role == "school") {
         setcurrschool(user?.school);
+
       } else {
         let school = schools?.find((school) => school?._id == temuser?.school);
-        console.log(school);
+      console.log(school)
         setcurrschool(school);
       }
+
+
+   
     };
+   
+
     factchstudent();
   }, [user]);
+
+
+    const [photoType, setPhotoType] = useState("Passport");
+  
+    useEffect(() => {
+      console.log("schoolID:", schoolID); // Debugging ke liye
+      if (schoolID) {
+        axios.get(`/user/getschool/${schoolID}`)
+          .then((response) => {
+            setPhotoType(response.data.data.photoType || "Passport");
+            console.log(response.data.data);
+          })
+          .catch((err) => console.log("Error fetching School data", err));
+      }
+    }, [schoolID]);
+    
+  
 
   const handleFormSubmit = async (e) => {
     e.preventDefault();
@@ -175,15 +200,11 @@ const EditStudent = ({ params }) => {
     if (extraField2) formData.extraField2 = extraField2;
     if (extraFields) formData.extraFields = extraFields;
 
-    console.log(formData);
-    console.log(ID);
-    console.log(StudentlId, "param");
-
     // Show loading alert
 
     // Dispatch action to add student with formData
     const response = await dispatch(editStudent(formData, ID));
-    console.log(response);
+ 
 
     if (response === "Student updated successfully") {
       setSelectedImage(null);
@@ -248,6 +269,7 @@ const EditStudent = ({ params }) => {
                 setImageData={setImageData}
                 setSelectedImage={setSelectedImage}
                 selectedImage={selectedImage}
+                photoT={photoType}
               />
             </div>
             <div className="mb-4 w-[320px]">

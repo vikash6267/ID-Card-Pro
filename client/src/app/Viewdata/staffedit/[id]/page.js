@@ -54,6 +54,7 @@ const Editsatff = ({ params }) => {
   const [selectedImage, setSelectedImage] = useState(null); // Base64 image data
   const [SignatureData, setSignatureData] = useState({ publicId: "", url: "" }); // State to store only public_id and url
   const [selectedImageSig, setSelectedImageSig] = useState(null); // Base64 image data
+  const [schoolID, setSchoolID] = useState("");
 
   const router = useRouter();
   const dispatch = useDispatch();
@@ -80,6 +81,7 @@ const Editsatff = ({ params }) => {
       console.log(staffData);
       if (staffData) {
         setName(staffData?.name);
+        setSchoolID(staffData?.school);
         setFatherName(staffData?.fatherName);
         setHusbandName(staffData?.husbandName);
         setDob(staffData?.dob);
@@ -129,6 +131,23 @@ const Editsatff = ({ params }) => {
     };
     factchstudent();
   }, [user]);
+
+
+  const [photoType, setPhotoType] = useState("Passport");
+  
+  useEffect(() => {
+    console.log("schoolID:", schoolID); // Debugging ke liye
+    if (schoolID) {
+      axios.get(`/user/getschool/${schoolID}`)
+        .then((response) => {
+          setPhotoType(response.data.data.photoType || "Passport");
+          console.log(response.data.data);
+        })
+        .catch((err) => console.log("Error fetching School data", err));
+    }
+  }, [schoolID]);
+  
+
 
   const handleFormSubmit = async (e) => {
     e.preventDefault();
@@ -245,6 +264,7 @@ const Editsatff = ({ params }) => {
                   setImageData={setImageData}
                   setSelectedImage={setSelectedImage}
                   selectedImage={selectedImage}
+                  photoT={photoType}
                 />
               </div>
               <label

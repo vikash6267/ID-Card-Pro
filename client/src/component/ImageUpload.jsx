@@ -1,11 +1,37 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Cropper from "react-cropper";
 import "cropperjs/dist/cropper.css";
 import Swal from "sweetalert2";
 import axios from "axios";
 
-const ImageUploaderWithCrop = ({ setImageData, selectedImage, setSelectedImage,title="Upload Image" ,height=false}) => {
+const ImageUploaderWithCrop = ({
+  setImageData,
+  selectedImage,
+  setSelectedImage,
+  title = "Upload Image",
+  height = false,
+  photoT = "Passport",
+}) => {
   const [cropper, setCropper] = useState(null);
+  const [aspectRatio, setAspectRatio] = useState(1 / 1);
+  const [photoType, setPhotoType] = useState(photoT || "Passport");
+
+  useEffect(() => {
+
+    console.log(photoT)
+    if (photoT === "Passport") {
+      setAspectRatio(7 / 9);
+      setPhotoType("Passport");
+    }else{
+      setAspectRatio(1 / 1);
+      setPhotoType("Square");
+    }
+  }, [photoT]);
+  const handleAspectRatioChange = (e) => {
+    const selectedRatio = e.target.value === "Passport" ? 7 / 9 : 1 / 1;
+    setPhotoType(e.target.value);
+    setAspectRatio(selectedRatio);
+  };
 
   const handlePhotoFileSelect = (event) => {
     const file = event.target.files[0];
@@ -90,7 +116,7 @@ const ImageUploaderWithCrop = ({ setImageData, selectedImage, setSelectedImage,t
         className="flex items-center px-3 py-3 mx-auto mt-6 text-center border-2 border-dashed rounded-lg cursor-pointer"
       >
         <input
-        id={`dropzone-file-${title}`}
+          id={`dropzone-file-${title}`}
           type="file"
           className="hidden"
           onChange={handlePhotoFileSelect}
@@ -112,45 +138,37 @@ const ImageUploaderWithCrop = ({ setImageData, selectedImage, setSelectedImage,t
         <h2 className="mx-3 text-gray-400">{title}</h2>
       </label>
 
+      <select
+        onChange={handleAspectRatioChange}
+        value={photoType}
+        className="w-full p-3 mb-6 border rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-600"
+      >
+        <option value="Square">Square</option>
+        <option value="Passport">Passport</option>
+      </select>
+
       {selectedImage && (
         <div className="mt-4">
-          {
-            height ?
-            <Cropper
-            src={selectedImage}
-            style={{  width: "100%" }}
-            aspectRatio={0}        // Disable fixed aspect ratio
-            guides={false}         // Disable guides
-            viewMode={3}           // Allow free resizing and movement of the crop box
-            dragMode="move"       // Allow moving the crop box
-            responsive={true}
-            autoCropArea={1}       // Maximize crop area
-            checkOrientation={false}
-            wheelZoom={true}       // Enable zoom with mouse wheel
-            zoomable={true}        // Enable zoom with buttons
-            minCropBoxWidth={50}   // Minimum crop box width
-            minCropBoxHeight={50}  // Minimum crop box height
-            toggleDragModeOnDblclick={false}  // Disable double-click mode toggle
-            onInitialized={(instance) => setCropper(instance)}  // Initialize the cropper instance
-          /> :
           <Cropper
+            key={aspectRatio} // **FIX: Ensures Cropper updates when aspectRatio changes**
             src={selectedImage}
-            style={{ height: 400, width: "100%" }}
-            aspectRatio={0}        // Disable fixed aspect ratio
-            guides={false}         // Disable guides
-            viewMode={3}           // Allow free resizing and movement of the crop box
-            dragMode="move"       // Allow moving the crop box
+            style={{ width: "100%", height: height ? "auto" : 400 }}
+            className="w-full h-64 rounded border"
+            aspectRatio={aspectRatio}
+            guides={false}
+            viewMode={3}
+            dragMode="move"
             responsive={true}
-            autoCropArea={1}       // Maximize crop area
+            autoCropArea={1}
             checkOrientation={false}
-            wheelZoom={true}       // Enable zoom with mouse wheel
-            zoomable={true}        // Enable zoom with buttons
-            minCropBoxWidth={50}   // Minimum crop box width
-            minCropBoxHeight={50}  // Minimum crop box height
-            toggleDragModeOnDblclick={false}  // Disable double-click mode toggle
-            onInitialized={(instance) => setCropper(instance)}  // Initialize the cropper instance
+            wheelZoom={true}
+            zoomable={true}
+            minCropBoxWidth={50}
+            minCropBoxHeight={50}
+            toggleDragModeOnDblclick={false}
+            onInitialized={(instance) => setCropper(instance)}
           />
-          }
+
           <p
             onClick={handleUpload}
             className="mt-4 cursor-pointer px-4 py-2 bg-blue-500 text-white rounded"

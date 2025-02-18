@@ -36,15 +36,14 @@ app.use(cookieParser());
 
 // CORS setup
 const allowedOrigins = [
- "https://xtream-generator.com",
- "https://www.xtream-generator.com",
- "https://cardpro.co.in",
- "https://www.cardpro.co.in",
-"https://id-card-ten.vercel.app",
-"http://localhost:3000",
-"http://192.168.29.84:3000/",
-"https://id-card-pro.vercel.app"
-  
+  "https://xtream-generator.com",
+  "https://www.xtream-generator.com",
+  "https://cardpro.co.in",
+  "https://www.cardpro.co.in",
+  "https://id-card-ten.vercel.app",
+  "http://localhost:3000",
+  "http://192.168.29.84:3000/",
+  "https://id-card-pro.vercel.app",
 ];
 
 app.use(
@@ -74,7 +73,7 @@ const errorHandler = require("./utils/errorHandler");
 app.post(
   "/upload-excel/:id",
   upload,
- 
+
   async (req, res, next) => {
     const file = req.files[0];
     const mappings = JSON.parse(req.body.data); // Mapping data sent from frontend
@@ -112,28 +111,10 @@ app.post(
     // Static column indexes mapping
     const columnIndex = {
       name: newheader.indexOf(cleanedMappings?.StudentName || ""),
-      fatherName: newheader.indexOf(cleanedMappings?.FathersName || ""),
-      motherName: newheader.indexOf(cleanedMappings?.MothersName || ""),
       class: newheader.indexOf(cleanedMappings?.Class || ""),
       section: newheader.indexOf(cleanedMappings?.Section || ""),
-      contact: newheader.indexOf(cleanedMappings?.ContactNo || ""),
-      address: newheader.indexOf(cleanedMappings?.Address || ""),
-      dob: newheader.indexOf(cleanedMappings?.DateofBirth || ""),
-      admissionNo: newheader.indexOf(cleanedMappings?.AdmissionNo || ""),
-      rollNo: newheader.indexOf(cleanedMappings?.RollNo || ""),
-      studentId: newheader.indexOf(cleanedMappings?.StudentID || ""),
-      adharNo: newheader.indexOf(cleanedMappings?.AadharNo || ""),
-      routeNo: newheader.indexOf(cleanedMappings?.RouteNo || ""),
       photoName: newheader.indexOf(cleanedMappings?.PhotoNo || ""),
-
-      houseName: newheader.indexOf(cleanedMappings?.HouseName || ""),
-      validUpTo: newheader.indexOf(cleanedMappings?.ValidUpTo || ""),
       course: newheader.indexOf(cleanedMappings?.Course || ""),
-      batch: newheader.indexOf(cleanedMappings?.Batch || ""),
-      idNo: newheader.indexOf(cleanedMappings?.IDNo || ""),
-      regNo: newheader.indexOf(cleanedMappings?.RegNo || ""),
-      extraField1: newheader.indexOf(cleanedMappings?.ExtraField1 || ""),
-      extraField2: newheader.indexOf(cleanedMappings?.ExtraField2 || ""),
     };
 
     // Dynamically handle extra fields from extraMapping
@@ -153,17 +134,6 @@ app.post(
       }
     }
 
-    console.log("Final Mapped Extra Fields: ", extraFields);
-
-    console.log(
-      "Normalized newheader: ",
-      newheader.map((item) => item.trim().toLowerCase())
-    );
-    console.log(
-      "Normalized extraMapping values: ",
-      Object.values(extraMapping).map((value) => value.trim().toLowerCase())
-    );
-
     if (columnIndex.name === -1) {
       return next(new errorHandler("Name is Required"));
     }
@@ -174,28 +144,11 @@ app.post(
     const studentData = await Promise.all(
       dataRows.map(async (row) => {
         const student = {
-          name: row[columnIndex.name],
-          fatherName: row[columnIndex.fatherName],
-          motherName: row[columnIndex.motherName],
-          class: row[columnIndex.class],
-          section: row[columnIndex.section],
-          contact: row[columnIndex.contact],
-          address: row[columnIndex.address],
-          dob: row[columnIndex.dob],
-          admissionNo: row[columnIndex.admissionNo],
-          rollNo: row[columnIndex.rollNo],
-          studentID: row[columnIndex.studentId],
-          aadharNo: row[columnIndex.adharNo],
-          routeNo: row[columnIndex.routeNo],
-          photoName: row[columnIndex.photoName],
-          houseName: row[columnIndex.houseName], // New field
-          validUpTo: row[columnIndex.validUpTo], // New field
-          course: row[columnIndex.course], // New field
-          batch: row[columnIndex.batch], // New field
-          idNo: row[columnIndex.idNo], // New field
-          regNo: row[columnIndex.regNo], // New field
-          extraField1: row[columnIndex.extraField1], // New field
-          extraField2: row[columnIndex.extraField2], // New field
+          name: row[columnIndex.name]?.toUpperCase(),
+          class: row[columnIndex.class]?.toUpperCase(),
+          section: row[columnIndex.section]?.toUpperCase(),
+          photoName: row[columnIndex.photoName]?.toUpperCase(),
+          course: row[columnIndex.course]?.toUpperCase(),
           school: schoolID,
           user: req.id,
           photoNameUnuiq: await getNextSequenceValue("studentName"),
@@ -217,7 +170,7 @@ app.post(
             const sanitizedKey = cleanKey(extraKey);
             student.extraFields.set(
               sanitizedKey,
-              row[columnIndexForExtraField]
+              row[columnIndexForExtraField]?.toUpperCase() || "N/A"
             );
           } else {
             const sanitizedKey = cleanKey(extraKey);
@@ -320,16 +273,15 @@ app.post(
 app.post(
   "/upload-excel/staff/:id",
   upload,
- 
+
   async (req, res) => {
     const file = req.files[0];
 
     const mappings = JSON.parse(req.body.data); // Mapping data sent from frontend
     const extraMapping = JSON.parse(req.body.extra); // Mapping data for extra fields sent from frontend
 
-    console.log(mappings)
+    console.log(mappings);
 
-    
     const cleanMapping = (data) => {
       const cleanedData = {};
       for (let key in data) {
@@ -367,7 +319,7 @@ app.post(
         return header; // Return null as is
       }
     });
-   console.log("newheader", newheader);
+    console.log("newheader", newheader);
 
     const columnIndex = {
       name: newheader.indexOf(cleanedMappings.Name || ""),
@@ -418,9 +370,6 @@ app.post(
       }
     }
 
- 
- 
-
     if (!columnIndex.name == -1) {
       return next(new errorHandler("Name is Required"));
     }
@@ -438,39 +387,38 @@ app.post(
     const staffData = await Promise.all(
       dataRows.map(async (row) => {
         const staff = {
-          name: row[columnIndex.name],
-          fatherName: row[columnIndex.fatherName],
-          husbandName: row[columnIndex.husbandName],
-          qualification: row[columnIndex.qualification],
-          doj: row[columnIndex.doj],
-          contact: row[columnIndex.contact],
-          email: row[columnIndex.email],
-          address: row[columnIndex.address],
-          dob: row[columnIndex.dob],
-          staffID: row[columnIndex.staffID],
-          schoolName: row[columnIndex.schoolName],
-          dispatchNo: row[columnIndex.dispatchNo],
-          ihrmsNo: row[columnIndex.ihrmsNo],
-          designation: row[columnIndex.designation],
-          uid: row[columnIndex.uid],
-          udiseCode: row[columnIndex.udiseCode],
-          bloodGroup: row[columnIndex.bloodGroup],
-          dateOfissue: row[columnIndex.dateOfissue],
-          photoName: row[columnIndex.photoName], 
-          signatureName: row[columnIndex.signatureName], 
+          name: row[columnIndex.name]?.toString().toUpperCase(),
+          fatherName: row[columnIndex.fatherName]?.toString().toUpperCase(),
+          husbandName: row[columnIndex.husbandName]?.toString().toUpperCase(),
+          qualification: row[columnIndex.qualification]?.toString().toUpperCase(),
+          doj: row[columnIndex.doj]?.toString().toUpperCase(),
+          contact: row[columnIndex.contact]?.toString().toUpperCase(),
+          email: row[columnIndex.email]?.toString().toUpperCase(),
+          address: row[columnIndex.address]?.toString().toUpperCase(),
+          dob: row[columnIndex.dob]?.toString().toUpperCase(),
+          staffID: row[columnIndex.staffID]?.toString().toUpperCase(),
+          schoolName: row[columnIndex.schoolName]?.toString().toUpperCase(),
+          dispatchNo: row[columnIndex.dispatchNo]?.toString().toUpperCase(),
+          ihrmsNo: row[columnIndex.ihrmsNo]?.toString().toUpperCase(),
+          designation: row[columnIndex.designation]?.toString().toUpperCase(),
+          uid: row[columnIndex.uid]?.toString().toUpperCase(),
+          udiseCode: row[columnIndex.udiseCode]?.toString().toUpperCase(),
+          bloodGroup: row[columnIndex.bloodGroup]?.toString().toUpperCase(),
+          dateOfissue: row[columnIndex.dateOfissue]?.toString().toUpperCase(),
+          photoName: row[columnIndex.photoName]?.toString().toUpperCase(),
+          signatureName: row[columnIndex.signatureName]?.toString().toUpperCase(),
           school: schoolID,
           user: req.id,
-
-          staffType: row[columnIndex.staffType],
-          adharNo: row[columnIndex.adharNo],
-          beltNo: row[columnIndex.beltNo],
-          licenceNo: row[columnIndex.licenceNo],
-          idNo: row[columnIndex.idNo],
-          jobStatus: row[columnIndex.jobStatus],
-          panCardNo: row[columnIndex.panCardNo],
-          extraField1: row[columnIndex.extraField1],
-          extraField2: row[columnIndex.extraField2],
-          institute: row[columnIndex.institute],
+          staffType: row[columnIndex.staffType]?.toString().toUpperCase(),
+          adharNo: row[columnIndex.adharNo]?.toString().toUpperCase(),
+          beltNo: row[columnIndex.beltNo]?.toString().toUpperCase(),
+          licenceNo: row[columnIndex.licenceNo]?.toString().toUpperCase(),
+          idNo: row[columnIndex.idNo]?.toString().toUpperCase(),
+          jobStatus: row[columnIndex.jobStatus]?.toString().toUpperCase(),
+          panCardNo: row[columnIndex.panCardNo]?.toString().toUpperCase(),
+          extraField1: row[columnIndex.extraField1]?.toString().toUpperCase(),
+          extraField2: row[columnIndex.extraField2]?.toString().toUpperCase(),
+          institute: row[columnIndex.institute]?.toString().toUpperCase(),
           photoNameUnuiq: await getNextSequenceValue("staffName"),
           signatureNameUnuiq: await getNextSequenceValue("staffSignature"),
           extraFieldsStaff: new Map(),
@@ -527,7 +475,7 @@ app.post(
             // If found, set the value in staff.extraFieldsStaff
             staff.extraFieldsStaff.set(
               sanitizedKey,
-              row[columnIndexForExtraField]
+              row[columnIndexForExtraField]?.toString().toUpperCase()
             );
           } else {
             // If not found, set a placeholder value
@@ -607,12 +555,13 @@ app.use("/admin", require("./routes/adminRoutes.js"));
 app.use("/image", require("./routes/imageRoute.js"));
 app.use("/pdf", require("./routes/pdf.js"));
 
-
-app.get('/proxy', async (req, res) => {
+app.get("/proxy", async (req, res) => {
   const url = req.query.url;
 
   if (!url) {
-    return res.status(400).json({ error: 'URL parameter is missing or invalid.' });
+    return res
+      .status(400)
+      .json({ error: "URL parameter is missing or invalid." });
   }
 
   try {
@@ -621,11 +570,12 @@ app.get('/proxy', async (req, res) => {
 
     res.json(data); // Forward the JSON response to the client
   } catch (error) {
-    console.error('Error fetching data:', error.message);
-    res.status(500).json({ error: 'Error fetching data from the provided URL.' });
+    console.error("Error fetching data:", error.message);
+    res
+      .status(500)
+      .json({ error: "Error fetching data from the provided URL." });
   }
 });
-
 
 //error handling
 

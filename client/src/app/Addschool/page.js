@@ -19,6 +19,7 @@ const AddSchool = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [requiredFields, setRequiredFields] = useState(["Student Name"]);
   const [requiredFieldsStaff, setrequiredFieldsStaff] = useState(["Name"]);
+  const [photoType, setPhotoType] = useState("Passport");
 
   // Student For adddition
   const [extraFields, setExtraFields] = useState([]);
@@ -69,7 +70,8 @@ const AddSchool = () => {
       requiredFields,
       requiredFieldsStaff,
       extraFields,
-      extraFieldsStaff
+      extraFieldsStaff,
+      photoType
     };
     console.log(data);
     // Add your form submission logic here
@@ -248,6 +250,21 @@ const AddSchool = () => {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
               />
+            </div>
+
+
+            <div>
+            <h2 className="text-lg font-bold mb-4">Select Photo Type</h2>
+      
+      <select
+        value={photoType}
+        onChange={(e) => setPhotoType(e.target.value)}
+        className="border p-2 rounded mb-4"
+      >
+        <option value="Passport">Passport</option>
+        <option value="Square">Square</option>
+      </select>
+
             </div>
             <h2 className="mt-5 font-semibold text-xl ">
               Student Required 

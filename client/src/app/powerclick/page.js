@@ -161,8 +161,8 @@ const StudentDisplay = () => {
   const [stuSection, setSection] = useState("");
   const [stuCourse, setCourse] = useState("");
   const [currRole, setCurrRole] = useState("");
-  const [aspectRatio, setAspectRatio] = useState(1 / 1);
   const [className, setClassname] = useState([]);
+  const [aspectRatio, setAspectRatio] = useState(1 / 1);
 
   const handleAspectRatioChange = (e) => {
     const selectedRatio = e.target.value === "passport" ? 7 / 9 : 1 / 1;
