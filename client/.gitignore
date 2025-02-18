@@ -6,6 +6,8 @@
 .pnp.js
 .yarn/install-state.gz
 
+/axiosconfig.js
+axiosconfig.js
 # testing
 /coverage
 
