@@ -93,6 +93,30 @@ const ClassUpdater = ({ schoolId, isOpen, onClose }) => {
     }
   };
 
+  const handleRemoveAllStudent = async () => {
+    const result = await Swal.fire({
+      title: "Are you sure?",
+      text: "This will remove all students from the school!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Yes, remove students!",
+      cancelButtonText: "Cancel",
+    });
+  
+    if (result.isConfirmed) {
+      setIsLoading(true); // Set loading to true when the request starts
+      try {
+        await axios.delete(`/user/delete-students/${schoolId}`); // Use DELETE method
+        Swal.fire("Success", "All students removed successfully!", "success");
+      } catch (err) {
+        Swal.fire("Error", "Failed to remove students", "error");
+      } finally {
+        setIsLoading(false); // Set loading to false after the request finishes
+      }
+    }
+  };
+  
+
   const handleDeleteClass = async (className) => {
     const result = await Swal.fire({
       title: "Are you sure?",
@@ -138,12 +162,18 @@ const ClassUpdater = ({ schoolId, isOpen, onClose }) => {
               Update Class Names
             </h2>
 
-            <div className="actions mb-4 text-center">
+            <div className="actions mb-4 text-center flex justify-between">
               <button
                 onClick={handleRemoveAllPhotos}
                 className="remove-photos-btn bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md transition duration-300"
               >
                 Remove All Photos
+              </button>
+              <button
+                onClick={handleRemoveAllStudent}
+                className="remove-photos-btn bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md transition duration-300"
+              >
+                Remove All Students
               </button>
             </div>
 

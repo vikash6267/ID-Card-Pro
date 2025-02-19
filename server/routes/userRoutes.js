@@ -621,6 +621,25 @@ router.put("/update-classes", async (req, res) => {
 });
 
 
+router.delete("/delete-students/:schoolId", async (req, res) => {
+  try {
+    const { schoolId } = req.params;
+
+    // Delete all students of the given schoolId
+    const result = await Student.deleteMany({ school: schoolId });
+// Check remaining students (if any)
+const remainingStudents = await Student.find({ school: schoolId });
+console.log(remainingStudents); // This should be an empty array if all were deleted
+
+    res.json({ 
+      success: true, 
+      message: `${result.deletedCount} students deleted successfully` 
+    });
+  } catch (error) {
+    console.error("Error deleting students:", error);
+    res.status(500).json({ success: false, message: "Error deleting students" });
+  }
+});
 
 
 
