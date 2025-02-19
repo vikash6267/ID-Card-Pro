@@ -118,7 +118,7 @@ function Page({ params }) {
         setPanCardNo(staffData?.panCardNo); // New field
         setAadharCardNo(staffData?.adharNo); // New field
         setExtraField1(staffData?.extraField1); // New field
-        setExtraField2(staffData?.extraField2); // New field
+        setExtraField2(staffData?.institute); // New field
         setExtraFieldsStaff(staffData?.extraFieldsStaff);
         if (staffData?.status === "Panding") {
           setIsPending(true);
@@ -174,7 +174,8 @@ function Page({ params }) {
       if (panCardNo) formData.panCardNo = panCardNo.trim();
       if (aadharCardNo) formData.adharNo = aadharCardNo.trim();
       if (extraField1) formData.extraField1 = extraField1.trim();
-      if (extraField2) formData.extraField2 = extraField2.trim();
+           if (extraField2) formData.institute = extraField2.trim();
+
       console.log(formData);
       console.log(id);
       if (extraFieldsStaff) formData.extraFieldsStaff = extraFieldsStaff;
