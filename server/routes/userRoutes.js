@@ -591,20 +591,38 @@ router.get("/get-classes/:schoolId", async (req, res) => {
 // Bulk update class names
 router.put("/update-classes", async (req, res) => {
   try {
-    const { schoolId, classUpdates } = req.body; // classUpdates = { oldClassName: newClassName }
+    const { schoolId, classUpdates } = req.body; // { oldClassName: newClassName }
 
-    for (const oldClass in classUpdates) {
-      await Student.updateMany(
-        { school: schoolId, class: oldClass },
-        { $set: { class: classUpdates[oldClass], status: "Panding" } }
-      );
+    console.log(classUpdates);
+
+    // Step 1: Fetch all students of the school
+    const students = await Student.find({ school: schoolId });
+
+    // Step 2: Create a mapping of old classes to new classes
+    const updatedStudents = students.map(student => {
+      return {
+        updateOne: {
+          filter: { _id: student._id },
+          update: { $set: { class: classUpdates[student.class], status: "Panding" } }
+        }
+      };
+    });
+
+    // Step 3: Bulk update students
+    if (updatedStudents.length > 0) {
+      await Student.bulkWrite(updatedStudents);
     }
 
     res.json({ success: true, message: "Classes updated successfully" });
   } catch (error) {
+    console.error("Error updating classes:", error);
     res.status(500).json({ success: false, message: "Error updating classes" });
   }
 });
+
+
+
+
 
 router.put("/remove-all-photos", async (req, res) => {
   try {

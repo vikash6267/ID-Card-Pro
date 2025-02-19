@@ -3,11 +3,7 @@ import { useState, useEffect } from "react";
 import axios from "../../../../axiosconfig";
 import Swal from "sweetalert2";
 
-const ClassUpdater = ({
-  schoolId = "6766a3c749f33676866a00a6",
-  isOpen,
-  onClose,
-}) => {
+const ClassUpdater = ({ schoolId, isOpen, onClose }) => {
   const [classes, setClasses] = useState([]);
   const [classUpdates, setClassUpdates] = useState({});
   const [schoolName, setSchoolName] = useState("Loading...");
@@ -59,6 +55,7 @@ const ClassUpdater = ({
           await axios.put("/user/update-classes", { schoolId, classUpdates });
           Swal.fire("Updated!", "Class names have been updated.", "success");
           setClassUpdates({});
+          fetch()
         } catch (err) {
           Swal.fire("Error!", "Failed to update classes. Try again.", "error");
           console.error("Error updating classes", err);
@@ -175,14 +172,54 @@ const ClassUpdater = ({
                         <td className="p-3 text-gray-700 text-sm sm:text-base">
                           {cls}
                         </td>
+
                         <td className="p-3">
-                          <input
-                            type="text"
-                            className="class-input border p-2 rounded-md w-full focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
-                            defaultValue={cls}
-                            onChange={(e) => handleChange(cls, e.target.value)}
-                          />
+                          <select
+                            className="border p-2 rounded-md w-full focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
+                            value={classUpdates[cls] || cls}
+                            onChange={(e) => {
+                              const selectedValue = e.target.value;
+                              if (selectedValue === "add-new") {
+                                setClassUpdates((prev) => ({
+                                  ...prev,
+                                  [cls]: "",
+                                }));
+                              } else {
+                                handleChange(cls, selectedValue);
+                              }
+                            }}
+                          >
+                            {classes.map((c) => (
+                              <option key={c} value={c}>
+                                {c}
+                              </option>
+                            ))}
+                            <option value="add-new">Add New Class</option>
+                          </select>
+
+                          {classUpdates[cls] !== undefined && (
+                            <input
+                              type="text"
+                              className="border p-2 rounded-md w-full mt-2 focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
+                              placeholder="Enter new class name"
+                              value={classUpdates[cls]}
+                              onChange={(e) => {
+                                setClassUpdates((prev) => ({
+                                  ...prev,
+                                  [cls]: e.target.value,
+                                }));
+                              }}
+                              onBlur={() => {
+                                if (!classUpdates[cls].trim()) {
+                                  const updatedState = { ...classUpdates };
+                                  delete updatedState[cls];
+                                  setClassUpdates(updatedState);
+                                }
+                              }}
+                            />
+                          )}
                         </td>
+
                         <td className="p-3 text-center">
                           <button
                             onClick={() => handleDeleteClass(cls)}
