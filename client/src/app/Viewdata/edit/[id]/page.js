@@ -143,14 +143,14 @@ const EditStudent = ({ params }) => {
   }, [user]);
 
 
-    const [photoType, setPhotoType] = useState("Passport");
+    const [photoType, setPhotoType] = useState("Square");
   
     useEffect(() => {
       console.log("schoolID:", schoolID); // Debugging ke liye
       if (schoolID) {
         axios.get(`/user/getschool/${schoolID}`)
           .then((response) => {
-            setPhotoType(response.data.data.photoType || "Passport");
+            setPhotoType(response.data.data.photoType || "Square");
             console.log(response.data.data);
           })
           .catch((err) => console.log("Error fetching School data", err));

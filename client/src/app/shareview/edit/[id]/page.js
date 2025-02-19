@@ -53,6 +53,7 @@ function Page({ params }) {
   const schoolId = searchParams.get("schoolid"); // Access query param
 
   const [loading, setLoding] = useState(true);
+    const [photoType, setPhotoType] = useState("Square");
 
   useEffect(() => {
 
@@ -63,6 +64,8 @@ function Page({ params }) {
         .get(`user//getschool/${schoolId}`)
         .then((response) => {
           setcurrschool(response.data.data); // Update the state with fetched data
+          setPhotoType(response.data.data.photoType || "Square");
+
         })
         .catch((err) => {
           setError("Error fetching school data"); // Handle error if request fails

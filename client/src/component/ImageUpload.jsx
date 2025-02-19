@@ -10,11 +10,11 @@ const ImageUploaderWithCrop = ({
   setSelectedImage,
   title = "Upload Image",
   height = false,
-  photoT = "Passport",
+  photoT = "Square",
 }) => {
   const [cropper, setCropper] = useState(null);
   const [aspectRatio, setAspectRatio] = useState(1 / 1);
-  const [photoType, setPhotoType] = useState(photoT || "Passport");
+  const [photoType, setPhotoType] = useState(photoT || "Square");
 
   useEffect(() => {
 
@@ -141,6 +141,7 @@ const ImageUploaderWithCrop = ({
       <select
         onChange={handleAspectRatioChange}
         value={photoType}
+        disabled
         className="w-full p-3 mb-6 border rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-600"
       >
         <option value="Square">Square</option>

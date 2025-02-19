@@ -170,7 +170,7 @@ app.post(
             const sanitizedKey = cleanKey(extraKey);
             student.extraFields.set(
               sanitizedKey,
-              row[columnIndexForExtraField]?.toUpperCase() || "N/A"
+              row[columnIndexForExtraField]?.toString().toUpperCase() || "N/A"
             );
           } else {
             const sanitizedKey = cleanKey(extraKey);

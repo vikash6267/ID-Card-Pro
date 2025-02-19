@@ -67,6 +67,8 @@ const {
   StaffSignatureDownload,
   getUsersSchoolsData,
   generateUserSchoolPdf,
+  duplicateStudentToPending,
+  duplicateStaffToPending,
 } = require("../controllers/userControllers");
 const isAuthenticated = require("../middlewares/auth");
 const router = express.Router();
@@ -141,6 +143,8 @@ router.post("/school/search", isAuthenticated, SerchSchool);
 router.post("/school/imagesData/:id", isAuthenticated, setImagesData);
 router.post("/school/excleData/:id", isAuthenticated, setExcleData);
 
+router.post("/student/change-status/copy/:id", duplicateStudentToPending);
+router.post("/staff/change-status/copy/:id", duplicateStaffToPending);
 // Student Status
 router.post("/student/change-status/readyto/:id", updateStudentStatusToPrint);
 router.post("/student/change-status/pending/:id", updateStudentStatusToPending);

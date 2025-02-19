@@ -20,6 +20,7 @@ import {
   FaUserTimes,
   FaShareAlt,
 } from "react-icons/fa";
+import { HiDuplicate } from "react-icons/hi";
 
 import { FaCheckCircle, FaTimesCircle } from "react-icons/fa";
 
@@ -1236,6 +1237,67 @@ const Viewdata = () => {
     }
   };
 
+  const copyData = async (studentId) => {
+    try {
+      // Show loading spinner
+      Swal.fire({
+        title: "Updating...",
+        text: "Please wait while the status is being updated.",
+        icon: "info",
+        showCancelButton: false,
+        allowOutsideClick: false,
+        didOpen: () => {
+          Swal.showLoading(); // Display loading spinner
+        },
+      });
+
+      if (currRole == "student") {
+        // Make the API call
+        const response = await axios.post(
+          `/user/student/change-status/copy/${currSchool}?`,
+          { studentIds: [studentId] }, // Wrap studentId in an array
+          config()
+        );
+
+        // Fetch updated student list
+        handleFormSubmit();
+        setStudentIds([]);
+        setStaffIds([]);
+        // Close the loading spinner and show success message
+        Swal.fire({
+          title: "Success!",
+          text: "Student status has been updated.",
+          icon: "success",
+        });
+      }
+
+      if (currRole == "staff") {
+        const response = await axios.post(
+          `/user/staff/change-status/copy/${currSchool}?`,
+          { staffIds: [studentId] },
+          config()
+        );
+        handleFormSubmit();
+        setStudentIds([]);
+        setStaffIds([]);
+        Swal.fire({
+          title: "Success!",
+          text: "Student status has been updated.",
+          icon: "success",
+        });
+      }
+    } catch (error) {
+      console.error("Error updating status:", error);
+
+      // Close the loading spinner and show error message
+      Swal.fire({
+        title: "Error!",
+        text: "Failed to update student status. Please try again later.",
+        icon: "error",
+      });
+    }
+  };
+
   const Statuschecker = (value) => {
     console.log(value);
 
@@ -1695,9 +1757,17 @@ const Viewdata = () => {
                       )}
 
                       <div className=" mt-3">
-                        <h3 className=" font-bold text-gray-800 mt-4 text-center text-wrap break-words">
+                        <h5 className="font-bold text-gray-800 mt-4 text-center text-wrap break-words">
                           {student?.name}
-                        </h3>
+                        </h5>
+
+                        {student?.isDuplicate === "true" && (
+                          <div className="flex items-center justify-center mt-2 bg-red-100 text-red-700 px-3 py-1 rounded-md shadow-md">
+                            <HiDuplicate className="mr-1 text-red-600 text-lg" />
+                            <span className="font-semibold">Duplicate</span>
+                          </div>
+                        )}
+
                         <div className="flex flex-col items-center mt-1">
                           <div className="grid grid-cols-2 gap-2 ">
                             <Image
@@ -1810,6 +1880,17 @@ const Viewdata = () => {
                           </button>
                         </div>
                       )}
+
+                      {status === "Printed" && user?.school && (
+                        <div className="flex justify-center mt-4 gap-3">
+                          <button
+                            className="flex items-center gap-2 bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded-lg shadow-lg"
+                            onClick={() => copyData(student._id)}
+                          >
+                            <FaArrowLeft /> Copy To Pending
+                          </button>
+                        </div>
+                      )}
                     </div>
                   ))}
               </div>
@@ -1866,6 +1947,12 @@ const Viewdata = () => {
                     <h3 className="text-xl font-semibold text-center text-gray-800">
                       {staff?.name}
                     </h3>
+                    {staff?.isDuplicate === "true" && (
+                      <div className="flex items-center justify-center mt-2 bg-red-100 text-red-700 px-3 py-1 rounded-md shadow-md">
+                        <HiDuplicate className="mr-1 text-red-600 text-lg" />
+                        <span className="font-semibold">Duplicate</span>
+                      </div>
+                    )}
                     <div className="flex flex-col items-center mt-1">
                       <div className="grid grid-cols-2 gap-2">
                         <Image
@@ -1984,7 +2071,7 @@ const Viewdata = () => {
                         </button>
                       </div>
                     )}
-                    {status === "Printed" && (
+                    {status === "Printed" && !user?.school && (
                       <div className="flex justify-center mt-4 gap-3">
                         <button
                           className="flex items-center gap-2 bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded-lg shadow-lg"
@@ -1997,6 +2084,17 @@ const Viewdata = () => {
                           onClick={() => moveBackreadytoSingle(staff._id)}
                         >
                           <FaArrowLeft /> Ready
+                        </button>
+                      </div>
+                    )}
+
+                    {status === "Printed" && user?.school && (
+                      <div className="flex justify-center mt-4 gap-3">
+                        <button
+                          className="flex items-center gap-2 bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded-lg shadow-lg"
+                          onClick={() => copyData(staff._id)}
+                        >
+                          <FaArrowLeft /> Copy To Pending
                         </button>
                       </div>
                     )}

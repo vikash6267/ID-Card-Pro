@@ -63,7 +63,7 @@ const schoolModel = mongoose.Schema(
     photoType:{
       type: String,
       enum: ["Passport",  "Square"],
-      default: "Passport",
+      default: "Square",
     },
     user: { type: mongoose.Schema.Types.ObjectId, ref: "user" },
     cardTemplate: { type: mongoose.Schema.Types.Mixed, default: {} }, // Allows any object structure

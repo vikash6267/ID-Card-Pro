@@ -686,7 +686,14 @@ exports.addStudent = catchAsyncErron(async (req, res, next) => {
 
     if (!currSchool) return next(new errorHandler("invalidate School ID"));
 
-    const { name, extraFields, class: studentClass, section, session, course } = req.body;
+    const {
+      name,
+      extraFields,
+      class: studentClass,
+      section,
+      session,
+      course,
+    } = req.body;
 
     console.log(req.body);
     if (!name) return next(new errorHandler("name is Required"));
@@ -698,7 +705,10 @@ exports.addStudent = catchAsyncErron(async (req, res, next) => {
     if (extraFields) {
       // Convert all values inside extraFields to uppercase
       currStudent.extraFields = Object.fromEntries(
-        Object.entries(extraFields).map(([key, value]) => [key, value.toUpperCase()])
+        Object.entries(extraFields).map(([key, value]) => [
+          key,
+          value.toUpperCase(),
+        ])
       );
     }
     if (studentClass) {
@@ -752,7 +762,14 @@ exports.addStudent = catchAsyncErron(async (req, res, next) => {
 
     if (!currSchool) return next(new errorHandler("invalidate School ID"));
 
-    const { name, extraFields, class: studentClass, section, session, course } = req.body;
+    const {
+      name,
+      extraFields,
+      class: studentClass,
+      section,
+      session,
+      course,
+    } = req.body;
 
     console.log(req.body);
     if (!name) return next(new errorHandler("name is Required"));
@@ -764,7 +781,10 @@ exports.addStudent = catchAsyncErron(async (req, res, next) => {
     if (extraFields) {
       // Convert all values inside extraFields to uppercase
       currStudent.extraFields = Object.fromEntries(
-        Object.entries(extraFields).map(([key, value]) => [key, value.toUpperCase()])
+        Object.entries(extraFields).map(([key, value]) => [
+          key,
+          value.toUpperCase(),
+        ])
       );
     }
     if (studentClass) {
@@ -808,7 +828,6 @@ exports.addStudent = catchAsyncErron(async (req, res, next) => {
     });
   }
 });
-
 
 exports.editStudent = catchAsyncErron(async (req, res, next) => {
   try {
@@ -909,19 +928,23 @@ exports.addStaff = catchAsyncErron(async (req, res, next) => {
 
       if (!currSchool) return next(new errorHandler("Invalid School ID"));
 
-      const { name, extraFieldsStaff, staffType, institute, SignatureData } = req.body;
+      const { name, extraFieldsStaff, staffType, institute, SignatureData } =
+        req.body;
 
       console.log(req.body);
       if (!name) return next(new errorHandler("Name is Required"));
 
       let currStaff = {
-        name: name.toUpperCase() // Ensure name is converted to uppercase
+        name: name.toUpperCase(), // Ensure name is converted to uppercase
       };
 
       // Convert extraFieldsStaff to uppercase if it exists
       if (extraFieldsStaff) {
         currStaff.extraFieldsStaff = Object.fromEntries(
-          Object.entries(extraFieldsStaff).map(([key, value]) => [key, value.toUpperCase()])
+          Object.entries(extraFieldsStaff).map(([key, value]) => [
+            key,
+            value.toUpperCase(),
+          ])
         );
       }
 
@@ -969,19 +992,29 @@ exports.addStaff = catchAsyncErron(async (req, res, next) => {
 
       if (!currSchool) return next(new errorHandler("Invalid School ID"));
 
-      const { name, fatherName, extraFieldsStaff, staffType, institute, SignatureData } = req.body;
+      const {
+        name,
+        fatherName,
+        extraFieldsStaff,
+        staffType,
+        institute,
+        SignatureData,
+      } = req.body;
 
       console.log(req.body);
       if (!name) return next(new errorHandler("Name is Required"));
 
       let currStaff = {
-        name: name.toUpperCase() // Ensure name is converted to uppercase here too
+        name: name.toUpperCase(), // Ensure name is converted to uppercase here too
       };
 
       // Convert extraFieldsStaff to uppercase if it exists
       if (extraFieldsStaff) {
         currStaff.extraFieldsStaff = Object.fromEntries(
-          Object.entries(extraFieldsStaff).map(([key, value]) => [key, value.toUpperCase()])
+          Object.entries(extraFieldsStaff).map(([key, value]) => [
+            key,
+            value.toUpperCase(),
+          ])
         );
       }
 
@@ -1028,17 +1061,15 @@ exports.addStaff = catchAsyncErron(async (req, res, next) => {
   }
 });
 
-
-
 exports.editStaff = catchAsyncErron(async (req, res, next) => {
   const staffId = req.params.id;
   console.log(req.body);
   let updates = req.body; // The updates from the request body.
 
   // Convert all fields to uppercase except avatar
-  const fieldsToUppercase = ['name', 'staffType', 'institute'];
+  const fieldsToUppercase = ["name", "staffType", "institute"];
 
-  fieldsToUppercase.forEach(field => {
+  fieldsToUppercase.forEach((field) => {
     if (updates[field]) {
       updates[field] = updates[field].toUpperCase();
     }
@@ -1047,7 +1078,10 @@ exports.editStaff = catchAsyncErron(async (req, res, next) => {
   // If extraFieldsStaff exists, convert its values to uppercase
   if (updates.extraFieldsStaff) {
     updates.extraFieldsStaff = Object.fromEntries(
-      Object.entries(updates.extraFieldsStaff).map(([key, value]) => [key, value.toUpperCase()])
+      Object.entries(updates.extraFieldsStaff).map(([key, value]) => [
+        key,
+        value.toUpperCase(),
+      ])
     );
   }
 
@@ -1101,7 +1135,6 @@ exports.editStaff = catchAsyncErron(async (req, res, next) => {
     staff: updatedStaff,
   });
 });
-
 
 exports.changeStudentAvatar = catchAsyncErron(async (req, res, next) => {
   const id = req.id;
@@ -1777,6 +1810,8 @@ exports.updateStudentStatusToPrint = catchAsyncErron(async (req, res, next) => {
 });
 
 // ---------------------StatusPending------------
+
+
 
 exports.updateStudentStatusToPending = catchAsyncErron(
   async (req, res, next) => {
@@ -3664,14 +3699,12 @@ exports.getSchoolById = async (req, res) => {
       console.log(error);
     }
 
-    return res
-      .status(200)
-      .json({
-        success: true,
-        data: school,
-        staffCountByStatus,
-        studentCountByStatus,
-      });
+    return res.status(200).json({
+      success: true,
+      data: school,
+      staffCountByStatus,
+      studentCountByStatus,
+    });
   } catch (err) {
     console.error("Error fetching school data:", err);
     return res
@@ -3975,3 +4008,120 @@ exports.generateUserSchoolPdf = async (req, res) => {
       .json({ success: false, message: "Error generating Excel", error });
   }
 };
+
+
+
+
+exports.duplicateStudentToPending = catchAsyncErron(async (req, res, next) => {
+  const schoolID = req.params.id;
+  let { studentIds } = req.body;
+
+  if (!Array.isArray(studentIds)) {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid request. studentIds should be an array.",
+    });
+  }
+
+  try {
+    // Step 1: Find students that need to be duplicated
+    const studentsToDuplicate = await Student.find({ _id: { $in: studentIds } });
+
+    if (studentsToDuplicate.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No students found with the provided IDs.",
+      });
+    }
+
+    // Step 2: Create copies with a new _id and updated fields
+    const duplicatedStudents = studentsToDuplicate.map((student) => {
+      const studentObject = student.toObject(); // Convert to plain object
+      delete studentObject._id; // Remove old _id so MongoDB generates a new one
+      delete studentObject.createdAt; // Remove timestamp
+      delete studentObject.updatedAt;
+
+      return {
+        ...studentObject,
+        isDuplicate: "true",
+        status: "Panding",
+      };
+    });
+
+    // Step 3: Insert duplicated students into the database
+    const insertedStudents = await Student.insertMany(duplicatedStudents);
+
+    return res.status(200).json({
+      success: true,
+      message: "Students duplicated successfully.",
+      duplicatedStudents: insertedStudents,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "An error occurred while duplicating students.",
+      error: error.message,
+    });
+  }
+});
+
+
+
+exports.duplicateStaffToPending = catchAsyncErron(async (req, res, next) => {
+  const schoolID = req.params.id;
+  let { staffIds } = req.body;
+
+  if (typeof staffIds === "string") {
+    try {
+      staffIds = JSON.parse(`[${staffIds}]`);
+    } catch (error) {
+      staffIds = staffIds
+        .split(",")
+        .map((id) => id.trim().replace(/^"|"$/g, ""));
+    }
+  }
+
+  if (!schoolID || !staffIds || !Array.isArray(staffIds)) {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid request. Please provide a school ID and a list of staff IDs.",
+    });
+  }
+
+  try {
+    // Pehle existing staff members ko find karna hai
+    const existingStaff = await Staff.find({ _id: { $in: staffIds } });
+
+    // Existing staff ke IDs ka array banayein
+    const existingStaffIds = existingStaff.map((staff) => staff._id.toString());
+
+    // Naye duplicate staff objects prepare karein
+    const newStaff = existingStaff.map((staff) => ({
+      ...staff.toObject(), // Saari existing fields copy karlo
+      _id: new mongoose.Types.ObjectId(), // Auto-generate naya _id
+      isDuplicate: "true", // Duplicate flag set karein
+      status: "Panding", // Default status set karein
+      createdAt: new Date(), // Naya timestamp set karein
+      updatedAt: new Date(),
+    }));
+
+    // Agar naye duplicates hain to unhe database me insert karein
+    let insertedStaff = [];
+    if (newStaff.length > 0) {
+      insertedStaff = await Staff.insertMany(newStaff);
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Staff duplicated successfully.",
+      existingStaff,
+      newStaff: insertedStaff,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "An error occurred while duplicating staff.",
+      error: error.message,
+    });
+  }
+});
