@@ -333,28 +333,28 @@ const Addexcel = () => {
     console.log(selectedPhotos.length);
 
     // Check for student role
-    if (currRole === "student" && counsAll.studentCount < totalPhotos) {
-      Swal.fire({
-        icon: "error",
-        title: "Upload Failed",
-        text: `Please Add Students First. Current Student Count is ${counsAll.studentCount}`,
-        allowOutsideClick: false, // This prevents closing the popup by clicking outside
-      });
-      setSelectedPhotos([]);
-      return;
-    }
+    // if (currRole === "student" && counsAll.studentCount < totalPhotos) {
+    //   Swal.fire({
+    //     icon: "error",
+    //     title: "Upload Failed",
+    //     text: `Please Add Students First. Current Student Count is ${counsAll.studentCount}`,
+    //     allowOutsideClick: false, // This prevents closing the popup by clicking outside
+    //   });
+    //   setSelectedPhotos([]);
+    //   return;
+    // }
 
     // Check for staff role
-    if (currRole === "staff" && counsAll.staffCount < totalPhotos) {
-      Swal.fire({
-        icon: "error",
-        title: "Upload Failed",
-        text: `Please Add Staff First. Current Staff Count is ${counsAll.staffCount}`,
-        allowOutsideClick: false,
-      });
-      setSelectedPhotos([]);
-      return;
-    }
+    // if (currRole === "staff" && counsAll.staffCount < totalPhotos) {
+    //   Swal.fire({
+    //     icon: "error",
+    //     title: "Upload Failed",
+    //     text: `Please Add Staff First. Current Staff Count is ${counsAll.staffCount}`,
+    //     allowOutsideClick: false,
+    //   });
+    //   setSelectedPhotos([]);
+    //   return;
+    // }
 
     // Inform the user about the estimated time
     Swal.fire({

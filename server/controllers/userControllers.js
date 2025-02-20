@@ -52,6 +52,7 @@ exports.currUser = catchAsyncErron(async (req, res, next) => {
 
   let user = await User.findById(id);
 
+
   if (!user) {
     // If user is not found, search for a school with the same id
     const school = await School.findById(id);
@@ -67,15 +68,47 @@ exports.currUser = catchAsyncErron(async (req, res, next) => {
       return next(new errorHandler("User not found", 401));
     }
   } else {
+
+
     // If user is found, add the role field to user
     user.role = "student";
   }
+  if (!user.isActive) 
+    return next(new errorHandler("Your account is inactive. Please contact support.", 403));
+
   console.log(user);
   res.status(201).json({
     success: true,
     message: "Successfully",
     user,
   });
+});
+
+
+exports.toggleUserActiveStatus = catchAsyncErron(async (req, res, next) => {
+  try {
+    const { userId } = req.params;
+
+    // Check if user exists
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    // Toggle isActive (true -> false, false -> true)
+    user.isActive = !user.isActive;
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: `User is now ${user.isActive ? "Active" : "Inactive"}`,
+      isActive: user.isActive,
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
 });
 
 exports.userRegistration = catchAsyncErron(async (req, res, next) => {
@@ -310,6 +343,11 @@ exports.userActivation = catchAsyncErron(async (req, res, next) => {
   });
 });
 
+
+
+
+
+
 exports.userLogin = catchAsyncErron(async (req, res, next) => {
   const { email, password } = req.body;
   console.log(req.body);
@@ -319,6 +357,9 @@ exports.userLogin = catchAsyncErron(async (req, res, next) => {
 
   const user = await User.findOne({ email: email }).select("+password").exec();
   if (!user) return next(new errorHandler("User Not Found", 404));
+ 
+ 
+  if (!user.isActive) return next(new errorHandler("Your account is inactive. Please contact support.", 403));
 
   const isMatch = await user.comparePassword(password);
   if (!isMatch) return next(new errorHandler("Wrong Credientials", 500));
@@ -342,6 +383,9 @@ exports.userLogin = catchAsyncErron(async (req, res, next) => {
     token: accesToken,
   });
 });
+
+
+
 
 exports.SchooluserLogin = catchAsyncErron(async (req, res, next) => {
   const { email, password } = req.body;

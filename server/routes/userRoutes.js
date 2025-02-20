@@ -69,6 +69,7 @@ const {
   generateUserSchoolPdf,
   duplicateStudentToPending,
   duplicateStaffToPending,
+  toggleUserActiveStatus,
 } = require("../controllers/userControllers");
 const isAuthenticated = require("../middlewares/auth");
 const router = express.Router();
@@ -79,6 +80,7 @@ const upload = require("../middlewares/multer");
 // const isAuthenticated = require("../middlewares/auth");
 
 router.post("/curr", isAuthenticated, currUser);
+router.put("/toggle-user-status/:userId", toggleUserActiveStatus);
 
 router.post("/registration", userRegistration);
 

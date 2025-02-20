@@ -62,6 +62,12 @@ const userModel = mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
+
     schoolLimit: {
       type: Number,
       default: 1,
