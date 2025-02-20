@@ -144,11 +144,11 @@ app.post(
     const studentData = await Promise.all(
       dataRows.map(async (row) => {
         const student = {
-          name: row[columnIndex.name]?.toUpperCase(),
-          class: row[columnIndex.class]?.toUpperCase(),
+          name: row[columnIndex.name]?.toString().toUpperCase(),
+          class: row[columnIndex.class]?.toString().toUpperCase(),
           section: row[columnIndex.section]?.toUpperCase(),
-          photoName: row[columnIndex.photoName]?.toUpperCase(),
-          course: row[columnIndex.course]?.toUpperCase(),
+          photoName: row[columnIndex.photoName],
+          course: row[columnIndex.course]?.toString().toUpperCase(),
           school: schoolID,
           user: req.id,
           photoNameUnuiq: await getNextSequenceValue("studentName"),
@@ -405,7 +405,7 @@ app.post(
           udiseCode: row[columnIndex.udiseCode]?.toString().toUpperCase(),
           bloodGroup: row[columnIndex.bloodGroup]?.toString().toUpperCase(),
           dateOfissue: row[columnIndex.dateOfissue]?.toString().toUpperCase(),
-          photoName: row[columnIndex.photoName]?.toString().toUpperCase(),
+          photoName: row[columnIndex.photoName],
           signatureName: row[columnIndex.signatureName]?.toString().toUpperCase(),
           school: schoolID,
           user: req.id,
