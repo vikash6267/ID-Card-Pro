@@ -270,6 +270,168 @@ app.post(
   }
 );
 
+
+// app.post("/upload-excel/:id", upload, async (req, res, next) => {
+//   const file = req.files[0];
+//   const mappings = JSON.parse(req.body.data); // Normal Mapping
+//   const extraMapping = JSON.parse(req.body.extra); // Extra Dynamic Mapping
+
+//   if (!file) {
+//     return res.status(400).send("No file uploaded.");
+//   }
+
+//   const schoolID = req.params.id;
+//   const rows = await readXlsxFile(file.buffer);
+//   if (rows.length < 2) {
+//     return res.status(400).send("Excel file does not contain data.");
+//   }
+
+//   const [headers, ...dataRows] = rows;
+//   const cleanedHeaders = headers.map(header => header?.trim());
+
+//   // Mapping student fields to their Excel column index
+//   const columnIndex = {
+//     id: cleanedHeaders.indexOf("_ID"), // Student ID field (used for finding students)
+//   };
+
+//   // Clean normal mappings
+//   for (const key in mappings) {
+//     columnIndex[key] = cleanedHeaders.indexOf(mappings[key]);
+//   }
+
+//   // Clean dynamic extra mappings
+//   for (const key in extraMapping) {
+//     columnIndex[key] = cleanedHeaders.indexOf(extraMapping[key]);
+//   }
+
+//   // Validate required fields
+//   if (columnIndex.id === -1) {
+//     return next(new Error("Student _ID is required in Excel"));
+//   }
+
+//   const updateOperations = [];
+
+//   for (const row of dataRows) {
+//     const studentId = row[columnIndex.id]?.toString().trim();
+//     if (!studentId) continue; // Skip if no student ID
+
+//     const updateData = {};
+
+//     // Normal mapped fields update
+//     for (const key in mappings) {
+//       if (columnIndex[key] !== -1) {
+//         updateData[key] = row[columnIndex[key]]?.toString().trim().toUpperCase() || "";
+//       }
+//     }
+
+//     // Extra dynamic fields update
+//     const extraFields = {};
+//     for (const key in extraMapping) {
+//       if (columnIndex[key] !== -1) {
+//         extraFields[key] = row[columnIndex[key]]?.toString().trim().toUpperCase() || "N/A";
+//       }
+//     }
+
+//     if (Object.keys(extraFields).length > 0) {
+//       updateData.extraFields = extraFields;
+//     }
+
+//     // Update operation for MongoDB
+//     updateOperations.push(
+//       Student.updateOne({ _id: studentId, school: schoolID }, { $set: updateData })
+//     );
+//   }
+
+//   try {
+//     // Execute all updates in parallel
+//     await Promise.all(updateOperations);
+//     res.status(200).json({ success: true, message: "Students updated successfully" });
+//   } catch (err) {
+//     console.error(err);
+//     return next(err);
+//   }
+// });
+
+app.post("/update-excel/:id", upload, async (req, res, next) => {
+  const file = req.files[0];
+  const mappings = JSON.parse(req.body.data); // Normal Mapping
+  const extraMapping = JSON.parse(req.body.extra); // Extra Dynamic Mapping
+
+  if (!file) {
+    return res.status(400).send("No file uploaded.");
+  }
+
+  const schoolID = req.params.id;
+  const rows = await readXlsxFile(file.buffer);
+  if (rows.length < 2) {
+    return res.status(400).send("Excel file does not contain data.");
+  }
+
+  const [headers, ...dataRows] = rows;
+  const cleanedHeaders = headers.map(header => header?.trim());
+
+  // Static + Dynamic column index mapping
+  const columnIndex = {
+    id: cleanedHeaders.indexOf("_ID"), // Unique Student ID for lookup
+    name: cleanedHeaders.indexOf(mappings?.StudentName || ""), 
+    class: cleanedHeaders.indexOf(mappings?.Class || ""),
+    section: cleanedHeaders.indexOf(mappings?.Section || ""),
+    course: cleanedHeaders.indexOf(mappings?.Course || ""),
+  };
+
+  // Dynamic extra mappings
+  for (const key in extraMapping) {
+    columnIndex[key] = cleanedHeaders.indexOf(extraMapping[key]);
+  }
+
+  // Validate required fields
+  if (columnIndex.id === -1) {
+    return next(new Error("Student _ID is required in Excel"));
+  }
+
+  const updateOperations = [];
+
+  for (const row of dataRows) {
+    const studentId = row[columnIndex.id]?.toString().trim();
+    if (!studentId) continue; // Skip if no student ID
+
+    const updateData = {};
+
+    // Static Fields Update
+    Object.keys(columnIndex).forEach(key => {
+      if (columnIndex[key] !== -1 && key !== "id") {
+        updateData[key] = row[columnIndex[key]]?.toString().trim().toUpperCase() || "";
+      }
+    });
+
+    // Extra Dynamic Fields Update
+    const extraFields = {};
+    for (const key in extraMapping) {
+      if (columnIndex[key] !== -1) {
+        extraFields[key] = row[columnIndex[key]]?.toString().trim().toUpperCase() || "N/A";
+      }
+    }
+
+    if (Object.keys(extraFields).length > 0) {
+      updateData.extraFields = extraFields;
+    }
+
+    // Update MongoDB
+    updateOperations.push(
+      Student.updateOne({ _id: studentId, school: schoolID }, { $set: updateData })
+    );
+  }
+
+  try {
+    await Promise.all(updateOperations);
+    res.status(200).json({ success: true, message: "Students updated successfully" });
+  } catch (err) {
+    console.error(err);
+    return next(err);
+  }
+});
+
+
 app.post(
   "/upload-excel/staff/:id",
   upload,

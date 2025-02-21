@@ -677,6 +677,77 @@ export const aadExcel = (fileData, schooId,dataHeading,extraFieldsMapping) => as
   }
 };
 
+
+export const updateExcel = (fileData, schooId,dataHeading,extraFieldsMapping) => async (dispatch) => {
+  try {
+    // Show loading alert
+    Swal.fire({
+      title: 'Uploading...',
+      text: 'Please wait while the file is being uploaded.',
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading();
+      },
+    });
+
+    dispatch(setLoading(true));
+    console.log("student");
+
+    const formData = new FormData();
+    formData.append("file", fileData);
+    
+    if (dataHeading) {
+      formData.append("data", JSON.stringify(dataHeading)); // Convert to JSON string
+    }
+    if (extraFieldsMapping) {
+      formData.append("extra", JSON.stringify(extraFieldsMapping)); // Convert to JSON string
+    }
+
+    const response = await axios.post(
+      `/update-excel/${schooId}`,
+      formData,
+      {
+        withCredentials: true,
+        headers: {
+          "Content-Type": "multipart/form-data",
+          authorization: `${localStorage.getItem("token")}`,
+        },
+      }
+    );
+
+    dispatch(currentUser());
+    dispatch(setLoading(false));
+
+    // Show success alert with the response message
+    Swal.fire({
+      icon: 'success',
+      title: 'Upload Successful',
+      text: response.data.message,
+      timer: 5000,
+      timerProgressBar: true,
+    });
+
+    return response.data.message;
+  } catch (error) {
+    dispatch(setLoading(false));
+    console.error(error);
+
+    // Show error alert
+    Swal.fire({
+      icon: 'error',
+      title: 'Upload Failed',
+      text: error?.response?.data?.message || 'Failed to upload the file. Please try again.',
+      timer: 5000,
+      timerProgressBar: true,
+    });
+
+    dispatch(
+      setError(error?.response?.data?.message || "Fail to upload Resume")
+    );
+  }
+};
+
+
 export const aadExcelstaff = (fileData, schooId,dataHeading,extraFieldsMappingStaff) => async (dispatch) => {
   try {
     // Show loading alert

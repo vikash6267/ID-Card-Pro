@@ -529,105 +529,187 @@ const Viewdata = () => {
 
   // Helper function to reset state
 
+  // const downloadExcel = async () => {
+  //   try {
+  //     if (currRole == "student") {
+  //       try {
+  //         const response = await axios.get(
+  //           `/user/excel/data/${currSchool}?status=${status}`,
+  //           {
+  //             headers: {
+  //               authorization: `${localStorage.getItem("token")}`,
+  //             },
+  //             responseType: "blob", // Set response type to blob for file download
+  //           }
+  //         );
+  //         const contentDisposition = response.headers["content-disposition"];
+
+  //         let filename = "Student_Data.xlsx";
+  //         if (contentDisposition) {
+  //           // Regular expression se filename extract karna
+  //           const filenameMatch =
+  //             contentDisposition.match(/filename="?([^"]+)"?/);
+  //           filename = filenameMatch
+  //             ? filenameMatch[1]
+  //             : "default_filename.xlsx";
+
+  //           console.log(filename); // Output: Test_staff.xlsx
+  //         } else {
+  //           console.log("Filename not found in headers");
+  //         }
+
+  //         const url =
+  //           window.URL.createObjectURL(new Blob([response.data])) || null;
+  //         const link = document.createElement("a");
+  //         link.href = url;
+  //         link.setAttribute("download", filename);
+  //         document.body.appendChild(link);
+  //         link.click();
+  //       } catch (error) {
+  //         toast.error("Error downloading Excel file:", {
+  //           position: "top-right",
+  //           autoClose: 5000,
+  //           hideProgressBar: false,
+  //           closeOnClick: true,
+  //           pauseOnHover: true,
+  //           draggable: true,
+  //           progress: undefined,
+  //         });
+  //       }
+  //     }
+  //     if (currRole == "staff") {
+  //       try {
+  //         console.log("Hello");
+  //         const response = await axios.get(
+  //           `/user/staff/excel/data/${currSchool}?status=${status}`,
+  //           {
+  //             headers: {
+  //               authorization: `${localStorage.getItem("token")}`,
+  //             },
+  //             responseType: "blob", // Set response type to blob for file download
+  //           }
+  //         );
+  //         const contentDisposition = response.headers["content-disposition"];
+
+  //         let filename = "Staff.xlsx";
+  //         if (contentDisposition) {
+  //           // Regular expression se filename extract karna
+  //           const filenameMatch =
+  //             contentDisposition.match(/filename="?([^"]+)"?/);
+  //           filename = filenameMatch
+  //             ? filenameMatch[1]
+  //             : "default_filename.xlsx";
+
+  //           console.log(filename); // Output: Test_staff.xlsx
+  //         } else {
+  //           console.log("Filename not found in headers");
+  //         }
+
+  //         const url =
+  //           window.URL.createObjectURL(new Blob([response.data])) || null;
+  //         const link = document.createElement("a");
+  //         link.href = url;
+  //         link.setAttribute("download", filename);
+  //         document.body.appendChild(link);
+  //         link.click();
+  //       } catch (error) {
+  //         toast.error("Error downloading Excel file:", {
+  //           position: "top-right",
+  //           autoClose: 5000,
+  //           hideProgressBar: false,
+  //           closeOnClick: true,
+  //           pauseOnHover: true,
+  //           draggable: true,
+  //           progress: undefined,
+  //         });
+  //       }
+  //     }
+  //   } catch (error) {
+  //     console.error("Error downloading Excel file:", error);
+  //   }
+  // };
+
+
   const downloadExcel = async () => {
     try {
-      if (currRole == "student") {
+      if (currRole === "student") {
+        const { value: idOption } = await Swal.fire({
+          title: "Download Excel",
+          text: "Do you want to download with ID?",
+          icon: "question",
+          showCancelButton: true,
+          confirmButtonText: "With ID",
+          cancelButtonText: "Without ID",
+        });
+  
+        // Agar user "With ID" choose kare toh idPresent = "yes" warna null
+        const idPresent = idOption ? "yes" : undefined;
+  
         try {
           const response = await axios.get(
-            `/user/excel/data/${currSchool}?status=${status}`,
+            `/user/excel/data/${currSchool}?status=${status}&idPresent=${idPresent}`,
             {
               headers: {
                 authorization: `${localStorage.getItem("token")}`,
               },
-              responseType: "blob", // Set response type to blob for file download
+              responseType: "blob", // File download ke liye responseType blob hona chahiye
             }
           );
+  
           const contentDisposition = response.headers["content-disposition"];
-
           let filename = "Student_Data.xlsx";
+  
           if (contentDisposition) {
-            // Regular expression se filename extract karna
-            const filenameMatch =
-              contentDisposition.match(/filename="?([^"]+)"?/);
-            filename = filenameMatch
-              ? filenameMatch[1]
-              : "default_filename.xlsx";
-
-            console.log(filename); // Output: Test_staff.xlsx
-          } else {
-            console.log("Filename not found in headers");
+            const filenameMatch = contentDisposition.match(/filename="?([^"]+)"?/);
+            filename = filenameMatch ? filenameMatch[1] : "default_filename.xlsx";
           }
-
-          const url =
-            window.URL.createObjectURL(new Blob([response.data])) || null;
+  
+          const url = window.URL.createObjectURL(new Blob([response.data]));
           const link = document.createElement("a");
           link.href = url;
           link.setAttribute("download", filename);
           document.body.appendChild(link);
           link.click();
         } catch (error) {
-          toast.error("Error downloading Excel file:", {
-            position: "top-right",
-            autoClose: 5000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-          });
+          Swal.fire("Error!", "Error downloading Excel file.", "error");
         }
       }
-      if (currRole == "staff") {
+  
+      if (currRole === "staff") {
         try {
-          console.log("Hello");
           const response = await axios.get(
             `/user/staff/excel/data/${currSchool}?status=${status}`,
             {
               headers: {
                 authorization: `${localStorage.getItem("token")}`,
               },
-              responseType: "blob", // Set response type to blob for file download
+              responseType: "blob",
             }
           );
+  
           const contentDisposition = response.headers["content-disposition"];
-
           let filename = "Staff.xlsx";
+  
           if (contentDisposition) {
-            // Regular expression se filename extract karna
-            const filenameMatch =
-              contentDisposition.match(/filename="?([^"]+)"?/);
-            filename = filenameMatch
-              ? filenameMatch[1]
-              : "default_filename.xlsx";
-
-            console.log(filename); // Output: Test_staff.xlsx
-          } else {
-            console.log("Filename not found in headers");
+            const filenameMatch = contentDisposition.match(/filename="?([^"]+)"?/);
+            filename = filenameMatch ? filenameMatch[1] : "default_filename.xlsx";
           }
-
-          const url =
-            window.URL.createObjectURL(new Blob([response.data])) || null;
+  
+          const url = window.URL.createObjectURL(new Blob([response.data]));
           const link = document.createElement("a");
           link.href = url;
           link.setAttribute("download", filename);
           document.body.appendChild(link);
           link.click();
         } catch (error) {
-          toast.error("Error downloading Excel file:", {
-            position: "top-right",
-            autoClose: 5000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-          });
+          Swal.fire("Error!", "Error downloading Excel file.", "error");
         }
       }
     } catch (error) {
       console.error("Error downloading Excel file:", error);
     }
   };
+
 
   const downloadImages = async () => {
     try {

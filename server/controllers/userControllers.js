@@ -3167,8 +3167,9 @@ exports.StaffSignatureDownload = catchAsyncErron(async (req, res, next) => {
 
 exports.ExcelData = catchAsyncErron(async (req, res, next) => {
   const schoolId = req.params.id;
+  const idPresent = req.query.idPresent;
   const status = req.query.status;
-
+console.log(idPresent)
   try {
     // Fetch the school data to get the dynamic extra fields
     const school = await School.findById(schoolId);
@@ -3179,8 +3180,7 @@ exports.ExcelData = catchAsyncErron(async (req, res, next) => {
     // School's extraFields (assumed to be part of the school schema)
     const schoolExtraFields = school.extraFields || [];
     const requiredFields = school.requiredFields || [];
-    console.log(requiredFields);
-
+   
     // Fetch all users (students) from the database
     const users = await Student.find({ school: schoolId, status: status });
 
@@ -3190,6 +3190,7 @@ exports.ExcelData = catchAsyncErron(async (req, res, next) => {
 
     // Static columns for required fields
     const staticColumnsAll = [
+      idPresent === "yes" &&  { header: "_ID", key: "_id", width: 15 },
       { header: "SR NO.", key: "srno", width: 15 },
       { header: "PHOTO NO.", key: "photoName", width: 15 },
       { header: "STUDENT NAME", key: "name", width: 20 },
@@ -3336,6 +3337,8 @@ exports.ExcelData = catchAsyncErron(async (req, res, next) => {
       const extraFields = user.extraFields || {};
 
       const row = {
+     _id: user._id.toString(),
+
         srno: `${index + 1}`, // Sequential PhotoName field
         photoName: user.photoNameUnuiq, // Sequential PhotoName field
         name: user.name,
