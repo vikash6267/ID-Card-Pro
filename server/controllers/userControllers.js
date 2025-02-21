@@ -68,13 +68,13 @@ exports.currUser = catchAsyncErron(async (req, res, next) => {
       return next(new errorHandler("User not found", 401));
     }
   } else {
-
+    if (!user.isActive) 
+      return next(new errorHandler("Your account is inactive. Please contact support.", 403));
+  
 
     // If user is found, add the role field to user
     user.role = "student";
   }
-  if (!user.isActive) 
-    return next(new errorHandler("Your account is inactive. Please contact support.", 403));
 
   console.log(user);
   res.status(201).json({
