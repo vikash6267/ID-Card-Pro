@@ -368,6 +368,7 @@ router.put("/students/:id/avatar", async (req, res) => {
 const fs = require("fs");
 const path = require("path");
 const puppeteer = require("puppeteer");
+const { default: mongoose } = require("mongoose");
 
 async function generateReport(queryObj = {}) {
   try {
@@ -988,6 +989,52 @@ router.post('/save-template', async (req, res) => {
   } catch (error) {
     console.error('❌ Error saving template:', error);
     res.status(500).json({ message: 'Error saving template', error });
+  }
+});
+
+router.post('/filter-data', async (req, res) => {
+  try {
+      const { schoolId } = req.body;
+
+      // Validate if schoolId is provided
+      if (!schoolId) {
+          return res.status(400).json({ message: "School ID is required." });
+      }
+
+      // Validate if schoolId is a valid MongoDB ObjectId
+      if (!mongoose.Types.ObjectId.isValid(schoolId)) {
+          return res.status(400).json({ message: "Invalid school ID format." });
+      }
+
+      // Check if the school exists
+      const schoolData = await School.findById(schoolId);
+      if (!schoolData) {
+          return res.status(404).json({ message: "School not found." });
+      }
+
+      // Define query object
+      const queryObj = { school: new mongoose.Types.ObjectId(schoolId) };
+
+      // Fetch unique values
+      const uniqueStudents = await Student.distinct("class", queryObj);
+      const uniqueSections = await Student.distinct("section", queryObj);
+      const uniqueCourses = await Student.distinct("course", queryObj);
+      const staffTypes = await Staff.distinct("staffType", queryObj);
+      const instituteUni = await Staff.distinct("institute", queryObj);
+
+      return res.status(200).json({
+          message: "Data fetched successfully",
+          school: schoolData.name,
+          uniqueStudents,
+          uniqueSections,
+          uniqueCourses,
+          staffTypes,
+          instituteUni,
+      });
+
+  } catch (error) {
+      console.error("❌ Internal Server Error:", error);
+      res.status(500).json({ message: "Internal server error", error: error.message });
   }
 });
 
