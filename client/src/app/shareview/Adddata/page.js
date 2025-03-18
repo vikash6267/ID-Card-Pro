@@ -80,7 +80,7 @@ const Adddata = () => {
         });
 
       const handleSchoolSelectHello = async () => {
-        const schoolId = currSchool._id;
+        const schoolId = vendor;
 
         // Validate schoolId
         if (!schoolId) {
@@ -91,14 +91,7 @@ const Adddata = () => {
         setLoading(true);
 
         try {
-          const school = schools?.find((school) => school._id === schoolId);
-          if (!school) {
-            setLoading(false);
-            console.error("❌ School not found in local state.");
-            return alert("Selected school does not exist.");
-          }
-
-          setCurrSchool(school);
+      
 
           const response = await axios.post("/user/filter-data", { schoolId });
 
@@ -111,11 +104,11 @@ const Adddata = () => {
             setInstitutes(response.data.instituteUni || []);
           } else {
             console.error("❌ Unexpected response structure:", response);
-            alert("Unexpected response from the server.");
+           
           }
         } catch (err) {
           console.error("❌ Error fetching filtered data:", err);
-          alert(err.response?.data?.message || "Failed to fetch data. Please try again.");
+          // alert(err.response?.data?.message || "Failed to fetch data. Please try again.");
         } finally {
           setLoading(false);
         }
