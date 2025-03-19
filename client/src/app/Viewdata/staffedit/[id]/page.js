@@ -236,6 +236,67 @@ const Editsatff = ({ params }) => {
     }
   };
 
+
+
+      const [classes, setClasses] = useState([]);
+      const [sections, setSections] = useState([]);
+      const [courses, setCourses] = useState([]);
+      const [staffTypes, setStaffTypes] = useState([]);
+      const [institutes, setInstitutes] = useState([]);
+      const [loading, setLoading] = useState(false);
+       // toggle
+      const [newStaffType, setNewStaffType] = useState(false);
+      const [newInstitute, setNewInstitute] = useState(false);
+      const [newClass, setNewClass] = useState(false);
+      const [newSection, setNewSection] = useState(false);
+      const [newCourse, setNewCourse] = useState(false);
+    
+    useEffect(()=>{
+    
+    
+      const handleSchoolSelectHello = async () => {
+        if(!schoolID) return
+  
+        const schoolId = schoolID;
+   
+    
+  
+  
+  
+        setLoading(true);
+    
+        try {
+    
+    
+        
+          
+    
+            const response = await axios.post("/user/filter-data", { schoolId });
+    
+            if (response.data) {
+              console.log(response.data)
+                setClasses(response.data.uniqueStudents || []);
+                setSections(response.data.uniqueSections || []);
+                setCourses(response.data.uniqueCourses || []);
+                setStaffTypes(response.data.staffTypes || []);
+                setInstitutes(response.data.instituteUni || []);
+            } else {
+                console.error("❌ Unexpected response structure:", response);
+                alert("Unexpected response from the server.");
+            }
+        } catch (err) {
+            console.error("❌ Error fetching filtered data:", err);
+            alert(err.response?.data?.message || "Failed to fetch data. Please try again.");
+        } finally {
+            setLoading(false);
+        }
+    };
+    
+    handleSchoolSelectHello()
+    
+    },[schoolID])
+
+
   const handleExtraFieldChange = (e, fieldName) => {
     setExtraFieldsStaff((prevState) => ({
       ...prevState,
@@ -285,44 +346,88 @@ const Editsatff = ({ params }) => {
             </div>
           
             {currSchool?.requiredFieldsStaff?.includes("Staff Type") && (
-              <div className="mb-4">
-                <label
-                  htmlFor="staffType"
-                  className="block text-sm font-medium text-gray-700"
-                >
-                  Staff Type
-                </label>
-                <input
-                  type="text"
-                  id="staffType"
-                  value={staffType}
-                  placeholder="Staff Type"
-                  onChange={(e) => setStaffType(e.target.value)}
-                  className="mt-1 block h-10 px-3 border w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                />
-              </div>
-            )}
-           
+        <div className="mb-4">
+           <label
+                htmlFor="staffType"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Staff Type
+              </label>
+          <select
+            id="staffType"
+            value={staffType}
+            onChange={(e) => {
+              if (e.target.value === "addNew") {
+                setNewStaffType(true);
+                setStaffType("");
+              } else {
+                setNewStaffType(false);
+                setStaffType(e.target.value);
+              }
+            }}
+            className="mt-1 block h-10 px-3 border w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+          >
+            <option value="">Select Staff Type</option>
+            {staffTypes.map((type, index) => (
+              <option key={index} value={type}>
+                {type}
+              </option>
+            ))}
+            <option value="addNew">Add New</option>
+          </select>
+          {newStaffType && (
+            <input
+              type="text"
+              placeholder="Enter new Staff Type"
+              value={staffType}
+              onChange={(e) => setStaffType(e.target.value)}
+              className="mt-2 block h-10 px-3 border w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            />
+          )}
+        </div>
+      )}
 
-            {/* Extra Field 2 */}
-            {currSchool?.requiredFieldsStaff?.includes("Institute") && (
-              <div className="mb-4">
-                <label
-                  htmlFor="extraField2"
-                  className="block text-sm font-medium text-gray-700"
-                >
-                 Institute
-                </label>
-                <input
-                  type="text"
-                  id="extraField2"
-                  value={extraField2}
-                  placeholder="Institute"
-                  onChange={(e) => setExtraField2(e.target.value)}
-                  className="mt-1 block h-10 px-3 border w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                />
-              </div>
-            )}
+      {currSchool?.requiredFieldsStaff?.includes("Institute") && (
+        <div className="mb-4">
+            <label
+                htmlFor="Institute"
+                className="block text-sm font-medium text-gray-700"
+              >
+               Institute
+              </label>
+          <select
+            id="Institute"
+            value={extraField2}
+            onChange={(e) => {
+              if (e.target.value === "addNew") {
+                setNewInstitute(true);
+                setExtraField2("");
+              } else {
+                setNewInstitute(false);
+                setExtraField2(e.target.value);
+              }
+            }}
+            className="mt-1 block h-10 px-3 border w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+          >
+            <option value="">Select Institute</option>
+            {institutes.map((inst, index) => (
+              <option key={index} value={inst}>
+                {inst}
+              </option>
+            ))}
+            <option value="addNew">Add New</option>
+          </select>
+          {newInstitute && (
+            <input
+              type="text"
+              placeholder="Enter new Institute"
+              value={extraField2}
+              onChange={(e) => setExtraField2(e.target.value)}
+              className="mt-2 block h-10 px-3 border w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            />
+          )}
+        </div>
+      )}
 
             {currSchool?.extraFieldsStaff?.length > 0 &&
               currSchool?.extraFieldsStaff?.map((field, index) => (

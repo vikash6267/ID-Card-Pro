@@ -250,6 +250,14 @@ useEffect(()=>{
     setLoading(true);
 
     try {
+
+
+      if (user?.role == "school") {
+        console.log(user.school);
+        setCurrSchool(user.school);
+        setloginSchool(true);
+      }
+      else{
         const school = schools?.find((school) => school._id === schoolId);
         if (!school) {
             setLoading(false);
@@ -258,6 +266,8 @@ useEffect(()=>{
         }
 
         setCurrSchool(school);
+      }
+      
 
         const response = await axios.post("/user/filter-data", { schoolId });
 
