@@ -229,6 +229,11 @@ router.get("/generate-pdf/:schoolId", async (req, res) => {
       args: ['--no-sandbox', '--disable-setuid-sandbox']
     });
 
+    // const browser = await puppeteer.launch({
+    //   executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe', // <- adjust this if Chrome is installed elsewhere
+    //   headless: true,
+    //   args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    // });
     // const browser = await puppeteer.launch();
 
     const page = await browser.newPage();

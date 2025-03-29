@@ -8,83 +8,96 @@
   <style>
     @page {
       size: A4;
-      margin: 40px;
+      margin: 20px; /* Minimized margin */
     }
 
     body {
       font-family: Arial, sans-serif;
       margin: 0;
-      padding: 20px;
+      padding: 5px;
       background-color: #f4f4f4;
+      /* Force all content to stay on one page */
+      page-break-inside: avoid;
+      break-inside: avoid;
     }
 
+    /* Wrapper to keep everything together */
+    .page-wrapper {
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
 
     .class-heading {
       text-align: center;
-      margin: 20px 0;
-      font-size: 24px;
+      margin: 5px 0;
+      font-size: 16px; /* Further reduced font size */
       color: #333;
       position: relative;
+      /* Prevent break after heading */
+      page-break-after: avoid;
+      break-after: avoid;
     }
 
     .class-heading img {
       position: absolute;
-      right: 10px;
+      right: 5px;
       top: 50%;
       transform: translateY(-50%);
-      width: 50px;
+      width: 30px; /* Smaller logo */
       height: auto;
     }
 
     .student-grid {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      padding: 10px;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr); /* 5 columns */
+      gap: 5px; /* Minimal gap */
+      padding: 3px;
+      /* Prevent break before grid */
+      page-break-before: avoid;
+      break-before: avoid;
     }
 
     .student-card {
       background-color: white;
-      border-radius: 8px;
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      border-radius: 4px;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
       overflow: hidden;
       text-align: center;
-      padding: 8px;
-      width: calc(33.33% - 10px);
+      padding: 3px; /* Minimal padding */
       box-sizing: border-box;
-      page-break-inside: avoid;
-      break-inside: avoid;
       position: relative;
+      min-height: 140px; /* Reduced height */
     }
 
     /* Fixed www.cardpro.co at the top of the card */
     .top-center-text {
-      font-size: 10px;
+      font-size: 6px; /* Smaller font */
       color: rgba(0, 0, 0, 0.6);
       position: absolute;
-      top: 5px;
+      top: 1px;
       left: 50%;
       transform: translateX(-50%);
     }
 
     .student-image img {
-      width: 55%;
-      height: 100px;
+      width: 45%; /* Smaller image */
+      height: 55px; /* Reduced height */
       object-fit: cover;
       border-radius: 50%;
-      margin-top: 20px;
+      margin-top: 10px;
     }
 
     .student-details h3 {
-      font-size: 15px;
+      font-size: 10px; /* Smaller font */
       color: #333;
-      margin: 5px 0;
+      margin: 2px 0;
+      font-weight: bold;
     }
 
     .student-details p {
-      font-size: 14px;
+      font-size: 8px; /* Smaller font */
       color: #666;
-      margin: 5px 0;
+      margin: 1px 0;
     }
 
     .extra-fields ul {
@@ -95,39 +108,13 @@
     }
 
     .extra-fields li {
-      font-size: 12px;
+      font-size: 7px; /* Smaller font */
       color: #777;
-      margin: 3px 0;
+      margin: 0;
+      line-height: 1.2;
     }
 
-    .page-break {
-      page-break-after: always;
-      clear: both;
-    }
-
-    /* Responsiveness */
-    @media (max-width: 768px) {
-      .student-card {
-        width: calc(50% - 10px);
-      }
-    }
-
-    @media (max-width: 480px) {
-      .student-card {
-        width: 100%;
-      }
-
-      .student-details h3 {
-        font-size: 12px;
-      }
-
-      .student-details p,
-      .extra-fields li {
-        font-size: 8px;
-        margin: 2px 0;
-      }
-    }
-
+    /* Print-specific styles */
     @media print {
       body {
         background-color: white;
@@ -135,7 +122,13 @@
 
       .student-card {
         box-shadow: none;
-        border: 1px solid #ddd;
+        border: 1px solid #eee;
+      }
+      
+      /* Force all content on one page */
+      html, body, .page-wrapper, .student-grid {
+        height: auto !important;
+        overflow: visible !important;
       }
     }
   </style>
@@ -143,42 +136,40 @@
 
 <body>
   <% Object.entries(groupedByClass).forEach(([className, students]) => { %>
-    <h1 class="class-heading"><%= heading %>
-    
-      <img src="https://cardpro.co.in/login.jpg" alt="Logo">
-    </h1>
+    <!-- Wrapper to keep heading and grid together -->
+    <div class="page-wrapper">
+      <h1 class="class-heading"><%= heading %>
+        <img src="https://cardpro.co.in/login.jpg" alt="Logo">
+      </h1>
 
-    <div class="student-grid">
-      <% students.forEach((student, index) => { %>
-        <div class="student-card">
-          <!-- Fixed text at the top -->
-          <div class="top-center-text">www.cardpro.co.in</div>
-          <div class="student-image">
-            <img src="<%= student.avatarUrl %>" alt="Student Image">
-          </div>
-          <div class="student-details">
-            <h3><%= student.name %></h3>
-            <% if (heading === "All Records") { %>
-              <p><strong>Class:</strong> <%= student.class %></p>
-              <p><strong>Section:</strong> <%= student.section %></p>
-            <% } %>
-            <div class="extra-fields">
-              <ul>
-                <% Object.entries(student.extraFields).forEach(([key, value]) => { %>
-                  <li><strong><%= key %>:</strong> <%= value %></li>
-                <% }) %>
-              </ul>
+      <div class="student-grid">
+        <% students.forEach((student) => { %>
+          <div class="student-card">
+            <!-- Fixed text at the top -->
+            <div class="top-center-text">www.cardpro.co.in</div>
+            <div class="student-image">
+              <img src="<%= student.avatarUrl %>" alt="Student Image">
+            </div>
+            <div class="student-details">
+              <h3><%= student.name %></h3>
+              <% if (heading === "All Records") { %>
+                <p><strong>Class:</strong> <%= student.class %></p>
+                <p><strong>Section:</strong> <%= student.section %></p>
+              <% } %>
+              <div class="extra-fields">
+                <ul>
+                  <% Object.entries(student.extraFields).forEach(([key, value]) => { %>
+                    <li><strong><%= key %>:</strong> <%= value %></li>
+                  <% }) %>
+                </ul>
+              </div>
             </div>
           </div>
-        </div>
-
-        <% if ((index + 1) % 9 === 0 || index === students.length - 1) { %>
-          <div class="page-break"></div>
-        <% } %>
-      <% }) %>
+        <% }) %>
+      </div>
     </div>
-
   <% }) %>
 </body>
 
 </html>
+
