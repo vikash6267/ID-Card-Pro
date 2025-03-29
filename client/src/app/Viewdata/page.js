@@ -2317,14 +2317,14 @@ const Viewdata = () => {
                     <FaCheck /> Move to Printed
                   </button>
                 )}
-                {user?.school && (
+            
                   <button
                     className="flex items-center gap-2 bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded-lg shadow-lg"
                     onClick={modeToPending}
                   >
                     <FaArrowLeft /> Move Back to Pending
                   </button>
-                )}
+             
                 {/* {(user?.exportExcel || user?.school?.exportExcel) && (
                   <button
                     className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg shadow-lg"
