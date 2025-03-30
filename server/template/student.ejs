@@ -4,11 +4,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Student Details</title>
+  <title>Student Details with QR</title>
   <style>
     @page {
       size: A4;
-      margin: 20px; /* Minimized margin */
+      margin: 20px;
     }
 
     body {
@@ -16,26 +16,14 @@
       margin: 0;
       padding: 5px;
       background-color: #f4f4f4;
-      /* Force all content to stay on one page */
-      page-break-inside: avoid;
-      break-inside: avoid;
-    }
-
-    /* Wrapper to keep everything together */
-    .page-wrapper {
-      page-break-inside: avoid;
-      break-inside: avoid;
     }
 
     .class-heading {
       text-align: center;
       margin: 5px 0;
-      font-size: 16px; /* Further reduced font size */
+      font-size: 16px;
       color: #333;
       position: relative;
-      /* Prevent break after heading */
-      page-break-after: avoid;
-      break-after: avoid;
     }
 
     .class-heading img {
@@ -43,18 +31,23 @@
       right: 5px;
       top: 50%;
       transform: translateY(-50%);
-      width: 30px; /* Smaller logo */
+      width: 30px;
       height: auto;
     }
 
-    .student-grid {
-      display: grid;
-      grid-template-columns: repeat(5, 1fr); /* 5 columns */
-      gap: 5px; /* Minimal gap */
-      padding: 3px;
-      /* Prevent break before grid */
-      page-break-before: avoid;
-      break-before: avoid;
+    /* Replace grid with flex layout for better page break control */
+    .student-container {
+      display: block;
+      width: 100%;
+    }
+
+    .student-row {
+      display: flex;
+      flex-wrap: nowrap;
+      justify-content: space-between;
+      margin-bottom: 5px;
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
     }
 
     .student-card {
@@ -63,15 +56,15 @@
       box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
       overflow: hidden;
       text-align: center;
-      padding: 3px; /* Minimal padding */
+      padding: 3px;
       box-sizing: border-box;
       position: relative;
-      min-height: 140px; /* Reduced height */
+      min-height: 150px;
+      width: 19%; /* Slightly less than 20% to account for margins */
     }
 
-    /* Fixed www.cardpro.co at the top of the card */
     .top-center-text {
-      font-size: 6px; /* Smaller font */
+      font-size: 6px;
       color: rgba(0, 0, 0, 0.6);
       position: absolute;
       top: 1px;
@@ -80,22 +73,22 @@
     }
 
     .student-image img {
-      width: 30%; /* Smaller image */
-      height: 40px; /* Reduced height */
+      width: 30%;
+      height: 40px;
       object-fit: cover;
       border-radius: 50%;
       margin-top: 8px;
     }
 
     .student-details h3 {
-      font-size: 10px; /* Smaller font */
+      font-size: 10px;
       color: #333;
       margin: 2px 0;
       font-weight: bold;
     }
 
     .student-details p {
-      font-size: 8px; /* Smaller font */
+      font-size: 8px;
       color: #666;
       margin: 1px 0;
     }
@@ -108,10 +101,19 @@
     }
 
     .extra-fields li {
-      font-size: 7px; /* Smaller font */
+      font-size: 7px;
       color: #777;
       margin: 0;
       line-height: 1.2;
+    }
+
+    .qr-code {
+      margin-top: 2px;
+    }
+
+    .qr-code img {
+      width: 30px;
+      height: 30px;
     }
 
     /* Print-specific styles */
@@ -125,10 +127,19 @@
         border: 1px solid #eee;
       }
       
-      /* Force all content on one page */
-      html, body, .page-wrapper, .student-grid {
-        height: auto !important;
-        overflow: visible !important;
+      /* Force page breaks between rows */
+      .student-row {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+      }
+      
+      /* Add explicit page break after every 4 rows (20 students) */
+      .page-break {
+        page-break-after: always;
+        break-after: page;
+        height: 0;
+        margin: 0;
+        padding: 0;
       }
     }
   </style>
@@ -136,40 +147,53 @@
 
 <body>
   <% Object.entries(groupedByClass).forEach(([className, students]) => { %>
-    <!-- Wrapper to keep heading and grid together -->
-    <div class="page-wrapper">
+    <div class="class-section">
       <h1 class="class-heading"><%= heading %>
         <img src="https://cardpro.co.in/login.jpg" alt="Logo">
       </h1>
 
-      <div class="student-grid">
-        <% students.forEach((student) => { %>
-          <div class="student-card">
-            <!-- Fixed text at the top -->
-            <div class="top-center-text">www.cardpro.co.in</div>
-            <div class="student-image">
-              <img src="<%= student.avatarUrl %>" alt="Student Image">
-            </div>
-            <div class="student-details">
-              <h3><%= student.name %></h3>
-              <% if (heading === "All Records") { %>
-                <p><strong>Class:</strong> <%= student.class %></p>
-                <p><strong>Section:</strong> <%= student.section %></p>
-              <% } %>
-              <div class="extra-fields">
-                <ul>
-                  <% Object.entries(student.extraFields).forEach(([key, value]) => { %>
-                    <li><strong><%= key %>:</strong> <%= value %></li>
-                  <% }) %>
-                </ul>
+      <div class="student-container">
+        <% 
+        // Create rows of 5 students each
+        for(let i = 0; i < students.length; i += 5) { 
+          const rowStudents = students.slice(i, i + 5);
+        %>
+          <div class="student-row">
+            <% rowStudents.forEach((student) => { %>
+              <div class="student-card">
+                <div class="top-center-text">www.cardpro.co.in</div>
+                <div class="student-image">
+                  <img src="<%= student.avatarUrl %>" alt="Student Image">
+                </div>
+                <div class="student-details">
+                  <h3><%= student.name %></h3>
+                  <% if (heading === "All Records") { %>
+                    <p><strong>Class:</strong> <%= student.class %></p>
+                    <p><strong>Section:</strong> <%= student.section %></p>
+                  <% } %>
+                  <div class="extra-fields">
+                    <ul>
+                      <% Object.entries(student.extraFields).forEach(([key, value]) => { %>
+                        <li><strong><%= key %>:</strong> <%= value %></li>
+                      <% }) %>
+                    </ul>
+                  </div>
+               
+                </div>
               </div>
-            </div>
+            <% }) %>
           </div>
-        <% }) %>
+          
+          <% 
+          // Add a page break after every 4 rows (20 students)
+          if ((i + 5) % 30 === 0 && i + 5 < students.length) { 
+          %>
+            <div class="page-break"></div>
+          <% } %>
+        <% } %>
       </div>
     </div>
   <% }) %>
 </body>
 
 </html>
-
