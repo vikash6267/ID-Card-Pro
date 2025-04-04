@@ -282,6 +282,8 @@ const StudentDisplay = () => {
               url: url,
             });
             console.log(res);
+
+            handleNextStudent()
           }
         };
 
@@ -372,9 +374,7 @@ const StudentDisplay = () => {
       )}
 
       <div className="bg-white shadow-lg rounded-lg p-8 w-11/12 max-w-lg">
-        <h2 className="text-3xl font-semibold text-center mb-6">
-          {currentStudent?.name}
-        </h2>
+      
         <div className="flex justify-center mt-4 mb-6">
           <img
             src={currentStudent?.avatar.url}
@@ -429,7 +429,10 @@ const StudentDisplay = () => {
         )}
 
         <div className="mt-6">
-          <h4 className="font-semibold">Upcoming Students:</h4>
+        <h2 className="text-xl font-semibold text-center mb-6">
+        Current Student -   {currentStudent?.name}
+        </h2>
+          <h4 className="font-semibold ">Upcoming Students:</h4>
           <ul>
             {upcomingStudents.map((student, index) => (
               <li key={index} className="text-gray-600">

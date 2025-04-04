@@ -460,6 +460,7 @@ handleSchoolSelectHello()
                   selectedImage={selectedImageSig}
                   title="Upload Signature"
                   height={true}
+                  signature={true}
               
                 />
               </>

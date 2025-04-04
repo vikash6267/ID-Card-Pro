@@ -11,22 +11,26 @@ const ImageUploaderWithCrop = ({
   title = "Upload Image",
   height = false,
   photoT = "Square",
+    signature = false, // <-- New prop
+
 }) => {
   const [cropper, setCropper] = useState(null);
   const [aspectRatio, setAspectRatio] = useState(1 / 1);
   const [photoType, setPhotoType] = useState(photoT || "Square");
 
   useEffect(() => {
-
-    console.log(photoT)
-    if (photoT === "Passport") {
+    if (signature) {
+      setAspectRatio(NaN); // Cropper allows free aspect when aspectRatio is NaN
+      setPhotoType("Free");
+    } else if (photoT === "Passport") {
       setAspectRatio(7 / 9);
       setPhotoType("Passport");
-    }else{
+    } else {
       setAspectRatio(1 / 1);
       setPhotoType("Square");
     }
-  }, [photoT]);
+  }, [photoT, signature]);
+  
   const handleAspectRatioChange = (e) => {
     const selectedRatio = e.target.value === "Passport" ? 7 / 9 : 1 / 1;
     setPhotoType(e.target.value);
@@ -150,25 +154,26 @@ const ImageUploaderWithCrop = ({
 
       {selectedImage && (
         <div className="mt-4">
-          <Cropper
-            key={aspectRatio} // **FIX: Ensures Cropper updates when aspectRatio changes**
-            src={selectedImage}
-            style={{ width: "100%", height: height ? "auto" : 400 }}
-            className="w-full h-64 rounded border"
-            aspectRatio={aspectRatio}
-            guides={false}
-            viewMode={3}
-            dragMode="move"
-            responsive={true}
-            autoCropArea={1}
-            checkOrientation={false}
-            wheelZoom={true}
-            zoomable={true}
-            minCropBoxWidth={50}
-            minCropBoxHeight={50}
-            toggleDragModeOnDblclick={false}
-            onInitialized={(instance) => setCropper(instance)}
-          />
+        <Cropper
+  key={aspectRatio}
+  src={selectedImage}
+  style={{ width: "100%", height: height ? "auto" : 400 }}
+  className="w-full h-64 rounded border"
+  aspectRatio={aspectRatio} // Free crop when NaN
+  guides={true}
+  viewMode={1}
+  dragMode={signature ? "crop" : "move"} // <-- Allow selecting crop box freely
+  responsive={true}
+  autoCropArea={1}
+  checkOrientation={false}
+  wheelZoom={true}
+  zoomable={true}
+  minCropBoxWidth={10}
+  minCropBoxHeight={10}
+  toggleDragModeOnDblclick={false}
+  onInitialized={(instance) => setCropper(instance)}
+/>
+
 
           <p
             onClick={handleUpload}
@@ -178,6 +183,19 @@ const ImageUploaderWithCrop = ({
           </p>
         </div>
       )}
+
+{/* {!signature && (
+  <select
+    onChange={handleAspectRatioChange}
+    value={photoType}
+    disabled
+    className="w-full p-3 mb-6 border rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-600"
+  >
+    <option value="Square">Square</option>
+    <option value="Passport">Passport</option>
+  </select>
+)} */}
+
     </div>
   );
 };
