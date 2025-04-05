@@ -283,7 +283,7 @@ const StudentDisplay = () => {
             });
             console.log(res);
 
-            handleNextStudent()
+            // handleNextStudent()
           }
         };
 
