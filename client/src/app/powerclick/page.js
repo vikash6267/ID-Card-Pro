@@ -273,17 +273,39 @@ const StudentDisplay = () => {
 
           Swal.close();
 
+          // if (uploadResponse.data.success) {
+          //   const { public_id, url } = uploadResponse.data.thumbnailImage;
+
+          //   // Update the student's avatar with the uploaded image URL
+          //   const res = await axios.put(`/user/students/${studentId}/avatar`, {
+          //     publicId: public_id,
+          //     url: url,
+          //   });
+          //   console.log(res);
+
+          //   // handleNextStudent()
+          // }
           if (uploadResponse.data.success) {
             const { public_id, url } = uploadResponse.data.thumbnailImage;
-
-            // Update the student's avatar with the uploaded image URL
+          
+            // Update student photo
             const res = await axios.put(`/user/students/${studentId}/avatar`, {
               publicId: public_id,
               url: url,
             });
-            console.log(res);
-
-            // handleNextStudent()
+          
+            // Remove uploaded student from array
+            setStudents((prev) => {
+              const updated = [...prev];
+              updated.splice(currentStudentIndex, 1);
+              return updated;
+            });
+          
+            // Move to next student (same index since we removed current one)
+            setCroppedPhoto(null);
+            setCurrentStudentIndex((prevIndex) =>
+              prevIndex >= students.length - 1 ? 0 : prevIndex
+            );
           }
         };
 
