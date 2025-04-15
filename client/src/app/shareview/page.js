@@ -1772,7 +1772,7 @@ console.log(institute)
 
         {showChatBox && (
           <div className="fixed bottom-16 left-4 flex flex-col gap-3">
-            {!user?.school && status ==="Panding" && (
+            {false && !user?.school && status ==="Panding" && (
               <>
                 <button
                   className={`flex items-center gap-2 ${
