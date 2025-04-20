@@ -425,15 +425,15 @@ setCounts((prev) => ({
             )}
           </div>
         </div>
-       <div className=" flex justify-between items-center w-full">
-       <p className="text-gray-600 text-center mb-6">
-          School: {currentStudent?.school?.name}hhb
-        </p>
-        <div className="text-sm font-medium">
-  {counts?.noPhotoCount} / {counts?.totalStudents - counts?.noPhotoCount} ({counts?.totalStudents})
+        <div className="flex flex-col sm:flex-row justify-between  items-center w-full gap-2">
+  <p className="text-gray-600 text-center sm:text-left">
+    School: {currentStudent?.school?.name}
+  </p>
+  <div className="text-sm font-medium text-center sm:text-right">
+    {counts?.noPhotoCount} / {counts?.totalStudents - counts?.noPhotoCount} ({counts?.totalStudents})
+  </div>
 </div>
 
-       </div>
         <select
           onChange={handleAspectRatioChange}
           className="w-full p-3 mb-6 border rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-600"
