@@ -302,7 +302,12 @@ const StudentDisplay = () => {
               updated.splice(currentStudentIndex, 1);
               return updated;
             });
-          
+          // Update counts immediately
+setCounts((prev) => ({
+  ...prev,
+  noPhotoCount: prev.noPhotoCount - 1,
+}));
+
             // Move to next student (same index since we removed current one)
             setCroppedPhoto(null);
             setCurrentStudentIndex((prevIndex) =>
@@ -422,11 +427,12 @@ const StudentDisplay = () => {
         </div>
        <div className=" flex justify-between items-center w-full">
        <p className="text-gray-600 text-center mb-6">
-          School: {currentStudent?.school?.name}
+          School: {currentStudent?.school?.name}hhb
         </p>
-        <div>
-           {counts?.totalStudents} vs  {students?.length}
-          </div>
+        <div className="text-sm font-medium">
+  {counts?.noPhotoCount} / {counts?.totalStudents - counts?.noPhotoCount} ({counts?.totalStudents})
+</div>
+
        </div>
         <select
           onChange={handleAspectRatioChange}
