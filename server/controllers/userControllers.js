@@ -1330,7 +1330,9 @@ exports.getAllStudentsInSchool = catchAsyncErron(async (req, res, next) => {
       ? await Student.distinct("course", queryObj)
       : []; // Replace "studentID" with the field you consider unique
 
-    // console.log(uniqueStudents)
+
+
+
     // Adding status filter if provided
     if (status) {
       queryObj.status = status;
@@ -1519,6 +1521,11 @@ exports.getAllStudentsInSchool = catchAsyncErron(async (req, res, next) => {
     res.status(500).json({ success: false, error: "Internal Server Error" });
   }
 });
+
+
+
+
+
 
 exports.getAllStaffInSchool = catchAsyncErron(async (req, res, next) => {
   const schoolId = req.params.id; // School ID from request params

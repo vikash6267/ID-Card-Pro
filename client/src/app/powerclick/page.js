@@ -155,6 +155,7 @@ const StudentPhotoCapture = ({ setCroppedPhoto, aspectRatio }) => {
 
 const StudentDisplay = () => {
   const [students, setStudents] = useState([]);
+  const [counts, setCounts] = useState({});
   const [currentStudentIndex, setCurrentStudentIndex] = useState(0);
   const [croppedPhoto, setCroppedPhoto] = useState(null);
   const [studentClass, setStudentClass] = useState("");
@@ -190,6 +191,7 @@ const StudentDisplay = () => {
         .then((response) => {
           console.log(response.data);
           setStudents(response.data?.students);
+          setCounts(response.data?.counting);
           setClassname(response.data?.uniqueStudents);
         })
         .catch((error) => console.error("Error fetching students:", error));
@@ -392,6 +394,8 @@ const StudentDisplay = () => {
               )
             )}
           </select>
+          
+     
         </div>
       )}
 
@@ -416,10 +420,14 @@ const StudentDisplay = () => {
             )}
           </div>
         </div>
-        <p className="text-gray-600 text-center mb-6">
+       <div className=" flex justify-between items-center w-full">
+       <p className="text-gray-600 text-center mb-6">
           School: {currentStudent?.school?.name}
         </p>
-
+        <div>
+           {counts?.totalStudents} vs  {students?.length}
+          </div>
+       </div>
         <select
           onChange={handleAspectRatioChange}
           className="w-full p-3 mb-6 border rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-600"

@@ -242,9 +242,10 @@ router.get("/students/no-photo/:schoolId", async (req, res) => {
       studentClass,
       section,
       course,
-      limit = 50,
+      limit = 50000,
       offset = 0,
     } = req.query; // Add limit and offset
+    let baseQuery = { school: schoolId };
 
     let queryObj = {
       school: schoolId,
@@ -264,6 +265,7 @@ router.get("/students/no-photo/:schoolId", async (req, res) => {
     // Adding status filter if provided
     if (status) {
       queryObj.status = status;
+      baseQuery.status = status;
     }
 
     // Adding class and section filter if provided
@@ -275,22 +277,27 @@ router.get("/students/no-photo/:schoolId", async (req, res) => {
     if (studentClass) {
       if (studentClass === "no-class" || studentClass === "") {
         queryObj.class = null; // Logic to filter for "Without Class Name"
+        baseQuery.class = null; // Logic to filter for "Without Class Name"
       } else {
         const escapedClassName = escapeRegex(studentClass); // Escape special characters
         queryObj.class = { $regex: `^${escapedClassName}$`, $options: "i" }; // Exact match with regex
+        baseQuery.class = { $regex: `^${escapedClassName}$`, $options: "i" }; // Exact match with regex
       }
     }
     if (course) {
       if (course === "no-class" || course === "") {
         queryObj.course = null; // Logic to filter for "Without Class Name"
+        baseQuery.course = null; // Logic to filter for "Without Class Name"
       } else {
         const escapedcourseName = escapeRegex(course); // Escape special characters
         queryObj.course = { $regex: `^${escapedcourseName}$`, $options: "i" }; // Exact match with regex
+        baseQuery.course = { $regex: `^${escapedcourseName}$`, $options: "i" }; // Exact match with regex
       }
     }
 
     if (section) {
       queryObj.section = { $regex: section, $options: "i" };
+      baseQuery.section = { $regex: section, $options: "i" };
     }
 
     function escapeRegex(value) {
@@ -302,12 +309,18 @@ router.get("/students/no-photo/:schoolId", async (req, res) => {
         $regex: `^${escapeRegex(studentClass)}$`,
         $options: "i",
       };
+      baseQuery.class = {
+        $regex: `^${escapeRegex(studentClass)}$`,
+        $options: "i",
+      };
     }
     if (course && course !== "no-class" && course !== "") {
       queryObj.course = { $regex: `^${escapeRegex(course)}$`, $options: "i" };
+      baseQuery.course = { $regex: `^${escapeRegex(course)}$`, $options: "i" };
     }
     if (section) {
       queryObj.section = { $regex: `^${escapeRegex(section)}$`, $options: "i" };
+      baseQuery.section = { $regex: `^${escapeRegex(section)}$`, $options: "i" };
     }
 
     // Add pagination with limit and offset
@@ -325,7 +338,16 @@ router.get("/students/no-photo/:schoolId", async (req, res) => {
         .json({ message: "No students without a photo found." });
     }
 
-    return res.status(200).json({ students, uniqueStudents });
+
+      // Fetch total count of all students (with same filters)
+      const totalStudents = await Student.countDocuments(baseQuery);
+
+      // Fetch count of students without a valid photo
+      const noPhotoCount = await Student.countDocuments(queryObj);
+  
+    return res.status(200).json({ students, uniqueStudents ,counting:{
+      totalStudents,noPhotoCount
+    }});
   } catch (error) {
     console.error("Error fetching students without photo:", error);
     return res
@@ -333,6 +355,11 @@ router.get("/students/no-photo/:schoolId", async (req, res) => {
       .json({ message: "Server Error", error: error.message });
   }
 });
+
+
+
+
+
 
 router.put("/students/:id/avatar", async (req, res) => {
   try {
