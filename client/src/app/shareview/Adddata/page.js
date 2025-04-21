@@ -219,11 +219,14 @@ const Adddata = () => {
     if (staffType) formData.staffType = staffType;
     if (extraField2) formData.extraField2 = extraField2;
     if (extraFieldsStaff) formData.extraFieldsStaff = extraFieldsStaff;
+    if (extraField2) formData.institute = extraField2;
     if (SignatureData) formData.SignatureData = SignatureData;
     // Add other staff fields here
     if (imageData.publicId) formData.publicId = imageData.publicId;
     if (imageData.url) formData.url = imageData.url;
 
+
+    console.log(formData)
     // Dispatch action to add staff with formData
     const response = await dispatch(addStaff(formData, currSchool._id));
     console.log(response);
@@ -265,6 +268,11 @@ const Adddata = () => {
 
     // Clear all form values after dispatching the form
   };
+
+
+
+
+
 
   const handleExtraFieldChange = (e, fieldName) => {
     setExtraFields({
