@@ -81,6 +81,14 @@ const Viewdata = () => {
     setStaffData([]);
   };
 
+  const [permissions, setPermissions] = useState({
+    canEdit: true,
+    canDelete: true,
+    canMoveToReady: true,
+    canShare: true,
+  })
+
+
   useEffect(() => {
     const query = new URLSearchParams(window.location.search);
 
@@ -95,6 +103,21 @@ const Viewdata = () => {
     const institute = query.get("institute");
 console.log(institute)
     // Setting states based on query parameters
+
+    const canEdit = query.get("canEdit");
+    const canDelete = query.get("canDelete");
+    const canMoveToReady = query.get("canMoveToReady");
+    const canShare = query.get("canShare");
+    
+    setPermissions((prev) => ({
+      ...prev,
+      canEdit: canEdit !== null ? canEdit === "1" : prev.canEdit,
+      canDelete: canDelete !== null ? canDelete === "1" : prev.canDelete,
+      canMoveToReady: canMoveToReady !== null ? canMoveToReady === "1" : prev.canMoveToReady,
+      canShare: canShare !== null ? canShare === "1" : prev.canShare,
+    }));
+
+    console.log(permissions)
     if (vendor) {
     
       axios
@@ -1418,16 +1441,16 @@ console.log(institute)
                             <p className=" opacity-0">{"."}</p>
                           )}
                           <div>
-                            <div className="flex gap-3">
-                              <button
+                        <div className="flex gap-3">
+                        {permissions.canShare &&        <button
                                 onClick={() =>
                                   handleShare(student._id, student.name)
                                 }
                                 className=" p-1 z-10 bg-green-600 text-white rounded-full shadow-md hover:bg-blue-500"
                               >
                                 <FaShareAlt size={13} />
-                              </button>
-                              <button
+                              </button>}
+                          { permissions.canDelete &&   <button
                                 onClick={(e) => {
                                   e.preventDefault();
                                   deleteStudent(student._id);
@@ -1435,7 +1458,7 @@ console.log(institute)
                                 className=" p-1 z-10 bg-red-600 text-white rounded-full shadow-md hover:bg-red-500"
                               >
                                 <FaTrashAlt ize={13} />
-                              </button>
+                              </button> }
                             </div>
                           </div>
                         </div>
@@ -1525,20 +1548,20 @@ console.log(institute)
 
                       {status === "Panding" &&  (
                         <div className="flex justify-center mt-4 gap-3">
-                          <button
+                        { permissions?.canEdit &&  <button
                             onClick={() => redirectToStudentEdit(student._id)}
                             className="flex items-center text-sm px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500 transform transition-all duration-200"
                           >
                             <FaEdit className="mr-2" />
                             Edit
-                          </button>
+                          </button>}
 
-                          <button
+                       {permissions.canMoveToReady &&   <button
                             onClick={(e) => moveReadySingle(student._id)}
                             className="text-sm px-1 py-2 text-[12px] bg-yellow-500 text-white rounded-lg hover:bg-yellow-400 transform transition-all duration-200"
                           >
                             <span className=" text-[8px]"> Move to</span> Ready
-                          </button>
+                          </button>}
                         </div>
                       )}
                       {/* {status === "Printed" && !user?.school && (
@@ -1590,18 +1613,18 @@ console.log(institute)
 
                       <div>
                         <div className="flex gap-3">
-                          <button
+                       { permissions.canShare &&  <button
                             onClick={() => handleShare2(staff._id, staff.name)}
                             className="p-1 bg-indigo-700 text-white rounded-full hover:bg-indigo-800 shadow-md transition-all"
                           >
                             <FaShareAlt size={13} />
-                          </button>
-                          <button
+                          </button>}
+                     { permissions.canDelete &&    <button
                             onClick={() => deleteStaff(staff._id)}
                             className="p-1 bg-red-600 text-white rounded-full hover:bg-red-700 shadow-md transition-all"
                           >
                             <FaTrashAlt size={13} />
-                          </button>
+                          </button>}
                         </div>
                       </div>
                     </div>
@@ -1711,24 +1734,24 @@ console.log(institute)
                     {status === "Panding" && (
                       <div className="flex justify-center gap-4 mt-4">
                         {/* Edit Button */}
-                        <button
+                       { permissions?.canEdit  &&<button
                           onClick={() => redirectToStaffEdit(staff._id)}
                           className="px-4 py-2 bg-indigo-700 flex items-center text-white rounded-lg shadow-md hover:bg-indigo-800 transition-all"
                         >
                           <FaEdit className="mr-2" />
                           Edit
-                        </button>
+                        </button>}
 
                         {/* Move to Ready Button */}
 
-                        <button
+                     { permissions?.canMoveToReady &&   <button
                           onClick={(e) => {
                             moveReadySingle(staff._id);
                           }}
                           className="px-2 py-1 bg-yellow-600 text-[12px] text-white rounded-lg shadow-md hover:bg-yellow-700 transition-all"
                         >
                           <span className="text-[8px]"> Move to </span>Ready
-                        </button>
+                        </button>}
                       </div>
                     )}
                     {status === "Printed" && (
@@ -1772,7 +1795,7 @@ console.log(institute)
 
         {showChatBox && (
           <div className="fixed bottom-16 left-4 flex flex-col gap-3">
-            {false && !user?.school && status ==="Panding" && (
+            {permissions?.canDelete && !user?.school && status ==="Panding" && (
               <>
                 <button
                   className={`flex items-center gap-2 ${
@@ -1826,12 +1849,12 @@ console.log(institute)
                 )}
 
                 <>
-                  <button
+              { permissions?.canMoveToReady &&    <button
                     className="flex items-center gap-2 bg-yellow-600 hover:bg-yellow-700 text-white py-2 px-4 rounded-lg shadow-lg"
                     onClick={modeToReadytoprint}
                   >
                     <FaCheck /> Move to Ready
-                  </button>
+                  </button>}
                 </>
               </>
             )}
