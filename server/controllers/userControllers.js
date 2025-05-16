@@ -33,7 +33,7 @@ const ejs = require("ejs");
 const cloudinary = require("cloudinary");
 
 cloudinary.v2.config({
-  cloud_name: "dubvmkr0l",
+  cloud_name: "dig2lqroi",
   api_key: process.env.CLOUDINARY_PUBLIC_KEY,
   api_secret: process.env.CLOUDINARY_SECRET_KEY,
 });
