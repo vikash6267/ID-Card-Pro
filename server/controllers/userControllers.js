@@ -68,9 +68,9 @@ exports.currUser = catchAsyncErron(async (req, res, next) => {
       return next(new errorHandler("User not found", 401));
     }
   } else {
-    if (!user.isActive) 
+    if (!user.isActive)
       return next(new errorHandler("Your account is inactive. Please contact support.", 403));
-  
+
 
     // If user is found, add the role field to user
     user.role = "student";
@@ -357,8 +357,8 @@ exports.userLogin = catchAsyncErron(async (req, res, next) => {
 
   const user = await User.findOne({ email: email }).select("+password").exec();
   if (!user) return next(new errorHandler("User Not Found", 404));
- 
- 
+
+
   if (!user.isActive) return next(new errorHandler("Your account is inactive. Please contact support.", 403));
 
   const isMatch = await user.comparePassword(password);
@@ -1218,24 +1218,27 @@ exports.changeStudentAvatar = catchAsyncErron(async (req, res, next) => {
 });
 
 exports.deleteStudent = catchAsyncErron(async (req, res, next) => {
-  const studentId = req.params.id; // Assuming the student ID is in the URL.
+  const studentId = req.params.id;
 
-  // Attempt to find the student by ID and delete it.
-  const deletedStudent = await Student.findByIdAndDelete(studentId);
+  const student = await Student.findById(studentId);
 
-  if (!deletedStudent) {
-    // If no student was found with the given ID, return an error response.
+  if (!student) {
     return next(
       new errorHandler(`Student not found with id of ${studentId}`, 404)
     );
   }
 
-  // Respond with a success message indicating the student was deleted.
+  student.isDeleted = true;
+  student.deletedAt = new Date();
+
+  await student.save();
+
   res.status(200).json({
     success: true,
-    message: "Student deleted successfully",
+    message: "Student deleted (soft delete) successfully",
   });
 });
+
 
 exports.deleteStaffcurr = catchAsyncErron(async (req, res, next) => {
   const studentId = req.params.id; // Assuming the student ID is in the URL.
@@ -1315,11 +1318,34 @@ exports.getAllStudentsInSchool = catchAsyncErron(async (req, res, next) => {
     const studentClass = req.query.studentClass; // Search term from query parameters
     const section = req.query.section; // Search term from query parameters
     const course = req.query.course; // Search term from query parameters
+    const showDelete = req.query.showDelete; // Search term from query parameters
 
-    console.log(course);
-    let queryObj = { school: new mongoose.Types.ObjectId(schoolId) };
+    console.log(showDelete);
+    let queryObj = {
+      school: new mongoose.Types.ObjectId(schoolId),
+    };
+
+    if (showDelete === "true") {
+      queryObj.isDeleted = true;
+    } else {
+      queryObj.$or = [
+        { isDeleted: false },
+        { isDeleted: { $exists: false } }
+      ];
+    }
     const SchoolData = await School.findById(schoolId);
-    let statusObj = { school: new mongoose.Types.ObjectId(schoolId) };
+    let statusObj = {
+      school: new mongoose.Types.ObjectId(schoolId),
+    };
+
+    if (showDelete === "true") {
+      statusObj.isDeleted = true;
+    } else {
+      statusObj.$or = [
+        { isDeleted: false },
+        { isDeleted: { $exists: false } },
+      ];
+    }
 
     const uniqueStudents = await Student.distinct("class", queryObj);
     // Replace "studentID" with the field you consider unique
@@ -1819,7 +1845,7 @@ exports.updateStudentStatusToPrint = catchAsyncErron(async (req, res, next) => {
       student.avatar &&
       (student.avatar.url === "https://cardpro.co.in/login.jpg" ||
         student.avatar.url ===
-          "https://plus.unsplash.com/premium_photo-1699534403319-978d740f9297?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D")
+        "https://plus.unsplash.com/premium_photo-1699534403319-978d740f9297?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D")
     ) {
       isValid = false;
       reason.push(
@@ -1850,8 +1876,17 @@ exports.updateStudentStatusToPrint = catchAsyncErron(async (req, res, next) => {
   // Update valid students
   const updated = await Student.updateMany(
     { _id: { $in: validStudentIds }, school: schoolID },
-    { $set: { status: "Ready to print" } }
+    {
+      $set: { status: "Ready to print" },
+      $push: {
+        statusHistory: {
+          status: "Ready to print",
+          changedAt: new Date(),
+        },
+      },
+    }
   );
+
 
   res.status(200).json({
     success: true,
@@ -1896,7 +1931,13 @@ exports.updateStudentStatusToPending = catchAsyncErron(
         school: schoolID, // Ensure the students belong to the specified school
       },
       {
-        $set: { status: "Panding" }, // Set the status to "Ready to print"
+        $set: { status: "Panding" },
+        $push: {
+          statusHistory: {
+            status: "Panding",
+            changedAt: new Date(),
+          },
+        },
       }
     );
 
@@ -1950,7 +1991,13 @@ exports.updateStudentStatusToPrinted = catchAsyncErron(
         school: schoolID, // Ensure the students belong to the specified school
       },
       {
-        $set: { status: "Printed" }, // Set the status to "Ready to print"
+        $set: { status: "Printed" },
+        $push: {
+          statusHistory: {
+            status: "Printed",
+            changedAt: new Date(),
+          },
+        }, // Set the status to "Ready to print"
       }
     );
 
@@ -1972,21 +2019,22 @@ exports.updateStudentStatusToPrinted = catchAsyncErron(
 
 exports.deleteStudents = catchAsyncErron(async (req, res, next) => {
   const schoolID = req.params.id;
-  let { studentIds } = req.body; // Assuming both are passed in the request body
+  let { studentIds } = req.body;
+
   console.log(studentIds);
+
+  // Handle if studentIds is a string instead of array
   if (typeof studentIds === "string") {
     try {
       studentIds = JSON.parse(`[${studentIds}]`);
     } catch (error) {
-      // If JSON.parse fails, split the string by commas and manually remove quotes
       studentIds = studentIds
         .split(",")
         .map((id) => id.trim().replace(/^"|"$/g, ""));
     }
   }
 
-  // Validate inputs (schoolId and studentIds)
-  if (!schoolID || !studentIds) {
+  if (!schoolID || !studentIds || !studentIds.length) {
     return res.status(400).json({
       success: false,
       message:
@@ -1994,14 +2042,20 @@ exports.deleteStudents = catchAsyncErron(async (req, res, next) => {
     });
   }
 
-  // Update status of students
-  const updated = await Student.deleteMany({
-    _id: { $in: studentIds }, // Filter documents by student IDs
-    school: schoolID, // Ensure the students belong to the specified school
-  });
+  const updated = await Student.updateMany(
+    {
+      _id: { $in: studentIds },
+      school: schoolID,
+    },
+    {
+      $set: {
+        isDeleted: true,
+        deletedAt: new Date(),
+      },
+    }
+  );
 
-  // If no documents were updated, it could mean invalid IDs were provided or they don't match the school ID
-  if (updated.matchedCount === 0) {
+  if (updated.modifiedCount === 0) {
     return res.status(404).json({
       success: false,
       message: "No matching students found for the provided IDs and school ID.",
@@ -2010,9 +2064,10 @@ exports.deleteStudents = catchAsyncErron(async (req, res, next) => {
 
   res.status(200).json({
     success: true,
-    message: `${updated.modifiedCount} students' status updated to "Printed"`,
+    message: `${updated.modifiedCount} students soft deleted successfully.`,
   });
 });
+
 
 // ---------------------StatusReaduToPrint Staff----------------
 
@@ -2129,7 +2184,7 @@ exports.updateStaffStatusToPrint = catchAsyncErron(async (req, res, next) => {
       staff.avatar &&
       (staff.avatar.url === "https://cardpro.co.in/login.jpg" ||
         staff.avatar.url ===
-          "https://plus.unsplash.com/premium_photo-1699534403319-978d740f9297?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D")
+        "https://plus.unsplash.com/premium_photo-1699534403319-978d740f9297?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D")
     ) {
       isValid = false;
       reason.push(
@@ -2142,7 +2197,7 @@ exports.updateStaffStatusToPrint = catchAsyncErron(async (req, res, next) => {
       staff.signatureImage &&
       (staff.signatureImage.url === "https://cardpro.co.in/login.jpg" ||
         staff.signatureImage.url ===
-          "https://plus.unsplash.com/premium_photo-1699534403319-978d740f9297?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D")
+        "https://plus.unsplash.com/premium_photo-1699534403319-978d740f9297?q=80&w=2940&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D")
     ) {
       isValid = false;
       reason.push(
@@ -3176,7 +3231,7 @@ exports.ExcelData = catchAsyncErron(async (req, res, next) => {
   const schoolId = req.params.id;
   const idPresent = req.query.idPresent;
   const status = req.query.status;
-console.log(idPresent)
+  console.log(idPresent)
   try {
     // Fetch the school data to get the dynamic extra fields
     const school = await School.findById(schoolId);
@@ -3187,7 +3242,7 @@ console.log(idPresent)
     // School's extraFields (assumed to be part of the school schema)
     const schoolExtraFields = school.extraFields || [];
     const requiredFields = school.requiredFields || [];
-   
+
     // Fetch all users (students) from the database
     const users = await Student.find({ school: schoolId, status: status });
 
@@ -3197,7 +3252,7 @@ console.log(idPresent)
 
     // Static columns for required fields
     const staticColumnsAll = [
-      idPresent === "yes" &&  { header: "_ID", key: "_id", width: 15 },
+      idPresent === "yes" && { header: "_ID", key: "_id", width: 15 },
       { header: "SR NO.", key: "srno", width: 15 },
       { header: "PHOTO NO.", key: "photoName", width: 15 },
       { header: "STUDENT NAME", key: "name", width: 20 },
@@ -3344,7 +3399,7 @@ console.log(idPresent)
       const extraFields = user.extraFields || {};
 
       const row = {
-     _id: user._id.toString(),
+        _id: user._id.toString(),
 
         srno: `${index + 1}`, // Sequential PhotoName field
         photoName: user.photoNameUnuiq, // Sequential PhotoName field
@@ -4178,4 +4233,54 @@ exports.duplicateStaffToPending = catchAsyncErron(async (req, res, next) => {
       error: error.message,
     });
   }
+});
+
+
+exports.restoreStudents = catchAsyncErron(async (req, res, next) => {
+  const schoolID = req.params.id;
+  let { studentIds } = req.body;
+
+  // Handle string to array conversion
+  if (typeof studentIds === "string") {
+    try {
+      studentIds = JSON.parse(`[${studentIds}]`);
+    } catch (error) {
+      studentIds = studentIds
+        .split(",")
+        .map((id) => id.trim().replace(/^"|"$/g, ""));
+    }
+  }
+
+  if (!schoolID || !studentIds || !studentIds.length) {
+    return res.status(400).json({
+      success: false,
+      message:
+        "Invalid request. Please provide a school ID and a list of student IDs.",
+    });
+  }
+
+  const updated = await Student.updateMany(
+    {
+      _id: { $in: studentIds },
+      school: schoolID,
+    },
+    {
+      $set: {
+        isDeleted: false,
+        deletedAt: null,
+      },
+    }
+  );
+
+  if (updated.modifiedCount === 0) {
+    return res.status(404).json({
+      success: false,
+      message: "No matching students found for the provided IDs and school ID.",
+    });
+  }
+
+  res.status(200).json({
+    success: true,
+    message: `${updated.modifiedCount} students restored successfully.`,
+  });
 });

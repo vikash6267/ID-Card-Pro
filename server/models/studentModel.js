@@ -75,6 +75,27 @@ const studentModel = mongoose.Schema(
       enum: ["Panding", "Ready to print", "Printed"],
       default: "Panding",
     },
+    statusHistory: [
+      {
+        status: {
+          type: String,
+          enum: ["Panding", "Ready to print", "Printed"],
+        },
+        changedAt: {
+          type: Date,
+          default: Date.now,
+        },
+
+      },
+    ],
+    isDeleted: {
+      type: Boolean,
+      default: false,
+    },
+    deletedAt: {
+      type: Date,
+      default: null,
+    },
   },
   { timestamps: true }
 );

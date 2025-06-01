@@ -70,6 +70,7 @@ const {
   duplicateStudentToPending,
   duplicateStaffToPending,
   toggleUserActiveStatus,
+  restoreStudents,
 } = require("../controllers/userControllers");
 const isAuthenticated = require("../middlewares/auth");
 const router = express.Router();
@@ -158,6 +159,7 @@ router.post("/staff/change-status/Printed/:id", updateStaffStatusToPrinted);
 
 // Multiple Delete
 router.post("/students/delete/:id", deleteStudents);
+router.post("/students/restore/:id", restoreStudents);
 router.post("/staffs/delete/:id", deleteStaff);
 
 router.post("/studentlist/excel/:id", isAuthenticated, studentListExcel);

@@ -9,7 +9,7 @@ import "react-toastify/dist/ReactToastify.css";
 import { redirect, useRouter } from "next/navigation";
 import Image from "next/image";
 import Swal from "sweetalert2";
-import { FaEdit, FaTrashAlt } from "react-icons/fa";
+import { FaEdit, FaTrashAlt, FaUndo } from "react-icons/fa";
 import { FaSearch } from "react-icons/fa";
 import {
   FaFileExport,
@@ -21,6 +21,7 @@ import {
   FaShareAlt,
 } from "react-icons/fa";
 import { HiDuplicate } from "react-icons/hi";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
 
 import { FaCheckCircle, FaTimesCircle } from "react-icons/fa";
 
@@ -28,12 +29,14 @@ import Pagination from "@/component/Pagination";
 import Link from "next/link";
 import SharePopup from "./Component/Share";
 import DownloadPopup from "./Component/DownloadPopup";
+import { MdChangeHistory } from "react-icons/md";
 
 const Viewdata = () => {
   const { user, schools, error } = useSelector((state) => state.user);
   const [currRole, setCurrRole] = useState("");
   const [status, setstatus] = useState("");
   const [submitted, setsubmited] = useState(false);
+  const [showStatus, setShowStatus] = useState(false);
   const [students, setstudents] = useState(null);
   const [staffs, setstaffs] = useState(null);
   const [showChatBox, setShowChatBox] = useState(false);
@@ -78,6 +81,7 @@ const Viewdata = () => {
   const [staffData, setStaffData] = useState([]);
 
   const [statusCount, setSatusCount] = useState([]);
+  const [showDeleted, setShowDeleted] = useState(false);
 
   const resetState = () => {
     setstudents([]);
@@ -108,7 +112,7 @@ const Viewdata = () => {
               if (studentCountByStatus && studentCountByStatus.length > 0) {
                 setSatusCount(studentCountByStatus);
                 setCurrRole("student");
-
+setShowDeleted(false)
                 // Map to extract statuses for students
                 const studentStatuses = studentCountByStatus.map(
                   (item) => item._id
@@ -127,7 +131,7 @@ const Viewdata = () => {
               } else if (staffCountByStatus && staffCountByStatus.length > 0) {
                 setSatusCount(staffCountByStatus);
                 setCurrRole("staff");
-
+setShowDeleted(false)
                 // Map to extract statuses for staff
                 const staffStatuses = staffCountByStatus.map(
                   (item) => item._id
@@ -349,6 +353,7 @@ const Viewdata = () => {
     courseValueSearch,
     staffValueSearch,
     staffValueSearchInsi,
+    showDeleted
   ]);
 
   const handleSchoolSelect = (e) => {
@@ -391,7 +396,7 @@ const Viewdata = () => {
             } else if (staffCountByStatus && staffCountByStatus.length > 0) {
               setSatusCount(staffCountByStatus);
               setCurrRole("staff");
-
+setShowDeleted(false)
               // Map to extract statuses for staff
               const staffStatuses = staffCountByStatus.map((item) => item._id);
 
@@ -447,7 +452,7 @@ const Viewdata = () => {
       // Determine endpoint and error messages dynamically based on role
       const isStudent = currRole === "student";
       const endpoint = isStudent
-        ? `/user/students/${currSchool}?status=${status}&page=${pagination.currentPage}&limit=${pagination.pageSize}&search=${searchQuery}&studentClass=${classNameValue}&section=${sectionValueSearch}&course=${courseValueSearch}`
+        ? `/user/students/${currSchool}?status=${status}&page=${pagination.currentPage}&limit=${pagination.pageSize}&search=${searchQuery}&studentClass=${classNameValue}&section=${sectionValueSearch}&course=${courseValueSearch}&showDelete=${showDeleted}`
         : `/user/staffs/${currSchool}?status=${status}&staffType=${staffValueSearch}&institute=${staffValueSearchInsi}&search=${searchQuery}&page=${pagination.currentPage}&limit=${pagination.pageSize}`;
       const noDataMessage = isStudent
         ? "No students found for the provided school ID"
@@ -1030,6 +1035,46 @@ const Viewdata = () => {
       }
     }
   };
+
+const restoreHandler = async (e) => {
+  e.preventDefault();
+
+  if (currRole === "student") {
+    if (studentIds.length === 0) {
+      Swal.fire("No students selected!", "", "warning");
+      return;
+    }
+
+    Swal.fire({
+      title: "Restoring...",
+      text: "Please wait while we process your request.",
+      icon: "info",
+      showConfirmButton: false,
+      didOpen: () => {
+        Swal.showLoading();
+      },
+    });
+
+    try {
+      const response = await axios.post(
+        `/user/students/restore/${currSchool}?`,
+        { studentIds },
+        config()
+      );
+
+      handleFormSubmit();
+      setStudentIds([]);
+      setStaffIds([]);
+      setIsAllSelected(false);
+      selectAllStudents();
+
+      Swal.fire("Success!", "Students restored successfully.", "success");
+    } catch (error) {
+      Swal.fire("Error!", "Something went wrong during restore.", "error");
+    }
+  }
+};
+
   const selectAllStudents = () => {
     if (isAllSelected) {
       // Clear all selections
@@ -1387,6 +1432,28 @@ const Viewdata = () => {
     console.log(statusObj);
     return statusObj ? statusObj.count : 0; // Return count or 0 if not found
   };
+
+
+  const formatDate = (dateString) => {
+  const options = {
+    weekday: "long",          // e.g., Monday
+    year: "numeric",          // e.g., 2025
+    month: "long",            // e.g., May
+    day: "numeric",           // e.g., 31
+    hour: "2-digit",          // e.g., 11 AM
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: true,             // 12-hour format
+  };
+  return new Date(dateString).toLocaleString("en-US", options);
+};
+
+
+  const handleToggle = () => {
+    const newValue = !showDeleted;
+    setShowDeleted(newValue);
+    
+  };
   return (
     <div>
       <Nav />
@@ -1458,7 +1525,7 @@ const Viewdata = () => {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setCurrRole("staff")}
+                  onClick={() => {setCurrRole("staff");setShowDeleted(false)}}
                   className={`px-4 py-1 rounded-md font-medium ${
                     currRole === "staff"
                       ? "bg-blue-600 text-white"
@@ -1783,6 +1850,14 @@ const Viewdata = () => {
 
         {submitted && (
           <div className="container mx-auto px-16 ">
+
+{showDeleted && (
+  <div className="text-sm text-red-600">
+    After 14 days, student will be automatically deleted
+  </div>
+)}
+
+          
             {pagination.totalPages > 0 && (
               <Pagination
                 totalPages={pagination.totalPages}
@@ -1814,7 +1889,7 @@ const Viewdata = () => {
                           ) : (
                             <p className=" opacity-0">{"."}</p>
                           )}
-                          <div>
+                       { !showDeleted &&  <div>
                             <div className="flex gap-3">
                               <button
                                 onClick={() =>
@@ -1834,7 +1909,7 @@ const Viewdata = () => {
                                 <FaTrashAlt ize={13} />
                               </button>
                             </div>
-                          </div>
+                          </div>}
                         </div>
                       )}
 
@@ -1928,7 +2003,7 @@ const Viewdata = () => {
                         </ul>
                       </div>
 
-                      {status === "Panding" && (
+                      {!showDeleted && status === "Panding" && (
                         <div className="flex justify-center mt-4 gap-3">
                           <button
                             onClick={() => redirectToStudentEdit(student._id)}
@@ -1946,7 +2021,7 @@ const Viewdata = () => {
                           </button>
                         </div>
                       )}
-                      {status === "Printed" && !user?.school && (
+                      {!showDeleted && status === "Printed" && !user?.school && (
                         <div className="flex justify-center mt-4 gap-3">
                           <button
                             className="flex items-center gap-2 bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded-lg shadow-lg"
@@ -1963,7 +2038,7 @@ const Viewdata = () => {
                         </div>
                       )}
 
-                      {status === "Printed" && user?.school && (
+                      {!showDeleted && status === "Printed" && user?.school && (
                         <div className="flex justify-center mt-4 gap-3">
                           <button
                             className="flex items-center gap-2 bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded-lg shadow-lg"
@@ -1973,6 +2048,41 @@ const Viewdata = () => {
                           </button>
                         </div>
                       )}
+
+
+{!showDeleted && <div className="mt-2 flex justify-center" >
+    <button
+        type="button"
+        onClick={() => setShowStatus(!showStatus)}
+        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+      >
+        {showStatus ? "Hide Status" : "Show Status"}
+      </button>
+</div>}
+                 { showStatus &&   <div>
+  {student?.statusHistory?.filter(item => item.status === status).length > 0 && (
+    <div>
+      <h3>{status} Status History:</h3>
+      <ul>
+        {student.statusHistory
+          .filter(item => item.status === status)
+          .map((item, index) => (
+            <li key={index}>
+              Date: {formatDate(item.changedAt)}
+            </li>
+        ))}
+      </ul>
+    </div>
+  )}
+</div>}
+
+{showDeleted && student.deletedAt && (
+  <>
+    Delete date time: {formatDate(student.deletedAt)}
+  </>
+)}
+
+
                     </div>
                   ))}
               </div>
@@ -2130,7 +2240,7 @@ const Viewdata = () => {
                       )}
 
                     {/* Action Buttons */}
-                    {status === "Panding" && (
+                    {!showDeleted && status === "Panding" && (
                       <div className="flex justify-center gap-4 mt-4">
                         {/* Edit Button */}
                         <button
@@ -2229,8 +2339,32 @@ const Viewdata = () => {
                 downloadSignature={downloadSignature}
               />
             )}
+<div>
+{currRole ==="student" && !user?.school && <>
+    <button
+      onClick={handleToggle}
+      className={`flex items-center gap-2 px-4 py-2 rounded-full shadow-md transition duration-300 ${
+        showDeleted ? "bg-red-500 text-white" : "bg-green-500 text-white"
+      }`}
+    >
+      {showDeleted ? (
+        <>
+          <FaEyeSlash className="text-lg" />
+          Hide Deleted
+        </>
+      ) : (
+        <>
+          <FaEye className="text-lg" />
+          Show Deleted
+        </>
+      )}
+    </button>
+</>}
 
-            <button
+</div>
+          { !showDeleted &&
+          <>
+          <button
               className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg shadow-lg"
               onClick={() => setShowPopup(true)}
             >
@@ -2242,7 +2376,8 @@ const Viewdata = () => {
             >
               Download Tab
             </button>
-            {!user?.school && (
+          </> }
+            { !user?.school && (
               <>
                 <button
                   className={`flex items-center gap-2 ${
@@ -2255,17 +2390,26 @@ const Viewdata = () => {
                   {isAllSelected ? <FaUserTimes /> : <FaUserCheck />}
                   {isAllSelected ? "Unselect All" : "Select All"}
                 </button>
-                <button
+   {showDeleted &&  
+   <button
+      className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg shadow-lg"
+      onClick={restoreHandler} // jo pehle diya tha
+    >
+      <FaUndo /> Restore Selected
+    </button>
+                }
+
+              {!showDeleted &&  <button
                   className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-lg shadow-lg"
                   onClick={deletHandler}
                 >
                   <FaTrashAlt /> Delete Selected
-                </button>
+                </button>}
               </>
             )}
 
             {/* Pending status */}
-            {status === "Panding" && (
+            {!showDeleted && status === "Panding" && (
               <>
                 {/* {(user?.exportExcel || user?.school?.exportExcel) && (
                   <button
@@ -2300,14 +2444,14 @@ const Viewdata = () => {
                     className="flex items-center gap-2 bg-yellow-600 hover:bg-yellow-700 text-white py-2 px-4 rounded-lg shadow-lg"
                     onClick={modeToReadytoprint}
                   >
-                    <FaCheck /> Move to Ready
+                    <FaCheck /> Move to Ready 
                   </button>
                 </>
               </>
             )}
 
             {/* Ready to Print status */}
-            {status === "Ready to print" && (
+            {!showDeleted && status === "Ready to print" && (
               <>
                 {!user?.school && (
                   <button
@@ -2345,7 +2489,7 @@ const Viewdata = () => {
             )}
 
             {/* Printed status */}
-            {status === "Printed" && (
+            {!showDeleted && status === "Printed" && (
               <>
                 {/* {(user?.exportExcel || user?.school?.exportExcel) && (
                   <button
@@ -2376,6 +2520,8 @@ const Viewdata = () => {
             Filter
           </button>
         )}
+
+
 
         {showFilterBox && (
           <div className="flex flex-col fixed right-[55px] bottom-20 z-10 px-5 py-5 rounded-md ">

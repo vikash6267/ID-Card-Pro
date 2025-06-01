@@ -5,6 +5,8 @@ const connectDb = require("./models/database");
 const app = express();
 const cors = require("cors");
 const fileUpload = require("express-fileupload");
+const Student = require("./models/schoolModel.js");
+const cron = require("node-cron");
 
 // DataBase Conection
 // require("./models/database.js").connectDatabase();
@@ -57,11 +59,28 @@ app.use(
 );
 
 const readXlsxFile = require("read-excel-file/node");
-const Student = require("./models/studentModel.js");
 const School = require("./models/schoolModel.js");
 const upload = require("./middlewares/multer.js");
 const isAuthenticated = require("./middlewares/auth.js");
 const Staff = require("./models/staffModel.js");
+
+
+
+// Runs every day at midnight
+cron.schedule("0 0 * * *", async () => {
+  const fourteenDaysAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
+
+  try {
+    const result = await student.deleteMany({
+      isDeleted: true,
+      deletedAt: { $lte: fourteenDaysAgo },
+    });
+
+    console.log(`${result.deletedCount} students permanently deleted`);
+  } catch (error) {
+    console.error("Error during scheduled deletion:", error);
+  }
+});
 
 //routed
 app.get("/", (req, res) => {
