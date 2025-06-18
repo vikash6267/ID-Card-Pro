@@ -66,7 +66,11 @@ const schoolModel = mongoose.Schema(
       default: "Square",
     },
     user: { type: mongoose.Schema.Types.ObjectId, ref: "user" },
-    cardTemplate: { type: mongoose.Schema.Types.Mixed, default: {} }, // Allows any object structure
+
+
+    cardTemplate: { type: mongoose.Schema.Types.Mixed, default: {} },
+    
+
     requiredFieldsStaff: [],
     requiredFields: [],
     extraFields: [

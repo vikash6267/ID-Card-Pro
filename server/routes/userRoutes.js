@@ -956,17 +956,24 @@ router.post("/staff-login", async (req, res) => {
 
 router.get('/students', async (req, res) => {
   try {
-    const schoolId = req.query.schoolId || '6781ec18f03a8b8ff5bf73b3';
-    const students = await Student.find({ school: schoolId });
+    const schoolId = req.query.schoolId || '6781fa21f03a8b8ff5bf7620';
+    const students = await Student.find({ school: schoolId, status: "Ready to print" });
     const school = await School.findById(schoolId);
 
-    // Assuming the school has a 'photoBaseUrl' field
     const photoBaseUrl = school.photoBaseUrl || 'http://localhost:4010/photos/';
 
-    const studentsWithPhotoUrls = students.map(student => ({
-      ...student.toObject(),
-      photoUrl: student.photoName ? `${photoBaseUrl}${student.photoName}` : null
-    }));
+    const studentsWithPhotoUrls = students.map(student => {
+      const studentObj = student.toObject();
+
+      // Convert extraFields Map -> plain object
+      if (studentObj.extraFields instanceof Map) {
+        studentObj.extraFields = Object.fromEntries(studentObj.extraFields);
+      }
+
+      studentObj.photoUrl = student.photoName ? `${photoBaseUrl}${student.photoName}` : null;
+
+      return studentObj;
+    });
 
     res.json(studentsWithPhotoUrls);
   } catch (error) {
@@ -1020,6 +1027,8 @@ router.post('/save-template', async (req, res) => {
     res.status(500).json({ message: 'Error saving template', error });
   }
 });
+
+
 
 router.post('/filter-data', async (req, res) => {
   try {
