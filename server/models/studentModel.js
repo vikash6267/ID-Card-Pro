@@ -4,8 +4,7 @@ const studentModel = mongoose.Schema(
   {
     name: {
       type: String,
-      required: [true, "Student Name is Required"],
-      minLength: [1, "Name should be at least 3 characters"],
+          minLength: [1, "Name should be at least 3 characters"],
     },
     fatherName: {
       type: String,

@@ -5,7 +5,7 @@ const connectDb = require("./models/database");
 const app = express();
 const cors = require("cors");
 const fileUpload = require("express-fileupload");
-const Student = require("./models/schoolModel.js");
+const Student = require("./models/studentModel.js");
 const cron = require("node-cron");
 
 // DataBase Conection
@@ -180,7 +180,7 @@ app.post(
         );
 
         for (const [extraKey, mappedValue] of Object.entries(extraFields)) {
-          const normalizedMappedValue = mappedValue.trim().toLowerCase();
+          const normalizedMappedValue = mappedValue?.trim().toLowerCase();
           const columnIndexForExtraField = normalizedNewHeader.indexOf(
             normalizedMappedValue
           );
@@ -638,7 +638,7 @@ app.post(
 
         for (const [extraKey, mappedValue] of Object.entries(extraFields)) {
           // Normalize the mapped value
-          const normalizedMappedValue = mappedValue.trim().toLowerCase();
+          const normalizedMappedValue = mappedValue?.trim().toLowerCase();
 
           // Find the column index in the normalized newheader
           const columnIndexForExtraField = normalizedNewHeader.indexOf(
