@@ -453,7 +453,8 @@ setShowDeleted(false)
       const isStudent = currRole === "student";
       const endpoint = isStudent
         ? `/user/students/${currSchool}?status=${status}&page=${pagination.currentPage}&limit=${pagination.pageSize}&search=${searchQuery}&studentClass=${classNameValue}&section=${sectionValueSearch}&course=${courseValueSearch}&showDelete=${showDeleted}`
-        : `/user/staffs/${currSchool}?status=${status}&staffType=${staffValueSearch}&institute=${staffValueSearchInsi}&search=${searchQuery}&page=${pagination.currentPage}&limit=${pagination.pageSize}`;
+        :`/user/staffs/${currSchool}?status=${encodeURIComponent(status)}&staffType=${encodeURIComponent(staffValueSearch)}&institute=${encodeURIComponent(staffValueSearchInsi)}&search=${encodeURIComponent(searchQuery)}&page=${pagination.currentPage}&limit=${pagination.pageSize}`;
+
       const noDataMessage = isStudent
         ? "No students found for the provided school ID"
         : "No staff found for the provided school ID";

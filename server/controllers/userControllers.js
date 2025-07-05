@@ -1554,12 +1554,13 @@ exports.getAllStudentsInSchool = catchAsyncErron(async (req, res, next) => {
 
 
 exports.getAllStaffInSchool = catchAsyncErron(async (req, res, next) => {
-  const schoolId = req.params.id; // School ID from request params
-  const status = req.query.status; // State from query parameters
-  const staffType = req.query.staffType; // Search term from query parameters
-  const institute = req.query.institute; // Search term from query parameters
-  const search = req.query.search; // Search term from query parameters
+ const schoolId = decodeURIComponent(req.params.id); 
+const status = req.query.status;
+const staffType = req.query.staffType;
+const institute = decodeURIComponent(req.query.institute || ''); 
+const search = decodeURIComponent(req.query.search || '');
 
+console.log(institute)
   let queryObj = { school: new mongoose.Types.ObjectId(schoolId) };
 
   let statusObj = { school: new mongoose.Types.ObjectId(schoolId) };
