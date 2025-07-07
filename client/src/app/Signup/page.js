@@ -49,7 +49,8 @@ const Signup = () => {
         confirmpassword,
       };
       const response = await dispatch(registerUser(User));
-      if (response === "successfully send mail please check your Mail") {
+      console.log(response)
+      if (response === "successfully send mail pleas check your Mail") {
         router.push("/Code")
       }
     } else {
