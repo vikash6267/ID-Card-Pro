@@ -68,7 +68,7 @@ const Staff = require("./models/staffModel.js");
 
 // Runs every day at midnight
 cron.schedule("0 0 * * *", async () => {
-  const fourteenDaysAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
+  const fourteenDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
   try {
     const result = await student.deleteMany({

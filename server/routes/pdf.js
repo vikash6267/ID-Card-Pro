@@ -102,7 +102,7 @@ router.get("/generate-pdf/:schoolId", async (req, res) => {
       heading = selectedFilters.join(", ");
     }
 
-    let queryObj = { school: schoolId };
+let queryObj = { school: schoolId, isDeleted: { $ne: true } };
 
     if (status) {
       queryObj.status = status;

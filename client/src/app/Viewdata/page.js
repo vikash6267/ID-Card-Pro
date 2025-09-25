@@ -112,7 +112,7 @@ const Viewdata = () => {
               if (studentCountByStatus && studentCountByStatus.length > 0) {
                 setSatusCount(studentCountByStatus);
                 setCurrRole("student");
-setShowDeleted(false)
+                setShowDeleted(false)
                 // Map to extract statuses for students
                 const studentStatuses = studentCountByStatus.map(
                   (item) => item._id
@@ -131,7 +131,7 @@ setShowDeleted(false)
               } else if (staffCountByStatus && staffCountByStatus.length > 0) {
                 setSatusCount(staffCountByStatus);
                 setCurrRole("staff");
-setShowDeleted(false)
+                setShowDeleted(false)
                 // Map to extract statuses for staff
                 const staffStatuses = staffCountByStatus.map(
                   (item) => item._id
@@ -396,7 +396,7 @@ setShowDeleted(false)
             } else if (staffCountByStatus && staffCountByStatus.length > 0) {
               setSatusCount(staffCountByStatus);
               setCurrRole("staff");
-setShowDeleted(false)
+              setShowDeleted(false)
               // Map to extract statuses for staff
               const staffStatuses = staffCountByStatus.map((item) => item._id);
 
@@ -453,7 +453,7 @@ setShowDeleted(false)
       const isStudent = currRole === "student";
       const endpoint = isStudent
         ? `/user/students/${currSchool}?status=${status}&page=${pagination.currentPage}&limit=${pagination.pageSize}&search=${searchQuery}&studentClass=${classNameValue}&section=${sectionValueSearch}&course=${courseValueSearch}&showDelete=${showDeleted}`
-        :`/user/staffs/${currSchool}?status=${encodeURIComponent(status)}&staffType=${encodeURIComponent(staffValueSearch)}&institute=${encodeURIComponent(staffValueSearchInsi)}&search=${encodeURIComponent(searchQuery)}&page=${pagination.currentPage}&limit=${pagination.pageSize}`;
+        : `/user/staffs/${currSchool}?status=${encodeURIComponent(status)}&staffType=${encodeURIComponent(staffValueSearch)}&institute=${encodeURIComponent(staffValueSearchInsi)}&search=${encodeURIComponent(searchQuery)}&page=${pagination.currentPage}&limit=${pagination.pageSize}`;
 
       const noDataMessage = isStudent
         ? "No students found for the provided school ID"
@@ -647,10 +647,10 @@ setShowDeleted(false)
           confirmButtonText: "With ID",
           cancelButtonText: "Without ID",
         });
-  
+
         // Agar user "With ID" choose kare toh idPresent = "yes" warna null
         const idPresent = idOption ? "yes" : undefined;
-  
+
         try {
           const response = await axios.get(
             `/user/excel/data/${currSchool}?status=${status}&idPresent=${idPresent}`,
@@ -661,15 +661,15 @@ setShowDeleted(false)
               responseType: "blob", // File download ke liye responseType blob hona chahiye
             }
           );
-  
+
           const contentDisposition = response.headers["content-disposition"];
           let filename = "Student_Data.xlsx";
-  
+
           if (contentDisposition) {
             const filenameMatch = contentDisposition.match(/filename="?([^"]+)"?/);
             filename = filenameMatch ? filenameMatch[1] : "default_filename.xlsx";
           }
-  
+
           const url = window.URL.createObjectURL(new Blob([response.data]));
           const link = document.createElement("a");
           link.href = url;
@@ -680,7 +680,7 @@ setShowDeleted(false)
           Swal.fire("Error!", "Error downloading Excel file.", "error");
         }
       }
-  
+
       if (currRole === "staff") {
         try {
           const response = await axios.get(
@@ -692,15 +692,15 @@ setShowDeleted(false)
               responseType: "blob",
             }
           );
-  
+
           const contentDisposition = response.headers["content-disposition"];
           let filename = "Staff.xlsx";
-  
+
           if (contentDisposition) {
             const filenameMatch = contentDisposition.match(/filename="?([^"]+)"?/);
             filename = filenameMatch ? filenameMatch[1] : "default_filename.xlsx";
           }
-  
+
           const url = window.URL.createObjectURL(new Blob([response.data]));
           const link = document.createElement("a");
           link.href = url;
@@ -941,9 +941,9 @@ setShowDeleted(false)
     const filtered = studentData.filter(
       (student) =>
         student?.class.replace(/\./g, "").toLowerCase() ===
-          classValue.toLowerCase() &&
+        classValue.toLowerCase() &&
         student?.section.replace(/\./g, "").toLowerCase() ===
-          sectionValue.toLowerCase()
+        sectionValue.toLowerCase()
     );
     setFilterActive(true);
     setstudents(filtered);
@@ -1037,44 +1037,44 @@ setShowDeleted(false)
     }
   };
 
-const restoreHandler = async (e) => {
-  e.preventDefault();
+  const restoreHandler = async (e) => {
+    e.preventDefault();
 
-  if (currRole === "student") {
-    if (studentIds.length === 0) {
-      Swal.fire("No students selected!", "", "warning");
-      return;
+    if (currRole === "student") {
+      if (studentIds.length === 0) {
+        Swal.fire("No students selected!", "", "warning");
+        return;
+      }
+
+      Swal.fire({
+        title: "Restoring...",
+        text: "Please wait while we process your request.",
+        icon: "info",
+        showConfirmButton: false,
+        didOpen: () => {
+          Swal.showLoading();
+        },
+      });
+
+      try {
+        const response = await axios.post(
+          `/user/students/restore/${currSchool}?`,
+          { studentIds },
+          config()
+        );
+
+        handleFormSubmit();
+        setStudentIds([]);
+        setStaffIds([]);
+        setIsAllSelected(false);
+        selectAllStudents();
+
+        Swal.fire("Success!", "Students restored successfully.", "success");
+      } catch (error) {
+        Swal.fire("Error!", "Something went wrong during restore.", "error");
+      }
     }
-
-    Swal.fire({
-      title: "Restoring...",
-      text: "Please wait while we process your request.",
-      icon: "info",
-      showConfirmButton: false,
-      didOpen: () => {
-        Swal.showLoading();
-      },
-    });
-
-    try {
-      const response = await axios.post(
-        `/user/students/restore/${currSchool}?`,
-        { studentIds },
-        config()
-      );
-
-      handleFormSubmit();
-      setStudentIds([]);
-      setStaffIds([]);
-      setIsAllSelected(false);
-      selectAllStudents();
-
-      Swal.fire("Success!", "Students restored successfully.", "success");
-    } catch (error) {
-      Swal.fire("Error!", "Something went wrong during restore.", "error");
-    }
-  }
-};
+  };
 
   const selectAllStudents = () => {
     if (isAllSelected) {
@@ -1227,9 +1227,9 @@ const restoreHandler = async (e) => {
       let err = error.response?.data?.message;
       if (
         error.response?.data?.message ===
-          "No students were updated due to missing required fields or empty extraFields values." ||
+        "No students were updated due to missing required fields or empty extraFields values." ||
         error.response?.data?.message ===
-          "No staff members were updated due to missing required fields or empty extraFields values."
+        "No staff members were updated due to missing required fields or empty extraFields values."
       ) {
         err = "Please Put Values And Try Again";
       }
@@ -1436,24 +1436,24 @@ const restoreHandler = async (e) => {
 
 
   const formatDate = (dateString) => {
-  const options = {
-    weekday: "long",          // e.g., Monday
-    year: "numeric",          // e.g., 2025
-    month: "long",            // e.g., May
-    day: "numeric",           // e.g., 31
-    hour: "2-digit",          // e.g., 11 AM
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: true,             // 12-hour format
+    const options = {
+      weekday: "long",          // e.g., Monday
+      year: "numeric",          // e.g., 2025
+      month: "long",            // e.g., May
+      day: "numeric",           // e.g., 31
+      hour: "2-digit",          // e.g., 11 AM
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: true,             // 12-hour format
+    };
+    return new Date(dateString).toLocaleString("en-US", options);
   };
-  return new Date(dateString).toLocaleString("en-US", options);
-};
 
 
   const handleToggle = () => {
     const newValue = !showDeleted;
     setShowDeleted(newValue);
-    
+
   };
   return (
     <div>
@@ -1516,22 +1516,20 @@ const restoreHandler = async (e) => {
                 <button
                   type="button"
                   onClick={() => setCurrRole("student")}
-                  className={`px-4 py-1 rounded-md font-medium ${
-                    currRole === "student"
+                  className={`px-4 py-1 rounded-md font-medium ${currRole === "student"
                       ? "bg-blue-600 text-white"
                       : "bg-gray-200 text-gray-700"
-                  }`}
+                    }`}
                 >
                   Student
                 </button>
                 <button
                   type="button"
-                  onClick={() => {setCurrRole("staff");setShowDeleted(false)}}
-                  className={`px-4 py-1 rounded-md font-medium ${
-                    currRole === "staff"
+                  onClick={() => { setCurrRole("staff"); setShowDeleted(false) }}
+                  className={`px-4 py-1 rounded-md font-medium ${currRole === "staff"
                       ? "bg-blue-600 text-white"
                       : "bg-gray-200 text-gray-700"
-                  }`}
+                    }`}
                 >
                   Staff
                 </button>
@@ -1551,11 +1549,10 @@ const restoreHandler = async (e) => {
                 <button
                   type="button"
                   onClick={() => setstatus("Panding")}
-                  className={`px-4 py-2 rounded-md font-medium relative ${
-                    status === "Panding"
+                  className={`px-4 py-2 rounded-md font-medium relative ${status === "Panding"
                       ? "bg-green-600 text-white"
                       : "bg-gray-200 text-gray-700"
-                  }`}
+                    }`}
                 >
                   Pending
                   {submitted && (
@@ -1569,11 +1566,10 @@ const restoreHandler = async (e) => {
                 <button
                   type="button"
                   onClick={() => setstatus("Ready to print")}
-                  className={`px-4 py-2 rounded-md font-medium relative ${
-                    status === "Ready to print"
+                  className={`px-4 py-2 rounded-md font-medium relative ${status === "Ready to print"
                       ? "bg-green-600 text-white"
                       : "bg-gray-200 text-gray-700"
-                  }`}
+                    }`}
                 >
                   Ready
                   {submitted && (
@@ -1587,11 +1583,10 @@ const restoreHandler = async (e) => {
                 <button
                   type="button"
                   onClick={() => setstatus("Printed")}
-                  className={`px-4 py-2 rounded-md font-medium relative ${
-                    status === "Printed"
+                  className={`px-4 py-2 rounded-md font-medium relative ${status === "Printed"
                       ? "bg-green-600 text-white"
                       : "bg-gray-200 text-gray-700"
-                  }`}
+                    }`}
                 >
                   Printed
                   {submitted && (
@@ -1852,13 +1847,13 @@ const restoreHandler = async (e) => {
         {submitted && (
           <div className="container mx-auto px-16 ">
 
-{showDeleted && (
-  <div className="text-sm text-red-600">
-    After 14 days, student will be automatically deleted
-  </div>
-)}
+            {showDeleted && (
+              <div className="text-sm text-red-600">
+                After 30 days, student will be automatically deleted
+              </div>
+            )}
 
-          
+
             {pagination.totalPages > 0 && (
               <Pagination
                 totalPages={pagination.totalPages}
@@ -1873,11 +1868,10 @@ const restoreHandler = async (e) => {
                   students?.map((student) => (
                     <div
                       key={student?._id}
-                      className={`relative shadow-lg p-6 rounded-xl border-2 w-full bg-gradient-to-b from-blue-400 via-blue-300 to-blue-100 transform  transition-all duration-300 ${
-                        studentIds.includes(student._id)
+                      className={`relative shadow-lg p-6 rounded-xl border-2 w-full bg-gradient-to-b from-blue-400 via-blue-300 to-blue-100 transform  transition-all duration-300 ${studentIds.includes(student._id)
                           ? "border-blue-500"
                           : "border-gray-200"
-                      }`}
+                        }`}
                       onClick={() => handleStudentSelect(student._id)}
                     >
                       {status === "Panding" && (
@@ -1890,25 +1884,28 @@ const restoreHandler = async (e) => {
                           ) : (
                             <p className=" opacity-0">{"."}</p>
                           )}
-                       { !showDeleted &&  <div>
+                          {<div>
                             <div className="flex gap-3">
-                              <button
+                              {!showDeleted && <button
                                 onClick={() =>
                                   handleShare(student._id, student.name)
                                 }
                                 className=" p-1 z-10 bg-green-600 text-white rounded-full shadow-md hover:bg-blue-500"
                               >
                                 <FaShareAlt size={13} />
-                              </button>
+                              </button>}
+                              
                               <button
                                 onClick={(e) => {
                                   e.preventDefault();
                                   deleteStudent(student._id);
                                 }}
-                                className=" p-1 z-10 bg-red-600 text-white rounded-full shadow-md hover:bg-red-500"
+                                className="flex items-center gap-1 p-1 z-10 bg-red-600 text-white rounded-full shadow-md hover:bg-red-500"
                               >
-                                <FaTrashAlt ize={13} />
+                                {showDeleted && <span>Permanently Delete</span>}
+                                <FaTrashAlt size={13} />
                               </button>
+
                             </div>
                           </div>}
                         </div>
@@ -1946,39 +1943,39 @@ const restoreHandler = async (e) => {
                                 {schoolData?.requiredFields?.includes(
                                   "Class"
                                 ) && (
-                                  <p>
-                                    <span className="font-semibold">
-                                      Class:
-                                    </span>{" "}
-                                    <span className=" text-[13px]">
-                                      {" "}
-                                      {student?.class || ""}
-                                    </span>
-                                  </p>
-                                )}
+                                    <p>
+                                      <span className="font-semibold">
+                                        Class:
+                                      </span>{" "}
+                                      <span className=" text-[13px]">
+                                        {" "}
+                                        {student?.class || ""}
+                                      </span>
+                                    </p>
+                                  )}
                                 {schoolData?.requiredFields?.includes(
                                   "Section"
                                 ) && (
-                                  <p>
-                                    <span className="font-semibold">
-                                      Section:
-                                    </span>{" "}
-                                    <span className=" text-[13px]">
-                                      {" "}
-                                      {student?.section || ""}
-                                    </span>
-                                  </p>
-                                )}
+                                    <p>
+                                      <span className="font-semibold">
+                                        Section:
+                                      </span>{" "}
+                                      <span className=" text-[13px]">
+                                        {" "}
+                                        {student?.section || ""}
+                                      </span>
+                                    </p>
+                                  )}
                                 {schoolData?.requiredFields?.includes(
                                   "Course"
                                 ) && (
-                                  <p>
-                                    <span className="font-semibold">
-                                      Course:
-                                    </span>{" "}
-                                    {student?.course || ""}
-                                  </p>
-                                )}
+                                    <p>
+                                      <span className="font-semibold">
+                                        Course:
+                                      </span>{" "}
+                                      {student?.course || ""}
+                                    </p>
+                                  )}
                               </div>
                             </div>
                           </div>
@@ -2051,37 +2048,37 @@ const restoreHandler = async (e) => {
                       )}
 
 
-{!showDeleted && <div className="mt-2 flex justify-center" >
-    <button
-        type="button"
-        onClick={() => setShowStatus(!showStatus)}
-        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-      >
-        {showStatus ? "Hide Status" : "Show Status"}
-      </button>
-</div>}
-                 { showStatus &&   <div>
-  {student?.statusHistory?.filter(item => item.status === status).length > 0 && (
-    <div>
-      <h3>{status} Status History:</h3>
-      <ul>
-        {student.statusHistory
-          .filter(item => item.status === status)
-          .map((item, index) => (
-            <li key={index}>
-              Date: {formatDate(item.changedAt)}
-            </li>
-        ))}
-      </ul>
-    </div>
-  )}
-</div>}
+                      {!showDeleted && <div className="mt-2 flex justify-center" >
+                        <button
+                          type="button"
+                          onClick={() => setShowStatus(!showStatus)}
+                          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                        >
+                          {showStatus ? "Hide Status" : "Show Status"}
+                        </button>
+                      </div>}
+                      {showStatus && <div>
+                        {student?.statusHistory?.filter(item => item.status === status).length > 0 && (
+                          <div>
+                            <h3>{status} Status History:</h3>
+                            <ul>
+                              {student.statusHistory
+                                .filter(item => item.status === status)
+                                .map((item, index) => (
+                                  <li key={index}>
+                                    Date: {formatDate(item.changedAt)}
+                                  </li>
+                                ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>}
 
-{showDeleted && student.deletedAt && (
-  <>
-    Delete date time: {formatDate(student.deletedAt)}
-  </>
-)}
+                      {showDeleted && student.deletedAt && (
+                        <>
+                          Delete date time: {formatDate(student.deletedAt)}
+                        </>
+                      )}
 
 
                     </div>
@@ -2096,11 +2093,10 @@ const restoreHandler = async (e) => {
               {staffs?.map((staff) => (
                 <div
                   key={staff?._id}
-                  className={`relative shadow-lg p-6 rounded-xl border-2 w-full bg-gradient-to-b from-blue-400 via-blue-300 to-blue-100 transform  transition-all duration-300 ${
-                    staffIds.includes(staff._id)
+                  className={`relative shadow-lg p-6 rounded-xl border-2 w-full bg-gradient-to-b from-blue-400 via-blue-300 to-blue-100 transform  transition-all duration-300 ${staffIds.includes(staff._id)
                       ? "border-blue-500"
                       : "border-indigo-50"
-                  }`}
+                    }`}
                   onClick={() => handleStaffSelect(staff._id)}
                 >
                   {/* Share and Delete Buttons */}
@@ -2169,34 +2165,34 @@ const restoreHandler = async (e) => {
                             {schoolData?.requiredFieldsStaff?.includes(
                               "Staff Type"
                             ) && (
-                              <p className="">
-                                <span className="font-semibold">
-                                  Staff Type:
-                                </span>{" "}
-                                <span className=" text-[13px]">
-                                  {" "}
-                                  {staff?.staffType
-                                    ?.split(" ")
-                                    .slice(0, 3)
-                                    .join(" ") || ""}
-                                  {staff?.staffType?.split(" ").length > 3
-                                    ? " ..."
-                                    : ""}
-                                </span>
-                              </p>
-                            )}
+                                <p className="">
+                                  <span className="font-semibold">
+                                    Staff Type:
+                                  </span>{" "}
+                                  <span className=" text-[13px]">
+                                    {" "}
+                                    {staff?.staffType
+                                      ?.split(" ")
+                                      .slice(0, 3)
+                                      .join(" ") || ""}
+                                    {staff?.staffType?.split(" ").length > 3
+                                      ? " ..."
+                                      : ""}
+                                  </span>
+                                </p>
+                              )}
                             {schoolData?.requiredFieldsStaff?.includes(
                               "Institute"
                             ) && (
-                              <p className="">
-                                <span className="font-semibold">
-                                  Institute:
-                                </span>{" "}
-                                <span className=" text-[13px]">
-                                  {staff?.institute || ""}
-                                </span>
-                              </p>
-                            )}
+                                <p className="">
+                                  <span className="font-semibold">
+                                    Institute:
+                                  </span>{" "}
+                                  <span className=" text-[13px]">
+                                    {staff?.institute || ""}
+                                  </span>
+                                </p>
+                              )}
                           </div>
                         </div>
                       </div>
@@ -2216,7 +2212,7 @@ const restoreHandler = async (e) => {
                               </span>
                               <span>
                                 {staff?.extraFieldsStaff &&
-                                staff.extraFieldsStaff[field?.name]
+                                  staff.extraFieldsStaff[field?.name]
                                   ? staff?.extraFieldsStaff[field?.name]
                                   : ""}
                               </span>
@@ -2302,9 +2298,8 @@ const restoreHandler = async (e) => {
         {/* Chat Box Button */}
         {submitted && (
           <button
-            className={`fixed bottom-4 left-4 bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-full shadow-lg ${
-              !showChatBox ? "button-bounce" : ""
-            }`}
+            className={`fixed bottom-4 left-4 bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-full shadow-lg ${!showChatBox ? "button-bounce" : ""
+              }`}
             onClick={toggleChatBox}
           >
             More
@@ -2340,67 +2335,65 @@ const restoreHandler = async (e) => {
                 downloadSignature={downloadSignature}
               />
             )}
-<div>
-{currRole ==="student" && !user?.school && <>
-    <button
-      onClick={handleToggle}
-      className={`flex items-center gap-2 px-4 py-2 rounded-full shadow-md transition duration-300 ${
-        showDeleted ? "bg-red-500 text-white" : "bg-green-500 text-white"
-      }`}
-    >
-      {showDeleted ? (
-        <>
-          <FaEyeSlash className="text-lg" />
-          Hide Deleted
-        </>
-      ) : (
-        <>
-          <FaEye className="text-lg" />
-          Show Deleted
-        </>
-      )}
-    </button>
-</>}
+            <div>
+              {currRole === "student" && !user?.school && <>
+                <button
+                  onClick={handleToggle}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-full shadow-md transition duration-300 ${showDeleted ? "bg-red-500 text-white" : "bg-green-500 text-white"
+                    }`}
+                >
+                  {showDeleted ? (
+                    <>
+                      <FaEyeSlash className="text-lg" />
+                      Hide Deleted
+                    </>
+                  ) : (
+                    <>
+                      <FaEye className="text-lg" />
+                      Show Deleted
+                    </>
+                  )}
+                </button>
+              </>}
 
-</div>
-          { !showDeleted &&
-          <>
-          <button
-              className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg shadow-lg"
-              onClick={() => setShowPopup(true)}
-            >
-              Share
-            </button>
-            <button
-              className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg shadow-lg"
-              onClick={() => setShowDownload(true)}
-            >
-              Download Tab
-            </button>
-          </> }
-            { !user?.school && (
+            </div>
+            {!showDeleted &&
               <>
                 <button
-                  className={`flex items-center gap-2 ${
-                    isAllSelected
+                  className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg shadow-lg"
+                  onClick={() => setShowPopup(true)}
+                >
+                  Share
+                </button>
+                <button
+                  className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg shadow-lg"
+                  onClick={() => setShowDownload(true)}
+                >
+                  Download Tab
+                </button>
+              </>}
+            {!user?.school && (
+              <>
+                <button
+                  className={`flex items-center gap-2 ${isAllSelected
                       ? "bg-red-600 hover:bg-red-700"
                       : "bg-blue-600 hover:bg-blue-700"
-                  } text-white py-2 px-4 rounded-lg shadow-lg`}
+                    } text-white py-2 px-4 rounded-lg shadow-lg`}
                   onClick={selectAllStudents}
                 >
                   {isAllSelected ? <FaUserTimes /> : <FaUserCheck />}
                   {isAllSelected ? "Unselect All" : "Select All"}
                 </button>
-   {showDeleted &&  
-   <button
-      className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg shadow-lg"
-      onClick={restoreHandler} // jo pehle diya tha
-    >
-      <FaUndo /> Restore Selected
-    </button>
+                {showDeleted &&
+                  <button
+                    className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg shadow-lg"
+                    onClick={restoreHandler} // jo pehle diya tha
+                  >
+                    <FaUndo /> Restore Selected
+                  </button>
                 }
 
-              {!showDeleted &&  <button
+                {!showDeleted && <button
                   className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-lg shadow-lg"
                   onClick={deletHandler}
                 >
@@ -2445,7 +2438,7 @@ const restoreHandler = async (e) => {
                     className="flex items-center gap-2 bg-yellow-600 hover:bg-yellow-700 text-white py-2 px-4 rounded-lg shadow-lg"
                     onClick={modeToReadytoprint}
                   >
-                    <FaCheck /> Move to Ready 
+                    <FaCheck /> Move to Ready
                   </button>
                 </>
               </>
@@ -2462,14 +2455,14 @@ const restoreHandler = async (e) => {
                     <FaCheck /> Move to Printed
                   </button>
                 )}
-            
-                  <button
-                    className="flex items-center gap-2 bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded-lg shadow-lg"
-                    onClick={modeToPending}
-                  >
-                    <FaArrowLeft /> Move Back to Pending
-                  </button>
-             
+
+                <button
+                  className="flex items-center gap-2 bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded-lg shadow-lg"
+                  onClick={modeToPending}
+                >
+                  <FaArrowLeft /> Move Back to Pending
+                </button>
+
                 {/* {(user?.exportExcel || user?.school?.exportExcel) && (
                   <button
                     className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg shadow-lg"

@@ -1217,6 +1217,30 @@ exports.changeStudentAvatar = catchAsyncErron(async (req, res, next) => {
   });
 });
 
+// exports.deleteStudent = catchAsyncErron(async (req, res, next) => {
+//   const studentId = req.params.id;
+
+//   const student = await Student.findById(studentId);
+
+//   if (!student) {
+//     return next(
+//       new errorHandler(`Student not found with id of ${studentId}`, 404)
+//     );
+//   }
+
+//   student.isDeleted = true;
+//   student.deletedAt = new Date();
+
+//   await student.save();
+
+//   res.status(200).json({
+//     success: true,
+//     message: "Student deleted (soft delete) successfully",
+//   });
+// });
+
+
+
 exports.deleteStudent = catchAsyncErron(async (req, res, next) => {
   const studentId = req.params.id;
 
@@ -1228,6 +1252,17 @@ exports.deleteStudent = catchAsyncErron(async (req, res, next) => {
     );
   }
 
+  // If already soft deleted, then permanently delete
+  if (student.isDeleted) {
+    await Student.findByIdAndDelete(studentId);
+
+    return res.status(200).json({
+      success: true,
+      message: "Student permanently deleted",
+    });
+  }
+
+  // Otherwise soft delete
   student.isDeleted = true;
   student.deletedAt = new Date();
 
@@ -2969,7 +3004,11 @@ exports.StaffAvatarsDownload = catchAsyncErron(async (req, res, next) => {
         .json({ success: false, message: "School not found" });
     }
 
-    const students = await Student.find({ school: schoolId, status });
+const students = await Student.find({ 
+  school: schoolId, 
+  status, 
+  isDeleted: { $ne: true }  // exclude deleted students
+});
     if (!students.length) {
       return res
         .status(404)
@@ -3245,7 +3284,11 @@ exports.ExcelData = catchAsyncErron(async (req, res, next) => {
     const requiredFields = school.requiredFields || [];
 
     // Fetch all users (students) from the database
-    const users = await Student.find({ school: schoolId, status: status });
+const users = await Student.find({ 
+  school: schoolId, 
+  status: status, 
+  isDeleted: { $ne: true }  // exclude deleted students
+});
 
     // Create a new Excel workbook and worksheet
     const workbook = new ExcelJS.Workbook();
@@ -3849,10 +3892,10 @@ exports.getUsersSchoolsData = async (req, res) => {
           schools.map(async (school) => {
             const schoolId = school._id;
 
-            const studentAggregation = await Student.aggregate([
-              { $match: { school: schoolId } },
-              { $group: { _id: "$status", count: { $sum: 1 } } },
-            ]);
+         const studentAggregation = await Student.aggregate([
+  { $match: { school: schoolId, isDeleted: { $ne: true } } },  // exclude soft deleted
+  { $group: { _id: "$status", count: { $sum: 1 } } },
+]);
 
             const staffAggregation = await Staff.aggregate([
               { $match: { school: schoolId } },
@@ -3929,10 +3972,10 @@ exports.generateUserSchoolPdf = async (req, res) => {
         const schoolId = school._id;
 
         // Aggregations for student and staff counts
-        const studentAggregation = await Student.aggregate([
-          { $match: { school: schoolId } },
-          { $group: { _id: "$status", count: { $sum: 1 } } },
-        ]);
+       const studentAggregation = await Student.aggregate([
+  { $match: { school: schoolId, isDeleted: { $ne: true } } }, // exclude soft deleted
+  { $group: { _id: "$status", count: { $sum: 1 } } },
+]);
 
         const staffAggregation = await Staff.aggregate([
           { $match: { school: schoolId } },
