@@ -292,6 +292,54 @@ const EditStudent = ({ params }) => {
     }
   };
 
+
+
+  const handleDeleteAvatar = async () => {
+  if (!ID) return;
+
+  const confirm = await Swal.fire({
+    title: "Are you sure?",
+    text: "Do you want to delete this avatar?",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonText: "Yes, delete it!",
+    cancelButtonText: "Cancel",
+  });
+
+  if (confirm.isConfirmed) {
+    try {
+      const res = await axios.put(`/user/remove-student-image/${ID}`);
+
+      if (res.data.success) {
+        Swal.fire({
+          title: "Deleted!",
+          text: res.data.message,
+          icon: "success",
+        });
+
+        // Update the state to default avatar
+        setImageData({
+          publicId: "",
+          url: "https://cardpro.co.in/login.jpg",
+        });
+      } else {
+        Swal.fire({
+          title: "Error!",
+          text: res.data.message,
+          icon: "error",
+        });
+      }
+    } catch (error) {
+      Swal.fire({
+        title: "Error!",
+        text: "Failed to delete avatar. Try again later.",
+        icon: "error",
+      });
+    }
+  }
+};
+
+
   // useEffect(() => {
   //   if (currSchool?.extraFields) {
   //     const initialFields = {};
@@ -320,21 +368,33 @@ const EditStudent = ({ params }) => {
               Edit Student
             </h3>
 
-            <div className="w-full flex justify-center items-center flex-col">
-              <Image
-                src={imageData.url}
-                className="w-[100px]"
-                height={550}
-                width={550}
-                alt="logo"
-              />
-              <ImageUploaderWithCrop
-                setImageData={setImageData}
-                setSelectedImage={setSelectedImage}
-                selectedImage={selectedImage}
-                photoT={photoType}
-              />
-            </div>
+         <div className="w-full flex justify-center items-center flex-col relative">
+  <Image
+    src={imageData.url || "https://cardpro.co.in/login.jpg"}
+    className="w-[100px] rounded-full border-4 border-blue-500 shadow-lg"
+    height={100}
+    width={100}
+    alt="Student Avatar"
+  />
+
+  {/* Delete Button */}
+  <button
+    onClick={handleDeleteAvatar}
+    type="button"
+    className="absolute top-0 right-0 bg-red-600 hover:bg-red-700 text-white rounded-full p-1 shadow-md text-xs"
+    title="Delete Avatar"
+  >
+    X
+  </button>
+
+  <ImageUploaderWithCrop
+    setImageData={setImageData}
+    setSelectedImage={setSelectedImage}
+    selectedImage={selectedImage}
+    photoT={photoType}
+  />
+</div>
+
             <div className="mb-4 w-[320px]">
               <label
                 htmlFor="name"

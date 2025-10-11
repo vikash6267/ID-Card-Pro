@@ -1079,5 +1079,50 @@ router.post('/filter-data', async (req, res) => {
 
 
 
+router.put("/remove-student-image/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // 🔹 Find student by ID
+    const student = await Student.findById(id);
+    if (!student) {
+      return res.status(404).json({
+        success: false,
+        message: "Student not found",
+      });
+    }
+
+    // 🔹 If Cloudinary image exists, delete it
+    if (student.avatar && student.avatar.publicId) {
+      try {
+        await cloudinary.uploader.destroy(student.avatar.publicId);
+      } catch (err) {
+        console.error("Cloudinary delete error:", err);
+      }
+    }
+
+    // 🔹 Reset avatar to default image
+    student.avatar = {
+      publicId: "",
+      url: "https://cardpro.co.in/login.jpg", // default image
+    };
+
+    await student.save();
+
+    return res.status(200).json({
+      success: true,
+      message: "Student image deleted successfully. Default image applied.",
+      student,
+    });
+  } catch (error) {
+    console.error("Error removing student image:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Error removing student image",
+      error: error.message,
+    });
+  }
+});
+
 
 module.exports = router;

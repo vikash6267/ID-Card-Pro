@@ -164,6 +164,7 @@ const StudentDisplay = () => {
   const [currRole, setCurrRole] = useState("");
   const [className, setClassname] = useState([]);
   const [aspectRatio, setAspectRatio] = useState(1 / 1);
+const [selectedStudent, setSelectedStudent] = useState(null);
 
   const handleAspectRatioChange = (e) => {
     const selectedRatio = e.target.value === "passport" ? 7 / 9 : 1 / 1;
@@ -372,6 +373,7 @@ setCounts((prev) => ({
     currentStudentIndex + 1,
     currentStudentIndex + 4
   );
+  console.log(upcomingStudents)
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 py-8">
@@ -465,17 +467,22 @@ setCounts((prev) => ({
         )}
 
         <div className="mt-6">
-        <h2 className="text-xl font-semibold text-center mb-6">
+        <h2 className="text-xl font-semibold text-center mb-6 cursor-pointer hover:bg-blue-100"  onClick={() => setSelectedStudent(currentStudent)}> 
         Current Student -   {currentStudent?.name}
         </h2>
           <h4 className="font-semibold ">Upcoming Students:</h4>
-          <ul>
-            {upcomingStudents.map((student, index) => (
-              <li key={index} className="text-gray-600">
-                {student.name}
-              </li>
-            ))}
-          </ul>
+        <ul>
+  {upcomingStudents.map((student, index) => (
+    <li
+      key={index}
+      onClick={() => setSelectedStudent(student)}
+      className="text-gray-700 cursor-pointer hover:bg-blue-100 p-2 rounded transition"
+    >
+      {student.name}
+    </li>
+  ))}
+</ul>
+
         </div>
 
         <div className="mt-6 flex justify-center gap-6">
@@ -513,6 +520,86 @@ setCounts((prev) => ({
           </button>
         </div>
       </div>
+
+      {selectedStudent && (
+  <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+    <div className="bg-white rounded-xl p-6 shadow-lg w-11/12 max-w-lg overflow-y-auto max-h-[90vh]">
+      <h2 className="text-2xl font-bold text-center mb-4 text-blue-700">
+        {selectedStudent.name}
+      </h2>
+
+      <div className="flex flex-col items-center mb-4">
+        <img
+          src={selectedStudent?.avatar?.url || "https://cardpro.co.in/login.jpg"}
+          alt={selectedStudent.name}
+          className="h-28 w-28 rounded-full border-4 border-gray-300 mb-3"
+        />
+        <p className="text-gray-700 font-medium">Class: {selectedStudent.class}</p>
+        {selectedStudent.section && (
+          <p className="text-gray-700 font-medium">
+            Section: {selectedStudent.section}
+          </p>
+        )}
+        {selectedStudent.school?.name && (
+          <p className="text-gray-600 text-sm text-center mt-1">
+            {selectedStudent.school?.name}
+          </p>
+        )}
+      </div>
+
+      <div className="border-t border-gray-300 my-3"></div>
+
+      <div className="space-y-2">
+        <h3 className="text-lg font-semibold text-gray-800 mb-2">Student Information:</h3>
+        {/* Dynamic Extra Fields */}
+        {selectedStudent.extraFields &&
+          Object.entries(selectedStudent.extraFields).map(([key, value], idx) => (
+            <div
+              key={idx}
+              className="flex justify-between border-b border-gray-200 py-1 text-sm"
+            >
+              <span className="font-medium text-gray-700">
+                {key.replace(/_/g, " ").trim()}
+              </span>
+              <span className="text-gray-600">{value || "-"}</span>
+            </div>
+          ))}
+
+        {/* Status */}
+        {selectedStudent.status && (
+          <div className="flex justify-between border-b border-gray-200 py-1 text-sm">
+            <span className="font-medium text-gray-700">Status</span>
+            <span className="text-gray-600">{selectedStudent.status}</span>
+          </div>
+        )}
+
+        {/* Created / Updated At */}
+        <div className="flex justify-between border-b border-gray-200 py-1 text-sm">
+          <span className="font-medium text-gray-700">Created At</span>
+          <span className="text-gray-600">
+            {new Date(selectedStudent.createdAt).toLocaleDateString()}
+          </span>
+        </div>
+        <div className="flex justify-between border-b border-gray-200 py-1 text-sm">
+          <span className="font-medium text-gray-700">Updated At</span>
+          <span className="text-gray-600">
+            {new Date(selectedStudent.updatedAt).toLocaleDateString()}
+          </span>
+        </div>
+      </div>
+
+      <div className="mt-6 flex justify-center">
+        <button
+          onClick={() => setSelectedStudent(null)}
+          className="px-6 py-2 bg-gray-700 text-white rounded-lg shadow-md hover:bg-gray-800 transition"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
     </div>
   );
 };

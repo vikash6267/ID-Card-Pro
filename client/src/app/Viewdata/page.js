@@ -1450,6 +1450,47 @@ const Viewdata = () => {
   };
 
 
+
+  const handleDeleteAvatar = async (studentId) => {
+    const confirm = await Swal.fire({
+      title: "Are you sure?",
+      text: "Do you want to delete this avatar?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Yes, delete it!",
+      cancelButtonText: "Cancel",
+    });
+
+    if (confirm.isConfirmed) {
+      try {
+        const res = await axios.put(`/user/remove-student-image/${studentId}`);
+
+        if (res.data.success) {
+          Swal.fire({
+            title: "Deleted!",
+            text: res.data.message,
+            icon: "success",
+          });
+          handleFormSubmit()
+          // Optionally, update the student state to reflect default avatar immediately
+          // Example: setStudent(prev => ({ ...prev, avatar: res.data.student.avatar }));
+        } else {
+          Swal.fire({
+            title: "Error!",
+            text: res.data.message,
+            icon: "error",
+          });
+        }
+      } catch (error) {
+        Swal.fire({
+          title: "Error!",
+          text: "Failed to delete avatar. Try again later.",
+          icon: "error",
+        });
+      }
+    }
+  };
+
   const handleToggle = () => {
     const newValue = !showDeleted;
     setShowDeleted(newValue);
@@ -1517,8 +1558,8 @@ const Viewdata = () => {
                   type="button"
                   onClick={() => setCurrRole("student")}
                   className={`px-4 py-1 rounded-md font-medium ${currRole === "student"
-                      ? "bg-blue-600 text-white"
-                      : "bg-gray-200 text-gray-700"
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-200 text-gray-700"
                     }`}
                 >
                   Student
@@ -1527,8 +1568,8 @@ const Viewdata = () => {
                   type="button"
                   onClick={() => { setCurrRole("staff"); setShowDeleted(false) }}
                   className={`px-4 py-1 rounded-md font-medium ${currRole === "staff"
-                      ? "bg-blue-600 text-white"
-                      : "bg-gray-200 text-gray-700"
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-200 text-gray-700"
                     }`}
                 >
                   Staff
@@ -1550,8 +1591,8 @@ const Viewdata = () => {
                   type="button"
                   onClick={() => setstatus("Panding")}
                   className={`px-4 py-2 rounded-md font-medium relative ${status === "Panding"
-                      ? "bg-green-600 text-white"
-                      : "bg-gray-200 text-gray-700"
+                    ? "bg-green-600 text-white"
+                    : "bg-gray-200 text-gray-700"
                     }`}
                 >
                   Pending
@@ -1567,8 +1608,8 @@ const Viewdata = () => {
                   type="button"
                   onClick={() => setstatus("Ready to print")}
                   className={`px-4 py-2 rounded-md font-medium relative ${status === "Ready to print"
-                      ? "bg-green-600 text-white"
-                      : "bg-gray-200 text-gray-700"
+                    ? "bg-green-600 text-white"
+                    : "bg-gray-200 text-gray-700"
                     }`}
                 >
                   Ready
@@ -1584,8 +1625,8 @@ const Viewdata = () => {
                   type="button"
                   onClick={() => setstatus("Printed")}
                   className={`px-4 py-2 rounded-md font-medium relative ${status === "Printed"
-                      ? "bg-green-600 text-white"
-                      : "bg-gray-200 text-gray-700"
+                    ? "bg-green-600 text-white"
+                    : "bg-gray-200 text-gray-700"
                     }`}
                 >
                   Printed
@@ -1869,8 +1910,8 @@ const Viewdata = () => {
                     <div
                       key={student?._id}
                       className={`relative shadow-lg p-6 rounded-xl border-2 w-full bg-gradient-to-b from-blue-400 via-blue-300 to-blue-100 transform  transition-all duration-300 ${studentIds.includes(student._id)
-                          ? "border-blue-500"
-                          : "border-gray-200"
+                        ? "border-blue-500"
+                        : "border-gray-200"
                         }`}
                       onClick={() => handleStudentSelect(student._id)}
                     >
@@ -1894,7 +1935,7 @@ const Viewdata = () => {
                               >
                                 <FaShareAlt size={13} />
                               </button>}
-                              
+
                               <button
                                 onClick={(e) => {
                                   e.preventDefault();
@@ -1924,61 +1965,57 @@ const Viewdata = () => {
                         )}
 
                         <div className="flex flex-col items-center mt-1">
-                          <div className="grid grid-cols-2 gap-2 ">
-                            <Image
-                              height={80}
-                              width={80}
-                              className="min-w-[95%] max-w-[95%] min-h-[100px] max-h-[100px] rounded-full border-4 border-blue-500 shadow-lg"
-                              src={student?.avatar?.url}
-                              alt={student?.name}
-                            />
+                          <div className="grid grid-cols-2 gap-2 relative">
+                            <div className="relative">
+                              <Image
+                                height={80}
+                                width={80}
+                                className="min-w-[95%] max-w-[95%] min-h-[100px] max-h-[100px] rounded-full border-4 border-blue-500 shadow-lg"
+                                src={student?.avatar?.url }
+                                alt={student?.name}
+                              />
+
+                              {/* Delete Button Overlay */}
+                {              student?.avatar?.url !== "https://cardpro.co.in/login.jpg" &&
+                              <button
+                                onClick={() => handleDeleteAvatar(student._id)}
+                                className="absolute top-0 right-0 bg-red-600 hover:bg-red-700 text-white rounded-full p-1 shadow-md text-xs"
+                                title="Delete Avatar"
+                              >
+                                X
+                              </button>}
+                            </div>
 
                             <div>
-                              <div className="mt-4 text-gray-700 ">
+                              <div className="mt-4 text-gray-700">
                                 {student?.photoNameUnuiq && (
                                   <p className="text-[10px] font-medium">
                                     Photo No.: {student?.photoNameUnuiq}
                                   </p>
                                 )}
-                                {schoolData?.requiredFields?.includes(
-                                  "Class"
-                                ) && (
-                                    <p>
-                                      <span className="font-semibold">
-                                        Class:
-                                      </span>{" "}
-                                      <span className=" text-[13px]">
-                                        {" "}
-                                        {student?.class || ""}
-                                      </span>
-                                    </p>
-                                  )}
-                                {schoolData?.requiredFields?.includes(
-                                  "Section"
-                                ) && (
-                                    <p>
-                                      <span className="font-semibold">
-                                        Section:
-                                      </span>{" "}
-                                      <span className=" text-[13px]">
-                                        {" "}
-                                        {student?.section || ""}
-                                      </span>
-                                    </p>
-                                  )}
-                                {schoolData?.requiredFields?.includes(
-                                  "Course"
-                                ) && (
-                                    <p>
-                                      <span className="font-semibold">
-                                        Course:
-                                      </span>{" "}
-                                      {student?.course || ""}
-                                    </p>
-                                  )}
+
+                                {schoolData?.requiredFields?.includes("Class") && (
+                                  <p>
+                                    <span className="font-semibold">Class:</span>{" "}
+                                    <span className="text-[13px]">{student?.class || ""}</span>
+                                  </p>
+                                )}
+                                {schoolData?.requiredFields?.includes("Section") && (
+                                  <p>
+                                    <span className="font-semibold">Section:</span>{" "}
+                                    <span className="text-[13px]">{student?.section || ""}</span>
+                                  </p>
+                                )}
+                                {schoolData?.requiredFields?.includes("Course") && (
+                                  <p>
+                                    <span className="font-semibold">Course:</span>{" "}
+                                    <span className="text-[13px]">{student?.course || ""}</span>
+                                  </p>
+                                )}
                               </div>
                             </div>
                           </div>
+
                         </div>
                         {/* Divider Line */}
                         <div className="h-[2px] w-[100%] bg-blue-500 mx-auto my-4 rounded-full"></div>
@@ -2094,8 +2131,8 @@ const Viewdata = () => {
                 <div
                   key={staff?._id}
                   className={`relative shadow-lg p-6 rounded-xl border-2 w-full bg-gradient-to-b from-blue-400 via-blue-300 to-blue-100 transform  transition-all duration-300 ${staffIds.includes(staff._id)
-                      ? "border-blue-500"
-                      : "border-indigo-50"
+                    ? "border-blue-500"
+                    : "border-indigo-50"
                     }`}
                   onClick={() => handleStaffSelect(staff._id)}
                 >
@@ -2376,8 +2413,8 @@ const Viewdata = () => {
               <>
                 <button
                   className={`flex items-center gap-2 ${isAllSelected
-                      ? "bg-red-600 hover:bg-red-700"
-                      : "bg-blue-600 hover:bg-blue-700"
+                    ? "bg-red-600 hover:bg-red-700"
+                    : "bg-blue-600 hover:bg-blue-700"
                     } text-white py-2 px-4 rounded-lg shadow-lg`}
                   onClick={selectAllStudents}
                 >
