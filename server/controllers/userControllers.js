@@ -4163,6 +4163,65 @@ exports.generateUserSchoolPdf = async (req, res) => {
 };
 
 
+exports.generateUserSchoolData = async (req, res) => {
+  try {
+    const userId = req.id; // User ID from middleware/auth
+
+    // Find the user by ID
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    // Get schools related to this user
+    const schools = await School.find({ user: user._id });
+    if (!schools.length) {
+      return res.status(404).json({
+        success: false,
+        message: "No schools found for this user",
+      });
+    }
+
+    const schoolDataArray = await Promise.all(
+      schools.map(async (school) => {
+        const schoolId = school._id;
+
+        // Aggregate students by status
+        const studentAggregation = await Student.aggregate([
+          { $match: { school: schoolId, isDeleted: { $ne: true } } },
+          { $group: { _id: "$status", count: { $sum: 1 } } },
+        ]);
+
+        const formatAggregationData = (aggregation) => {
+          return aggregation.reduce(
+            (acc, curr) => {
+              acc[curr._id] = curr.count;
+              return acc;
+            },
+            { Panding: 0, "Ready to print": 0, Printed: 0 }
+          );
+        };
+
+        return {
+          schoolName: school.name,
+          _id: school._id,
+          readyToPrintStudents: formatAggregationData(studentAggregation)["Ready to print"] || 0,
+        };
+      })
+    );
+
+    // Send JSON response
+    res.status(200).json({
+      success: true,
+      data: schoolDataArray,
+    });
+  } catch (error) {
+    console.error("Error fetching school data:", error);
+    res.status(500).json({ success: false, message: "Error fetching data", error });
+  }
+};
+
+
 
 
 exports.duplicateStudentToPending = catchAsyncErron(async (req, res, next) => {
@@ -4327,4 +4386,150 @@ exports.restoreStudents = catchAsyncErron(async (req, res, next) => {
     success: true,
     message: `${updated.modifiedCount} students restored successfully.`,
   });
+});
+
+
+
+exports.DownloadExcelAndImagesZip = catchAsyncErron(async (req, res, next) => {
+  const schoolId = req.params.id;
+const { status } = req.query;
+
+  try {
+    const school = await School.findById(schoolId);
+    if (!school) {
+      return res.status(404).json({ success: false, message: "School not found" });
+    }
+
+    const students = await Student.find({ 
+      school: schoolId, 
+      status, 
+      isDeleted: { $ne: true } 
+    });
+
+    if (!students.length) {
+      return res.status(404).json({ success: false, message: "No students found" });
+    }
+
+    const schoolExtraFields = school.extraFields || [];
+    const requiredFields = school.requiredFields || [];
+
+    // Create temp directory
+    const tempDir = path.join(__dirname, "temp_zip");
+    if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
+
+    // --- Step 1: Download all avatars ---
+    for (let student of students) {
+      const url = student?.avatar?.url || "https://cardpro.co.in/login.jpg";
+      const ext = path.extname(url).split("?")[0] || ".jpg";
+      const fileName = `${student.photoNameUnuiq}${ext}`;
+      const filePath = path.join(tempDir, fileName.replace(/ /g, "_"));
+
+      try {
+        const response = await axios({ url, method: "GET", responseType: "stream" });
+        const writer = fs.createWriteStream(filePath);
+        response.data.pipe(writer);
+        await new Promise((resolve, reject) => {
+          writer.on("finish", resolve);
+          writer.on("error", reject);
+        });
+      } catch (err) {
+        console.error(`Failed to download ${url}:`, err.message);
+      }
+    }
+
+    // --- Step 2: Generate Excel with dynamic fields ---
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Students");
+
+    // Static + dynamic columns
+    const staticColumns = [
+      { header: "Photo No.", key: "photoName", width: 20 },
+      { header: "Student Name", key: "name", width: 25 },
+      { header: "Father's Name", key: "fatherName", width: 25 },
+      { header: "Mother's Name", key: "motherName", width: 25 },
+      { header: "Class", key: "class", width: 15 },
+      { header: "Section", key: "section", width: 10 },
+      { header: "Roll No.", key: "rollNo", width: 15 },
+    ];
+
+    // Add required fields dynamically
+    requiredFields.forEach((field) => {
+      staticColumns.push({ header: field, key: field, width: 25 });
+    });
+
+    // Add extra fields dynamically
+    schoolExtraFields.forEach((field) => {
+      staticColumns.push({ header: field.name || "Extra Field", key: field.name, width: 25 });
+    });
+
+    worksheet.columns = staticColumns;
+
+    // Style header
+    const headerRow = worksheet.getRow(1);
+    headerRow.font = { bold: true, color: { argb: "FFFFFF" } };
+    headerRow.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "4CAF50" } };
+
+    // Add data rows
+    students.forEach((s, index) => {
+      const row = {
+        photoName: s.photoNameUnuiq,
+        name: s.name,
+        fatherName: s.fatherName,
+        motherName: s.motherName,
+        class: s.class,
+        section: s.section,
+        rollNo: s.rollNo,
+      };
+
+      // Add required fields
+      requiredFields.forEach((f) => {
+        row[f] = s[f] || "";
+      });
+
+      // Add extra fields (from student.extraFields Map or object)
+      schoolExtraFields.forEach((f) => {
+        if (s.extraFields) {
+          row[f.name] = s.extraFields.get?.(f.name) || s.extraFields[f.name] || "";
+        } else {
+          row[f.name] = "";
+        }
+      });
+
+      worksheet.addRow(row);
+    });
+
+    const excelPath = path.join(tempDir, `${school.name.replace(/ /g, "_")}_students.xlsx`);
+    await workbook.xlsx.writeFile(excelPath);
+
+    // --- Step 3: Create ZIP ---
+    const zipFileName = `${school.name.replace(/ /g, "_")}_students.zip`;
+    const zipFilePath = path.join(__dirname, zipFileName);
+    const output = fs.createWriteStream(zipFilePath);
+    const archive = archiver("zip", { zlib: { level: 9 } });
+    archive.pipe(output);
+
+    // Add all files in temp directory
+    fs.readdirSync(tempDir).forEach((file) => {
+      archive.file(path.join(tempDir, file), { name: file });
+    });
+
+    await archive.finalize();
+
+    // Cleanup temp folder
+    fs.rmSync(tempDir, { recursive: true, force: true });
+
+    // --- Step 4: Send ZIP ---
+    res.setHeader("Content-Disposition", `attachment; filename="${zipFileName}"`);
+    res.setHeader("Content-Type", "application/zip");
+    const readStream = fs.createReadStream(zipFilePath);
+    readStream.pipe(res);
+
+    readStream.on("close", () => {
+      fs.unlinkSync(zipFilePath); // Delete ZIP after sending
+    });
+
+  } catch (error) {
+    console.error("Error creating ZIP:", error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
 });

@@ -71,6 +71,8 @@ const {
   duplicateStaffToPending,
   toggleUserActiveStatus,
   restoreStudents,
+  generateUserSchoolData,
+  DownloadExcelAndImagesZip,
 } = require("../controllers/userControllers");
 const isAuthenticated = require("../middlewares/auth");
 const router = express.Router();
@@ -167,6 +169,7 @@ router.post("/studentlist/excel/:id", isAuthenticated, studentListExcel);
 router.post("/bar-chart", isAuthenticated, GraphData);
 
 router.get("/excel/data/:id", isAuthenticated, ExcelData);
+router.get("/zip/:id", isAuthenticated, DownloadExcelAndImagesZip);
 
 router.get("/staff/excel/data/:id", isAuthenticated, ExcelDataStaff);
 
@@ -177,6 +180,7 @@ router.post("/staff/signatureNew/:id", isAuthenticated, StaffSignatureDownload);
 
 router.get("/search/student/:id", isAuthenticated, SerchStudent);
 router.get("/userdata", isAuthenticated, generateUserSchoolPdf);
+router.get("/userdata-raw", isAuthenticated, generateUserSchoolData);
 router.get("/users-data",  getUsersSchoolsData);
 
 // router.post("student/avatars", upload , isAuthenticated ,StudentsAvatars);
