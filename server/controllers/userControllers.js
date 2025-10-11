@@ -4533,3 +4533,46 @@ const { status } = req.query;
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 });
+
+
+
+
+
+
+exports.updateStudentStatusToPrintedAll = catchAsyncErron(async (req, res, next) => {
+  const schoolID = req.params.id;
+
+  // Validate school ID
+  if (!schoolID) {
+    return res.status(400).json({
+      success: false,
+      message: "Please provide a valid school ID.",
+    });
+  }
+
+  // Update only those students whose current status is "Ready to print"
+  const updated = await Student.updateMany(
+    { school: schoolID, status: "Ready to print" },
+    {
+      $set: { status: "Printed" },
+      $push: {
+        statusHistory: {
+          status: "Printed",
+          changedAt: new Date(),
+        },
+      },
+    }
+  );
+
+  if (updated.matchedCount === 0) {
+    return res.status(404).json({
+      success: false,
+      message: "No students with status 'Ready to print' found for this school.",
+    });
+  }
+
+  res.status(200).json({
+    success: true,
+    message: `${updated.modifiedCount} students' status updated to "Printed" for school ${schoolID}`,
+  });
+});

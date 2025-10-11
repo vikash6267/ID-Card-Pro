@@ -73,6 +73,7 @@ const {
   restoreStudents,
   generateUserSchoolData,
   DownloadExcelAndImagesZip,
+  updateStudentStatusToPrintedAll,
 } = require("../controllers/userControllers");
 const isAuthenticated = require("../middlewares/auth");
 const router = express.Router();
@@ -154,6 +155,7 @@ router.post("/staff/change-status/copy/:id", duplicateStaffToPending);
 router.post("/student/change-status/readyto/:id", updateStudentStatusToPrint);
 router.post("/student/change-status/pending/:id", updateStudentStatusToPending);
 router.post("/student/change-status/printed/:id", updateStudentStatusToPrinted);
+router.put("/student-all/change-status/printed/:id", updateStudentStatusToPrintedAll);
 // Staff Status
 router.post("/staff/change-status/readyto/:id", updateStaffStatusToPrint);
 router.post("/staff/change-status/pending/:id", updateStaffStatusToPending);
