@@ -4167,13 +4167,13 @@ exports.generateUserSchoolData = async (req, res) => {
   try {
     const userId = req.id; // User ID from middleware/auth
 
-    // Find the user by ID
+    // Find user
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ success: false, message: "User not found" });
     }
 
-    // Get schools related to this user
+    // Get all schools for this user
     const schools = await School.find({ user: user._id });
     if (!schools.length) {
       return res.status(404).json({
@@ -4182,44 +4182,50 @@ exports.generateUserSchoolData = async (req, res) => {
       });
     }
 
+    // Build data for each school
     const schoolDataArray = await Promise.all(
       schools.map(async (school) => {
         const schoolId = school._id;
 
-        // Aggregate students by status
+        // Aggregate student counts by status
         const studentAggregation = await Student.aggregate([
           { $match: { school: schoolId, isDeleted: { $ne: true } } },
           { $group: { _id: "$status", count: { $sum: 1 } } },
         ]);
 
-        const formatAggregationData = (aggregation) => {
-          return aggregation.reduce(
-            (acc, curr) => {
-              acc[curr._id] = curr.count;
-              return acc;
-            },
-            { Panding: 0, "Ready to print": 0, Printed: 0 }
-          );
-        };
+        // Convert aggregation result into simple object
+        const statusCounts = studentAggregation.reduce(
+          (acc, curr) => {
+            acc[curr._id] = curr.count;
+            return acc;
+          },
+          { Pending: 0, "Ready to print": 0, Printed: 0 }
+        );
 
         return {
           schoolName: school.name,
           _id: school._id,
-          readyToPrintStudents: formatAggregationData(studentAggregation)["Ready to print"] || 0,
+          readyToPrintStudents: statusCounts["Ready to print"] || 0,
         };
       })
     );
 
-    // Send JSON response
+    // 🔽 Sort schools: highest readyToPrintStudents first
+    const sortedSchools = schoolDataArray.sort(
+      (a, b) => b.readyToPrintStudents - a.readyToPrintStudents
+    );
+
+    // Respond with sorted data
     res.status(200).json({
       success: true,
-      data: schoolDataArray,
+      data: sortedSchools,
     });
   } catch (error) {
     console.error("Error fetching school data:", error);
     res.status(500).json({ success: false, message: "Error fetching data", error });
   }
 };
+
 
 
 
@@ -4392,36 +4398,39 @@ exports.restoreStudents = catchAsyncErron(async (req, res, next) => {
 
 exports.DownloadExcelAndImagesZip = catchAsyncErron(async (req, res, next) => {
   const schoolId = req.params.id;
-const { status } = req.query;
+  const idPresent = req.query.idPresent;
+  const { status } = req.query; // status query
 
   try {
+    // 1. Fetch School
     const school = await School.findById(schoolId);
     if (!school) {
       return res.status(404).json({ success: false, message: "School not found" });
     }
 
-    const students = await Student.find({ 
-      school: schoolId, 
-      status, 
-      isDeleted: { $ne: true } 
-    });
-
-    if (!students.length) {
-      return res.status(404).json({ success: false, message: "No students found" });
-    }
-
     const schoolExtraFields = school.extraFields || [];
     const requiredFields = school.requiredFields || [];
 
-    // Create temp directory
+    // 2. Fetch Students
+    const users = await Student.find({ // 'users' from your ExcelData logic
+      school: schoolId,
+      status: status,
+      isDeleted: { $ne: true }
+    });
+
+    if (!users.length) {
+      return res.status(404).json({ success: false, message: "No students found" });
+    }
+
+    // 3. Create Temp Directory
     const tempDir = path.join(__dirname, "temp_zip");
     if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
 
-    // --- Step 1: Download all avatars ---
-    for (let student of students) {
-      const url = student?.avatar?.url || "https://cardpro.co.in/login.jpg";
+    // 4. Download all avatars (from DownloadExcelAndImagesZip logic)
+    for (let user of users) { // Using 'user' from your loop
+      const url = user?.avatar?.url || "https://cardpro.co.in/login.jpg"; // Default image
       const ext = path.extname(url).split("?")[0] || ".jpg";
-      const fileName = `${student.photoNameUnuiq}${ext}`;
+      const fileName = `${user.photoNameUnuiq}${ext}`;
       const filePath = path.join(tempDir, fileName.replace(/ /g, "_"));
 
       try {
@@ -4434,102 +4443,240 @@ const { status } = req.query;
         });
       } catch (err) {
         console.error(`Failed to download ${url}:`, err.message);
+        // Continue even if one image fails
       }
     }
 
-    // --- Step 2: Generate Excel with dynamic fields ---
+    // 5. Generate Excel (Using your ExcelData logic)
     const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet("Students");
+    const worksheet = workbook.addWorksheet("Users");
 
-    // Static + dynamic columns
-    const staticColumns = [
-      { header: "Photo No.", key: "photoName", width: 20 },
-      { header: "Student Name", key: "name", width: 25 },
-      { header: "Father's Name", key: "fatherName", width: 25 },
-      { header: "Mother's Name", key: "motherName", width: 25 },
-      { header: "Class", key: "class", width: 15 },
-      { header: "Section", key: "section", width: 10 },
-      { header: "Roll No.", key: "rollNo", width: 15 },
+    // --- Start: Your ExcelData Column Logic ---
+    const staticColumnsAll = [
+      idPresent === "yes" && { header: "_ID", key: "_id", width: 15 },
+      { header: "SR NO.", key: "srno", width: 15 },
+      { header: "PHOTO NO.", key: "photoName", width: 15 },
+      { header: "STUDENT NAME", key: "name", width: 20 },
+      requiredFields.includes("Father's Name") && {
+        header: "FATHER'S NAME",
+        key: "fatherName",
+        width: 20,
+      },
+      requiredFields.includes("Mother's Name") && {
+        header: "MOTHER'S NAME",
+        key: "motherName",
+        width: 20,
+      },
+      requiredFields.includes("Date of Birth") && {
+        header: "DATE OF BIRTH",
+        key: "dob",
+        width: 15,
+      },
+      requiredFields.includes("Contact No.") && {
+        header: "CONTACT NO.",
+        key: "contact",
+        width: 15,
+      },
+      requiredFields.includes("Address") && {
+        header: "ADDRESS",
+        key: "address",
+        width: 30,
+      },
+      requiredFields.includes("Roll No.") && {
+        header: "ROLL NO.",
+        key: "rollNo",
+        width: 30,
+      },
+      requiredFields.includes("Class") && {
+        header: "CLASS",
+        key: "class",
+        width: 30,
+      },
+      requiredFields.includes("Session") && {
+        header: "SESSION",
+        key: "session",
+        width: 30,
+      },
+      requiredFields.includes("Section") && {
+        header: "SECTION",
+        key: "section",
+        width: 30,
+      },
+      requiredFields.includes("Admission No.") && {
+        header: "ADMISSION NO.",
+        key: "admissionNo",
+        width: 30,
+      },
+      requiredFields.includes("Blood Group") && {
+        header: "BLOOD GROUP",
+        key: "bloodGroup",
+        width: 30,
+      },
+      requiredFields.includes("Student ID") && {
+        header: "STUDENT ID",
+        key: "studentID",
+        width: 30,
+      },
+      requiredFields.includes("Aadhar No.") && {
+        header: "AADHAR NO.",
+        key: "aadharNo",
+        width: 30,
+      },
+      requiredFields.includes("Ribbon Colour") && {
+        header: "RIBBON COLOUR",
+        key: "ribbionColour",
+        width: 30,
+      },
+      requiredFields.includes("Route No.") && {
+        header: "ROUTE NO./TRANSPORT",
+        key: "routeNo",
+        width: 30,
+      },
+      requiredFields.includes("House Name") && {
+        header: "HOUSE NAME",
+        key: "houseName",
+        width: 30,
+      },
+      requiredFields.includes("Valid Up To") && {
+        header: "VALID UP TO",
+        key: "validUpTo",
+        width: 30,
+      },
+      requiredFields.includes("Course") && {
+        header: "COURSE",
+        key: "course",
+        width: 30,
+      },
+      requiredFields.includes("Batch") && {
+        header: "BATCH",
+        key: "batch",
+        width: 30,
+      },
+      requiredFields.includes("ID No.") && {
+        header: "ID NO.",
+        key: "idNo",
+        width: 30,
+      },
+      requiredFields.includes("Reg. No.") && {
+        header: "REG. NO.",
+        key: "regNo",
+        width: 30,
+      },
+      requiredFields.includes("Extra Field-1") && {
+        header: "EXTRA FIELD-1",
+        key: "extraField1",
+        width: 30,
+      },
+      requiredFields.includes("Extra Field-2") && {
+        header: "EXTRA FIELD-2",
+        key: "extraField2",
+        width: 30,
+      },
     ];
+    const staticColumns = staticColumnsAll.filter(Boolean);
 
-    // Add required fields dynamically
-    requiredFields.forEach((field) => {
-      staticColumns.push({ header: field, key: field, width: 25 });
-    });
-
-    // Add extra fields dynamically
-    schoolExtraFields.forEach((field) => {
-      staticColumns.push({ header: field.name || "Extra Field", key: field.name, width: 25 });
+    schoolExtraFields.forEach((field, index) => {
+      staticColumns.push({
+        header: field.name || `EXTRA FIELD-${index + 1}`,
+        key: field.name,
+        width: 30,
+      });
     });
 
     worksheet.columns = staticColumns;
-
-    // Style header
     const headerRow = worksheet.getRow(1);
     headerRow.font = { bold: true, color: { argb: "FFFFFF" } };
-    headerRow.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "4CAF50" } };
+    headerRow.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "4CAF50" },
+    };
+    // --- End: Your ExcelData Column Logic ---
 
-    // Add data rows
-    students.forEach((s, index) => {
+    // Add data rows (from your ExcelData logic)
+    users.forEach((user, index) => {
+      const extraFields = user.extraFields || {};
       const row = {
-        photoName: s.photoNameUnuiq,
-        name: s.name,
-        fatherName: s.fatherName,
-        motherName: s.motherName,
-        class: s.class,
-        section: s.section,
-        rollNo: s.rollNo,
+        _id: user._id.toString(),
+        srno: `${index + 1}`,
+        photoName: user.photoNameUnuiq,
+        name: user.name,
+        fatherName: user.fatherName,
+        motherName: user.motherName,
+        dob: user.dob,
+        contact: user.contact,
+        address: user.address,
+        rollNo: user.rollNo,
+        class: user.class,
+        section: user.section,
+        session: user.session,
+        admissionNo: user.admissionNo,
+        bloodGroup: user.bloodGroup,
+        studentID: user.studentID,
+        aadharNo: user.aadharNo,
+        ribbionColour: user.ribbionColour,
+        routeNo: user.routeNo,
+        houseName: user.houseName,
+        validUpTo: user.validUpTo,
+        course: user.course,
+        batch: user.batch,
+        idNo: user.idNo,
+        regNo: user.regNo,
+        extraField1: user.extraField1,
+        extraField2: user.extraField2,
       };
 
-      // Add required fields
-      requiredFields.forEach((f) => {
-        row[f] = s[f] || "";
+      schoolExtraFields.forEach((field) => {
+        row[field.name] = extraFields.get(field.name) || "";
       });
-
-      // Add extra fields (from student.extraFields Map or object)
-      schoolExtraFields.forEach((f) => {
-        if (s.extraFields) {
-          row[f.name] = s.extraFields.get?.(f.name) || s.extraFields[f.name] || "";
-        } else {
-          row[f.name] = "";
-        }
-      });
-
       worksheet.addRow(row);
     });
 
-    const excelPath = path.join(tempDir, `${school.name.replace(/ /g, "_")}_students.xlsx`);
+    // Save Excel file to temp directory
+    const modifiedName = school.name.replace(/[\s,]+/g, "_");
+    const excelPath = path.join(tempDir, `${modifiedName}_students.xlsx`);
     await workbook.xlsx.writeFile(excelPath);
 
-    // --- Step 3: Create ZIP ---
-    const zipFileName = `${school.name.replace(/ /g, "_")}_students.zip`;
-    const zipFilePath = path.join(__dirname, zipFileName);
+    // 6. Create ZIP
+    const zipFileName = `${modifiedName}_students.zip`;
+    const zipFilePath = path.join(__dirname, zipFileName); // Store zip in root temporarily
     const output = fs.createWriteStream(zipFilePath);
     const archive = archiver("zip", { zlib: { level: 9 } });
+
     archive.pipe(output);
 
-    // Add all files in temp directory
+    // Add all files from temp directory to zip
     fs.readdirSync(tempDir).forEach((file) => {
       archive.file(path.join(tempDir, file), { name: file });
     });
 
     await archive.finalize();
 
-    // Cleanup temp folder
+    // 7. Cleanup temp folder (files are now in zip)
     fs.rmSync(tempDir, { recursive: true, force: true });
 
-    // --- Step 4: Send ZIP ---
+    // 8. Send ZIP file to user
     res.setHeader("Content-Disposition", `attachment; filename="${zipFileName}"`);
     res.setHeader("Content-Type", "application/zip");
+    
     const readStream = fs.createReadStream(zipFilePath);
     readStream.pipe(res);
 
+    // Delete ZIP file after it's sent
     readStream.on("close", () => {
-      fs.unlinkSync(zipFilePath); // Delete ZIP after sending
+      fs.unlinkSync(zipFilePath);
     });
 
   } catch (error) {
     console.error("Error creating ZIP:", error);
+    // Clean up temp dir/zip on error if they exist
+    const tempDir = path.join(__dirname, "temp_zip");
+    if (fs.existsSync(tempDir)) {
+      fs.rmSync(tempDir, { recursive: true, force: true });
+    }
+    // Delete partial zip if it exists
+    // (This part is complex, simpler to just let the main error handler catch)
+
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 });
