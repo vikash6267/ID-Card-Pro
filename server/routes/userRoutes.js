@@ -407,51 +407,62 @@ const { default: mongoose } = require("mongoose");
 
 async function generateReport(queryObj = {}) {
   try {
-    // Fetch all unique classes based on the query, including students without class
-    const classes = await Student.distinct("class", queryObj);
+    // Exclude deleted students by default
+    const finalQueryObj = { ...queryObj, isDeleted: false };
 
-    // Ensure "No Class" category is included
+    // Get all unique classes matching the filters
+    const classes = await Student.distinct("class", finalQueryObj);
+
+    // Include "No Class" if some students have no class field
     if (!classes.includes(null) && !classes.includes(undefined)) {
       classes.push("No Class");
     }
 
-    // Prepare a result object to store the counts of each status for each class.
     const result = [];
 
     for (const className of classes) {
       const query =
         className === "No Class"
-          ? { class: { $exists: false }, ...queryObj }
-          : { class: className, ...queryObj };
+          ? { class: { $exists: false }, ...finalQueryObj }
+          : { class: className, ...finalQueryObj };
 
-      // Get the count of students for each status and the total number of students in the class
+      // Count per status and total students
+      const Panding = await Student.countDocuments({ ...query, status: "Panding" });
+      const ReadyToPrint = await Student.countDocuments({ ...query, status: "Ready to print" });
+      const Printed = await Student.countDocuments({ ...query, status: "Printed" });
+      const totalStudents = await Student.countDocuments(query);
+
       const classData = {
         class: className,
-        Panding: await Student.countDocuments({ ...query, status: "Panding" }),
-        "Ready to print": await Student.countDocuments({
-          ...query,
-          status: "Ready to print",
-        }),
-        Printed: await Student.countDocuments({ ...query, status: "Printed" }),
-        totalStudents: await Student.countDocuments(query), // Count all students in the class
+        Panding,
+        "Ready to print": ReadyToPrint,
+        Printed,
+        totalStudents,
       };
+
+      // 🧩 Debug logs
+      console.log(`\n📘 Class: ${className}`);
+      console.log({
+        Panding,
+        ReadyToPrint,
+        Printed,
+        totalStudents,
+        queryUsed: query,
+      });
 
       result.push(classData);
     }
 
-    // Fetch the school name based on the provided query (school ID).
-    const schoolId = queryObj.school || "";
+    // Get school info
+    const schoolId = finalQueryObj.school || "";
     const school = await School.findById(schoolId);
     const schoolName = school ? school.name : "Unknown School";
 
-    // Resolve the absolute path of the EJS template
-    const templatePath = path.resolve(
-      __dirname,
-      "../template/report_templates.ejs"
-    );
+    // Render report HTML using EJS
+    const templatePath = path.resolve(__dirname, "../template/report_templates.ejs");
     const html = await ejs.renderFile(templatePath, { schoolName, result });
 
-    // Use Puppeteer to generate the PDF
+    // Generate PDF using Puppeteer
     const browser = await puppeteer.launch({
       headless: true,
       args: ["--no-sandbox", "--disable-setuid-sandbox"],
@@ -460,16 +471,22 @@ async function generateReport(queryObj = {}) {
     await page.setContent(html);
     const pdfBuffer = await page.pdf({
       format: "A4",
-      printBackground: true, // This ensures that background colors and images are rendered
+      printBackground: true,
     });
 
-    // Save the PDF to the server's file system
-    const filePath = path.join(__dirname, "../reports", "student_report.pdf");
+    // Save generated PDF to reports folder
+    const reportsDir = path.join(__dirname, "../reports");
+    if (!fs.existsSync(reportsDir)) fs.mkdirSync(reportsDir, { recursive: true });
+
+    const filePath = path.join(reportsDir, "student_report.pdf");
     fs.writeFileSync(filePath, pdfBuffer);
 
     await browser.close();
-    return filePath; // Return the file path to be used later
+
+    console.log(`✅ Report generated successfully: ${filePath}`);
+    return filePath;
   } catch (error) {
+    console.error("❌ Error generating report:", error);
     throw new Error("Error generating report: " + error.message);
   }
 }
