@@ -3,7 +3,8 @@ import { ImageIcon, Trash2, Plus, X, Check } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
-import {RotateCw } from "lucide-react";
+import { RotateCw } from "lucide-react";
+import { toast } from "sonner";
 
 const DEFAULT_WIDTH = 86;
 const DEFAULT_HEIGHT = 54;
@@ -39,7 +40,7 @@ export function BackgroundUpload({
   useEffect(() => {
     const newUploadEnabled = {};
     groups.forEach(group => {
-      if (currentSide === 'back') {
+      if (currentSide === 'back' && template?.front) {
         const frontGroupName = group.name.replace('Back:', 'Front:');
         const frontGroup = template.front.backgroundGroups?.find(g => g.name === frontGroupName);
         newUploadEnabled[group.name] = !!frontGroup?.image;
@@ -48,7 +49,7 @@ export function BackgroundUpload({
       }
     });
     setUploadEnabled(newUploadEnabled);
-  }, [groups, currentSide, template.front]);
+  }, [groups, currentSide, template]);
 
   useEffect(() => {
     setSelectedColumn(backgroundConfig?.backgroundColumn || "");
@@ -105,8 +106,23 @@ export function BackgroundUpload({
     img.src = url;
   
     img.onload = () => {
-      const cardWidth = mmToPx(width);
-      const cardHeight = mmToPx(height);
+      // ✅ AUTO-DETECT IMAGE SIZE and convert to mm
+      const dpi = 300;
+      const imageWidthMm = (img.width / dpi) * 25.4;
+      const imageHeightMm = (img.height / dpi) * 25.4;
+      
+      // ✅ Update card size based on image dimensions
+      setWidth(parseFloat(imageWidthMm.toFixed(2)));
+      setHeight(parseFloat(imageHeightMm.toFixed(2)));
+      
+      // ✅ Notify parent component about size change
+      if (onSizeChange) {
+        onSizeChange(imageWidthMm, imageHeightMm);
+      }
+      
+      // Use detected dimensions for canvas
+      const cardWidth = mmToPx(imageWidthMm);
+      const cardHeight = mmToPx(imageHeightMm);
       
       const canvas = document.createElement("canvas");
       const ctx = canvas.getContext("2d");
@@ -115,7 +131,7 @@ export function BackgroundUpload({
       ctx.fillStyle = "#fff";
       ctx.fillRect(0, 0, cardWidth, cardHeight);
       ctx.drawImage(img, 0, 0, cardWidth, cardHeight);
-      const dataUrl = canvas.toDataURL("image/jpeg", 0.8);
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.9);
   
       setGroupBackgrounds(prev => ({
         ...prev,
@@ -134,6 +150,13 @@ export function BackgroundUpload({
         isFront: sideLabel === 'Front'
       });
   
+      // ✅ Show success message with detected size
+      setError("");
+      toast.success(`Card size auto-adjusted to ${imageWidthMm.toFixed(1)}mm × ${imageHeightMm.toFixed(1)}mm`, {
+        description: "Based on image dimensions at 300 DPI",
+        duration: 3000
+      });
+  
       e.target.value = ""; // Reset input
       URL.revokeObjectURL(url);
     };
@@ -142,7 +165,7 @@ export function BackgroundUpload({
       setError("Error loading image");
       URL.revokeObjectURL(url);
     };
-  }, [width, height, groups, selectedColumn, groupBackgrounds, onUpload, sideLabel, currentSide, template]);
+  }, [width, height, groups, selectedColumn, groupBackgrounds, onUpload, sideLabel, currentSide, template, onSizeChange]);
 
   const handleWidthChange = (e) => {
     const newWidth = parseFloat(e.target.value);
@@ -466,9 +489,27 @@ const isValueGrouped = (value) => {
                     </div>
 
                     <div className="flex flex-col space-y-2 pt-2">
+                      {/* Auto-size info banner */}
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm">
+                        <div className="flex items-start gap-2">
+                          <svg className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <div className="flex-1">
+                            <p className="font-medium text-blue-900">Auto-Size Detection</p>
+                            <p className="text-blue-700 text-xs mt-1">
+                              Card size will automatically adjust to match your uploaded image dimensions (at 300 DPI).
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
                       <div className="flex items-center space-x-4">
                         <div className="flex-1">
-                          <Label className="text-sm font-medium">Width (mm)</Label>
+                          <Label className="text-sm font-medium flex items-center gap-1">
+                            Width (mm)
+                            <span className="text-xs text-gray-500">(auto)</span>
+                          </Label>
                           <Input
                             type="number"
                             value={width}
@@ -476,10 +517,14 @@ const isValueGrouped = (value) => {
                             placeholder="Width"
                             min="1"
                             step="0.1"
+                            className="bg-blue-50"
                           />
                         </div>
                         <div className="flex-1">
-                          <Label className="text-sm font-medium">Height (mm)</Label>
+                          <Label className="text-sm font-medium flex items-center gap-1">
+                            Height (mm)
+                            <span className="text-xs text-gray-500">(auto)</span>
+                          </Label>
                           <Input
                             type="number"
                             value={height}
@@ -487,6 +532,7 @@ const isValueGrouped = (value) => {
                             placeholder="Height"
                             min="1"
                             step="0.1"
+                            className="bg-blue-50"
                           />
                         </div>
                         <Button 
@@ -494,6 +540,7 @@ const isValueGrouped = (value) => {
                           variant="outline"
                           size="sm"
                           className="self-end mb-1"
+                          title="Rotate dimensions"
                         >
                           <RotateCw className="w-4 h-4" />
                         </Button>

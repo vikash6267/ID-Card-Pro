@@ -246,6 +246,8 @@ export function ResizableElement({
       const deltaX = dragStartRef.current ? (e.clientX - dragStartRef.current.x) / zoomLevel : 0;
       const deltaY = dragStartRef.current ? (e.clientY - dragStartRef.current.y) / zoomLevel : 0;
       
+      // ✅ Priority: Resizing > Rotating > Dragging
+      // This ensures resize doesn't trigger drag
     
       if (isRotating) {
         const centerX = elementRect.left + elementRect.width / 2;
@@ -269,7 +271,8 @@ export function ResizableElement({
           });
         }
     
-      } else if (isDragging) {
+      } else if (isDragging && !isResizing) {
+        // ✅ Only drag if NOT resizing
         if (!dragStartRef.current) return;
     
         if (selectedElements.length > 1) {
@@ -321,33 +324,38 @@ export function ResizableElement({
           onUpdate(updatedElements);
     
         } else {
-const halfW = element.size.width / 2;
-const halfH = element.size.height / 2;
-const desiredX = mouseX - halfW;
-const desiredY = mouseY - halfH;
+          // ✅ Use delta-based movement (not cursor-centered)
+          const init = initialPositionsRef.current[element.id];
+          if (!init) {
+            return;
+          }
+          
+          const newX = init.x + deltaX;
+          const newY = init.y + deltaY;
+          
+          // Calculate bounds with rotation
+          const rotatedBox = getRotatedBoundingBox(
+            newX, newY,
+            element.size.width, element.size.height,
+            element.rotation || 0
+          );
+          
+          const canvasWidth = containerRect.width / zoomLevel;
+          const canvasHeight = containerRect.height / zoomLevel;
+          
+          // Clamp to canvas bounds
+          let clampedX = newX;
+          let clampedY = newY;
+          
+          if (rotatedBox.minX < 0) clampedX += -rotatedBox.minX;
+          if (rotatedBox.maxX > canvasWidth) clampedX -= rotatedBox.maxX - canvasWidth;
+          if (rotatedBox.minY < 0) clampedY += -rotatedBox.minY;
+          if (rotatedBox.maxY > canvasHeight) clampedY -= rotatedBox.maxY - canvasHeight;
 
-const rotatedBox = getRotatedBoundingBox(
-  desiredX, desiredY,
-  element.size.width, element.size.height,
-  element.rotation || 0
-);
-
-const canvasWidth = containerRect.width / zoomLevel;
-const canvasHeight = containerRect.height / zoomLevel;
-
-let offsetX = desiredX;
-let offsetY = desiredY;
-
-// Clamp rotated box within container
-if (rotatedBox.minX < 0) offsetX += -rotatedBox.minX;
-if (rotatedBox.maxX > canvasWidth) offsetX -= rotatedBox.maxX - canvasWidth;
-if (rotatedBox.minY < 0) offsetY += -rotatedBox.minY;
-if (rotatedBox.maxY > canvasHeight) offsetY -= rotatedBox.maxY - canvasHeight;
-
-onUpdate({
-  ...element,
-  position: { x: offsetX, y: offsetY },
-});
+          onUpdate({
+            ...element,
+            position: { x: clampedX, y: clampedY },
+          });
         }
     
       } else if (isResizing) {
@@ -367,26 +375,39 @@ onUpdate({
           const rawX = (e.clientX - containerRect.left) / zoomLevel;
           const rawY = (e.clientY - containerRect.top) / zoomLevel;
       
-          const newWidth = Math.max(20, rawX - startX);
-          const newHeight = Math.max(20, rawY - startY);
+          // ✅ Add minimum size constraints and smoother calculation
+          const minSize = 20;
+          const newWidth = Math.max(minSize, Math.round(rawX - startX));
+          const newHeight = Math.max(minSize, Math.round(rawY - startY));
       
           const canvasWidth = containerRect.width / zoomLevel;
           const canvasHeight = containerRect.height / zoomLevel;
       
+          // ✅ Clamp to canvas bounds
+          const clampedWidth = Math.min(newWidth, canvasWidth - startX);
+          const clampedHeight = Math.min(newHeight, canvasHeight - startY);
+          
+          // ✅ Only update if size changed significantly (reduce jitter)
+          const sizeChanged = 
+            Math.abs(clampedWidth - element.size.width) > 2 || 
+            Math.abs(clampedHeight - element.size.height) > 2;
+          
+          if (!sizeChanged) return;
+      
           const newFontSize =
             element.type !== "text"
-              ? (element.style?.fontSize || 16) * (newWidth / element.size.width)
+              ? (element.style?.fontSize || 16) * (clampedWidth / element.size.width)
               : element.style?.fontSize || 16;
       
           onUpdate({
             ...element,
             size: {
-              width: Math.min(newWidth, canvasWidth - startX),
-              height: Math.min(newHeight, canvasHeight - startY),
+              width: clampedWidth,
+              height: clampedHeight,
             },
             style: {
               ...element.style,
-              fontSize: newFontSize,
+              fontSize: Math.round(newFontSize),
             },
           });
         }
@@ -399,16 +420,22 @@ onUpdate({
       setIsDragging(false);
       setIsResizing(false);
       setIsRotating(false);
+      // ✅ Clear refs on mouse up
+      dragStartRef.current = null;
+      initialPositionsRef.current = {};
     };
 
+    // ✅ Proper useEffect for event listeners
     if (isDragging || isResizing || isRotating) {
       document.addEventListener("mousemove", handleMouseMove);
       document.addEventListener("mouseup", handleMouseUp);
     }
     
     return () => {
-      document.removeEventListener("mousemove", handleMouseMove);
-      document.removeEventListener("mouseup", handleMouseUp);
+      if (isDragging || isResizing || isRotating) {
+        document.removeEventListener("mousemove", handleMouseMove);
+        document.removeEventListener("mouseup", handleMouseUp);
+      }
     };
   }, [isDragging, isResizing, isRotating, element, onUpdate, containerRef, applyMask, maskSrc, photos]);
 
@@ -500,9 +527,59 @@ const handleTextChange = (e) => {
           return photos[photoKey] || "/placeholder.svg";
         }
         
-        // For dynamic images, try both direct and excel-based references
-        const excelValue = excelData.rows[currentRecordIndex]?.[element.heading];
-        return photos[excelValue] || photos[photoKey] || "/placeholder.svg";
+        // ✅ Smart image matching function
+        const findMatchingPhoto = (key) => {
+          if (!key) return null;
+          
+          // 1. Try exact match
+          if (photos[key]) return photos[key];
+          
+          // 2. Try with original_ prefix
+          if (photos[`original_${key}`]) return photos[`original_${key}`];
+          
+          // 3. Remove extension and try (85597.JPG → 85597)
+          const keyWithoutExt = key.replace(/\.(jpg|jpeg|png|gif|webp|bmp)$/i, '');
+          if (photos[keyWithoutExt]) return photos[keyWithoutExt];
+          if (photos[`original_${keyWithoutExt}`]) return photos[`original_${keyWithoutExt}`];
+          
+          // 4. Try case-insensitive match
+          const lowerKey = key.toLowerCase();
+          const matchedKey = Object.keys(photos).find(k => k.toLowerCase() === lowerKey);
+          if (matchedKey) return photos[matchedKey];
+          
+          // 5. Try partial match (filename without extension)
+          const baseKey = keyWithoutExt.toLowerCase();
+          const partialMatch = Object.keys(photos).find(k => {
+            const photoBase = k.replace(/\.(jpg|jpeg|png|gif|webp|bmp)$/i, '').toLowerCase();
+            return photoBase === baseKey;
+          });
+          if (partialMatch) return photos[partialMatch];
+          
+          return null;
+        };
+        
+        // Try to find photo with smart matching
+        let foundPhoto = findMatchingPhoto(photoKey);
+        
+        if (foundPhoto) {
+          console.log(`✅ Found image: ${photoKey}`);
+          return foundPhoto;
+        }
+        
+        // Try getting from current record if available
+        if (currentRecord && element.heading) {
+          const excelValue = currentRecord[element.heading];
+          foundPhoto = findMatchingPhoto(excelValue);
+          
+          if (foundPhoto) {
+            console.log(`✅ Found image from Excel: ${excelValue}`);
+            return foundPhoto;
+          }
+        }
+        
+        // Fallback to placeholder
+        console.warn(`⚠️ Image not found: ${photoKey}. Available:`, Object.keys(photos).slice(0, 5));
+        return "/placeholder.svg";
       }
       
       return element.content || "/placeholder.svg";
@@ -667,9 +744,9 @@ const handleTextChange = (e) => {
 {getContent() ? (
   applyMask && maskSrc && !element.isCustomImage ? (
     <PhotoMask
-      src={photos[element.content] || "/placeholder.svg"}
+      src={getContent()}
       maskSrc={maskSrc}
-      onMaskApply={() => handleMaskApply(photos[element.content], true)}
+      onMaskApply={() => handleMaskApply(getContent(), true)}
       rotation={totalRotation} // Pass combined rotation
       className="w-full h-full object-cover"
       elementStyle={element.style}
@@ -677,10 +754,7 @@ const handleTextChange = (e) => {
   ) : (
     <div className="relative w-full h-full flex items-center justify-center">
       <img
-        src={applyMask 
-          ? photos[element.content] 
-          : photos[`original_${element.content}`] || photos[element.content] || "/placeholder.svg"
-        }
+        src={getContent()}
         alt="Element Image"
         className="w-full h-full object-cover"
         onLoad={(e) => checkTransparency(e.target, setHasImageTransparency)}
@@ -804,7 +878,7 @@ const handleTextChange = (e) => {
       
 <div
   ref={elementRef}
-  className={`absolute cursor-move transition-all duration-100`}
+  className={`absolute cursor-move resizable-element ${isResizing ? 'resizing' : ''}`}
   style={{
     left: `${element.position.x}px`,
     top: `${element.position.y}px`,
@@ -826,9 +900,18 @@ const handleTextChange = (e) => {
     transform: `rotate(${rotation}deg)`,
     transformOrigin: "center center",
     opacity: element.style?.opacity ?? 1,
-
+    // ✅ Smooth transitions when not resizing
+    transition: isResizing ? 'none' : 'width 0.05s ease-out, height 0.05s ease-out',
+    // ✅ Prevent text selection during resize
+    userSelect: isResizing ? 'none' : 'auto',
+    WebkitUserSelect: isResizing ? 'none' : 'auto',
   }}
         onMouseDown={(e) => {
+          // ✅ Don't start drag if clicking on resize handle
+          if (e.target.closest('.resize-handle')) {
+            return; // Let resize handle's own handler take over
+          }
+          
           e.stopPropagation();
         
           // Right-click → Rotate
@@ -858,28 +941,31 @@ const handleTextChange = (e) => {
             }
           }
         
-          // ✅ Setup for dragging
-          const elementsToMove = isAlreadySelected ? selectedElements : [element];
-          const containerRect = containerRef.current?.getBoundingClientRect();
-        
-          if (!containerRect) return;
-        
-          // Save initial mouse position relative to container
-          dragStartRef.current = {
-            x: e.clientX,
-            y: e.clientY,
-          };
-        
-          // Save initial element positions
-          initialPositionsRef.current = {};
-          elementsToMove.forEach((el) => {
-            initialPositionsRef.current[el.id] = {
-              x: el.position.x,
-              y: el.position.y,
+          // ✅ Setup for dragging (only if not resizing)
+          if (!isResizing) {
+            const elementsToMove = isAlreadySelected ? selectedElements : [element];
+            const containerRect = containerRef.current?.getBoundingClientRect();
+          
+            if (!containerRect) return;
+          
+            // Save initial mouse position
+            dragStartRef.current = {
+              x: e.clientX,
+              y: e.clientY,
             };
-          });
-        
-          setIsDragging(true);
+          
+            // Save initial element positions
+            initialPositionsRef.current = {};
+            elementsToMove.forEach((el) => {
+              initialPositionsRef.current[el.id] = {
+                x: el.position.x,
+                y: el.position.y,
+              };
+            });
+          
+            setIsDragging(true);
+          }
+          
           onSelect?.(e); // Safe call if onSelect is defined
         }}
         
@@ -905,16 +991,20 @@ const handleTextChange = (e) => {
           {renderElementContent()}
         </div>
 
-        {/* Resize handle */}
-{/* Resize handle - only shown if element is selected */}
+        {/* Resize handle - Improved with better visual feedback */}
 {selectedElements.some((el) => el.id === element.id) && (
-  <div className="absolute bottom-0 right-0 w-3.5 h-3.5 group">
-    {/* Horizontal cut line */}
+  <div className="absolute bottom-0 right-0 w-4 h-4 group resize-handle pointer-events-auto">
+    {/* Corner resize handle - single unified handle */}
     <div
-      className="absolute bottom-0 right-0 w-2 h-0.5 bg-neutral-500 group-hover:bg-black transition-colors duration-150 cursor-se-resize"
+      className={`resize-handle absolute bottom-0 right-0 w-3 h-3 border-2 border-blue-500 bg-white rounded-sm shadow-md 
+        group-hover:border-blue-600 group-hover:scale-110 transition-all duration-150 cursor-se-resize
+        ${isResizing ? 'border-blue-600 scale-110' : ''}`}
       onMouseDown={(e) => {
         e.stopPropagation();
         e.preventDefault();
+        
+        // ✅ Explicitly set resizing, prevent dragging
+        setIsDragging(false);
         setIsResizing(true);
 
         const elementsToResize = selectedElements;
@@ -922,21 +1012,18 @@ const handleTextChange = (e) => {
           startGroupResize(elementsToResize, zoomLevel);
         }, 0);
       }}
-    />
-    {/* Vertical cut line */}
-    <div
-      className="absolute bottom-0 right-0 w-0.5 h-2 bg-neutral-500 group-hover:bg-black transition-colors duration-150 cursor-se-resize"
-      onMouseDown={(e) => {
-        e.stopPropagation();
-        e.preventDefault();
-        setIsResizing(true);
-
-        const elementsToResize = selectedElements;
-        setTimeout(() => {
-          startGroupResize(elementsToResize, zoomLevel);
-        }, 0);
+      style={{
+        touchAction: 'none',
+        userSelect: 'none',
+        pointerEvents: 'auto',
+        zIndex: 1000
       }}
-    />
+    >
+      {/* Inner dot for better visibility */}
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+        <div className="w-1 h-1 bg-blue-500 rounded-full"></div>
+      </div>
+    </div>
   </div>
 )}
 

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import CardEditor from "./components/card-editor";
 import CardGenerator from "./components/card-generator";
+import { SimpleCardDownload } from "./components/simple-card-download";
 import { Button } from "./components/ui/button";
 import axios from "../../../axiosconfig";
 
@@ -94,13 +95,22 @@ export default function Page() {
                 </Button>
               </div>
 
-              <CardGenerator
-                template={template}
-                excelData={excelData}
-                photos={photos}
-                applyMask={applyMask}
-                maskSrc={maskSrc}
-              />
+              <div className="space-y-6">
+                <SimpleCardDownload
+                  template={template}
+                  excelData={excelData}
+                  photos={photos}
+                  currentProject={null}
+                />
+                
+                <CardGenerator
+                  template={template}
+                  excelData={excelData}
+                  photos={photos}
+                  applyMask={applyMask}
+                  maskSrc={maskSrc}
+                />
+              </div>
             </>
           )}
         </div>
