@@ -1,12 +1,13 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { ImageIcon } from "lucide-react";
 import { Input } from "./ui/input";
 import PhotoMask from "./photo-mask";
 import QRCodeElement from "./qr-code-element";
 import BarcodeElement from "./barcode-element";
 import { useGroupResize } from "./useGroupResize";
+import { rafThrottle } from "./utils/performance";
 
 
 export function ResizableElement({
@@ -58,6 +59,12 @@ export function ResizableElement({
     snapToGrid: 10,
     lockAspectRatio: "shiftKey", // <-- enable shift-key based locking
   });
+  
+  // RAF throttled update function for smooth performance
+  const rafUpdateRef = useRef(null);
+  
+  // Rotation sensitivity
+  const rotationSensitivity = 0.5;
 
 
   
@@ -186,52 +193,46 @@ export function ResizableElement({
         resizeObserver.disconnect();
       };
     }, [element.content, element.size.width, element.size.height, element.style, isEditing]);
-  // Sensitivity factor for rotation speed
-  const rotationSensitivity = 0.5;
 
   useEffect(() => {
     // Update rotation state when element rotation changes
     setRotation(element.rotation || 0);
   }, [element.rotation]);
 
-  useEffect(() => {
-    if (applyMask && maskSrc && photos[element.content]) {
-      handleMaskApply(photos[element.content]);
-    }
-    
- function getRotatedBoundingBox(x, y, width, height, angleDeg) {
-  const angle = angleDeg * (Math.PI / 180);
-  const cos = Math.cos(angle);
-  const sin = Math.sin(angle);
+  // Helper function for rotated bounding box (outside useEffect)
+  const getRotatedBoundingBox = useCallback((x, y, width, height, angleDeg) => {
+    const angle = angleDeg * (Math.PI / 180);
+    const cos = Math.cos(angle);
+    const sin = Math.sin(angle);
 
-  const cx = x + width / 2;
-  const cy = y + height / 2;
+    const cx = x + width / 2;
+    const cy = y + height / 2;
 
-  const corners = [
-    { x: -width / 2, y: -height / 2 },
-    { x: width / 2, y: -height / 2 },
-    { x: width / 2, y: height / 2 },
-    { x: -width / 2, y: height / 2 },
-  ];
+    const corners = [
+      { x: -width / 2, y: -height / 2 },
+      { x: width / 2, y: -height / 2 },
+      { x: width / 2, y: height / 2 },
+      { x: -width / 2, y: height / 2 },
+    ];
 
-  const rotatedCorners = corners.map(({ x, y }) => ({
-    x: cx + x * cos - y * sin,
-    y: cy + x * sin + y * cos,
-  }));
+    const rotatedCorners = corners.map(({ x, y }) => ({
+      x: cx + x * cos - y * sin,
+      y: cy + x * sin + y * cos,
+    }));
 
-  const xs = rotatedCorners.map(p => p.x);
-  const ys = rotatedCorners.map(p => p.y);
+    const xs = rotatedCorners.map(p => p.x);
+    const ys = rotatedCorners.map(p => p.y);
 
-  return {
-    minX: Math.min(...xs),
-    maxX: Math.max(...xs),
-    minY: Math.min(...ys),
-    maxY: Math.max(...ys),
-  };
-}
- 
+    return {
+      minX: Math.min(...xs),
+      maxX: Math.max(...xs),
+      minY: Math.min(...ys),
+      maxY: Math.max(...ys),
+    };
+  }, []);
 
-    const handleMouseMove = (e) => {
+  // Mouse move handler core logic
+  const handleMouseMoveCore = useCallback((e) => {
       if (!containerRef.current || !elementRef.current) return;
     
       const containerRect = containerRef.current.getBoundingClientRect();
@@ -262,7 +263,12 @@ export function ResizableElement({
         const newRotation = (dragStartRef.current.rotation + angleDiff) % 360;
     
         if (selectedElements.length > 1) {
-          applyGroupRotation(newRotation, selectedElements);
+          // Group rotation - update all selected elements
+          const updatedElements = selectedElements.map(el => ({
+            ...el,
+            rotation: newRotation
+          }));
+          onUpdate(updatedElements);
         } else {
           setRotation(newRotation);
           onUpdate({
@@ -412,32 +418,52 @@ export function ResizableElement({
           });
         }
       }
-      
-    };
-   
+  }, [containerRef, elementRef, zoomLevel, isDragging, isResizing, isRotating, element, selectedElements, onUpdate, getRotatedBoundingBox, resizeGroup]);
+  
+  // Wrap with RAF throttling for smooth performance
+  const handleMouseMove = useCallback((e) => {
+    if (rafUpdateRef.current) {
+      cancelAnimationFrame(rafUpdateRef.current);
+    }
+    
+    rafUpdateRef.current = requestAnimationFrame(() => {
+      handleMouseMoveCore(e);
+    });
+  }, [handleMouseMoveCore]);
 
-    const handleMouseUp = () => {
-      setIsDragging(false);
-      setIsResizing(false);
-      setIsRotating(false);
-      // ✅ Clear refs on mouse up
-      dragStartRef.current = null;
-      initialPositionsRef.current = {};
-    };
+  const handleMouseUp = useCallback(() => {
+    // Cancel any pending RAF updates
+    if (rafUpdateRef.current) {
+      cancelAnimationFrame(rafUpdateRef.current);
+      rafUpdateRef.current = null;
+    }
+    
+    setIsDragging(false);
+    setIsResizing(false);
+    setIsRotating(false);
+    // ✅ Clear refs on mouse up
+    dragStartRef.current = null;
+    initialPositionsRef.current = {};
+  }, []);
 
-    // ✅ Proper useEffect for event listeners
+  // ✅ Proper useEffect for event listeners
+  useEffect(() => {
     if (isDragging || isResizing || isRotating) {
       document.addEventListener("mousemove", handleMouseMove);
       document.addEventListener("mouseup", handleMouseUp);
-    }
-    
-    return () => {
-      if (isDragging || isResizing || isRotating) {
+      
+      return () => {
         document.removeEventListener("mousemove", handleMouseMove);
         document.removeEventListener("mouseup", handleMouseUp);
-      }
-    };
-  }, [isDragging, isResizing, isRotating, element, onUpdate, containerRef, applyMask, maskSrc, photos]);
+      };
+    }
+  }, [isDragging, isResizing, isRotating, handleMouseMove, handleMouseUp]);
+  
+  useEffect(() => {
+    if (applyMask && maskSrc && photos[element.content]) {
+      handleMaskApply(photos[element.content]);
+    }
+  }, [applyMask, maskSrc, photos, element.content]);
 
   const handleDoubleClick = () => {
     if (element.type === "text") {

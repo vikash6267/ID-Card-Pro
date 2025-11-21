@@ -1,5 +1,6 @@
 
 import "./globals.css";
+import "./card/components/optimized-styles.css";
 
 
 
