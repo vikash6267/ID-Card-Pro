@@ -79,13 +79,7 @@ const DEFAULT_PROJECT = {
   photos: {} // Add empty photos object by default
 }
 
-export default function CardEditor({ 
-  onTemplateChange, 
-  onExcelDataChange, 
-  onPhotosChange, 
-  excelData2,
-  photos2, 
-}) {
+export default function CardEditor({ onTemplateChange, onExcelDataChange, onPhotosChange }) {
   const [showExcelEditor, setShowExcelEditor] = useState(false);
   const [template, setTemplate] = useState(structuredClone(DEFAULT_PROJECT));
   const [cardWidth, setCardWidth] = useState(3.375);
@@ -124,30 +118,6 @@ const [showGalleryModal, setShowGalleryModal] = useState(false);
 const [selectedPhoto, setSelectedPhoto] = useState(null);
 const cropCanvasRef = useRef(null);
 const [showPhotoEditor, setShowPhotoEditor] = useState(false);
-
-
-
-
-
-
-
-  // ✅ Initialize with pre-loaded data
-  useEffect(() => {
-    if (excelData2 && excelData2.rows.length > 0) {
-      console.log("🔄 Initializing Excel data from props:", excelData2)
-      setExcelData(excelData2)
-      onExcelDataChange?.(excelData2)
-    }
-  }, [excelData2])
-
-  useEffect(() => {
-    if (photos2 && Object.keys(photos2).length > 0) {
-      console.log("🔄 Initializing photos from props:", photos2)
-      setPhotos(photos2)
-      onPhotosChange?.(photos2)
-    }
-  }, [photos2])
-
 
 useEffect(() => {
   onExcelDataChange?.(excelData);
@@ -878,8 +848,7 @@ const saveProject = (manualSave = true) => {
   }, []);
   
   const handlePanStart = (e) => {
-    // ✅ Only pan if Ctrl+Click on canvas background (not on elements)
-    if (e.ctrlKey && e.button === 0 && e.target === e.currentTarget) {
+    if (e.ctrlKey && e.button === 0) {
       console.log("🖱️ Pan Start");
       setIsPanning(true);
       setPanStart({ x: e.clientX, y: e.clientY });
@@ -1107,22 +1076,14 @@ const handleMouseMove = (e) => {
       const reader = new FileReader();
       reader.onload = (event) => {
         if (event.target && typeof event.target.result === "string") {
-          // ✅ Store with multiple keys for better matching
-          const fullName = file.name; // e.g., "85597.JPG"
-          const nameWithoutExt = file.name.split(".")[0]; // e.g., "85597"
-          const lowerFullName = fullName.toLowerCase(); // e.g., "85597.jpg"
-          
-          // Store with all possible keys
-          newPhotos[nameWithoutExt] = event.target.result; // Primary key (without extension)
-          newPhotos[fullName] = event.target.result; // With extension
-          newPhotos[lowerFullName] = event.target.result; // Lowercase version
-          
+          const name = file.name.split(".")[0]; // Key used for storing the photo
+          newPhotos[name] = event.target.result; // Saving the photo
           loadedCount++;
   
           if (loadedCount === files.length) {
             setPhotos(newPhotos);
             onPhotosChange(newPhotos, galleryRotations); // ✅ Pass galleryRotations as 2nd argument
-            console.log("✅ Updated Photos:", Object.keys(newPhotos).length, "photos loaded");
+            console.log("✅ Updated Photos:", newPhotos, "🌀 Rotations:", galleryRotations);
           }
         }
       };
@@ -1141,40 +1102,10 @@ const handleMouseMove = (e) => {
     let isStatic = false;
   
     // Handle different element types
-    if (selectedHeader && selectedHeader !== "custom" && excelData.headers.includes(selectedHeader)) {
-      // ✅ Get actual value from current record
-      const actualValue = excelData.rows[currentRecordIndex]?.[selectedHeader];
-      
-      if (type === "text") {
-        // For text, show the actual value
-        content = actualValue || selectedHeader;
-      } else if (type === "image") {
-        // ✅ For image, get the photo key from Excel and verify it exists in photos
-        const photoKey = actualValue || selectedHeader;
-        
-        // Check if photo exists in photos object
-        if (photos[photoKey]) {
-          content = photoKey;
-          console.log(`✅ Image found: ${photoKey}`);
-        } else {
-          // Try with original_ prefix
-          const originalKey = `original_${photoKey}`;
-          if (photos[originalKey]) {
-            content = originalKey;
-            console.log(`✅ Original image found: ${originalKey}`);
-          } else {
-            // Fallback to placeholder
-            content = photoKey;
-            console.warn(`⚠️ Image not found in photos: ${photoKey}. Available photos:`, Object.keys(photos));
-          }
-        }
-      } else if (type === "qrcode" || type === "barcode") {
-        // For QR/Barcode, use the actual value
-        content = actualValue || selectedHeader;
-      }
+    if (selectedHeader && excelData.headers.includes(selectedHeader)) {
+      content = excelData.rows[currentRecordIndex]?.[selectedHeader] || selectedHeader;
     } else if (type === "text") {
       content = "Custom Text";
-      isStatic = true;
     } else if (type === "image") {
       // Special case for custom images
       if (selectedHeader === "custom") {
@@ -1263,6 +1194,12 @@ const handleMouseMove = (e) => {
     const updateElement = (updatedElements) => {
       if (!containerRef.current) return;
     
+      const rect = containerRef.current.getBoundingClientRect();
+    
+      // ✅ Correct for zoom by dividing the rendered width/height by zoomLevel
+      const scaleFactorX = (dpi * cardWidth) / (rect.width / zoomLevel);
+      const scaleFactorY = (dpi * cardHeight) / (rect.height / zoomLevel);
+    
       const isArray = Array.isArray(updatedElements) ? updatedElements : [updatedElements];
     
       const newTemplate = {
@@ -1274,15 +1211,13 @@ const handleMouseMove = (e) => {
             if (updated) {
               return {
                 ...updated,
-                // ✅ Don't scale position - it's already in correct units
                 position: {
-                  x: updated.position?.x ?? el.position.x,
-                  y: updated.position?.y ?? el.position.y,
+                  x: updated.position?.x * scaleFactorX ?? el.position.x,
+                  y: updated.position?.y * scaleFactorY ?? el.position.y,
                 },
-                // ✅ Don't scale size - it's already in correct units
                 size: {
-                  width: updated.size?.width ?? el.size.width,
-                  height: updated.size?.height ?? el.size.height,
+                  width: updated.size?.width * scaleFactorX ?? el.size.width,
+                  height: updated.size?.height * scaleFactorY ?? el.size.height,
                 },
                 rotation: updated.rotation ?? el.rotation,
                 style: {
@@ -1333,46 +1268,48 @@ const handleMouseMove = (e) => {
       }
     };
     
-    // Move the updateElementContent function outside of the useEffect
-    const updateElementContent = (element) => {
-      // Skip updating static elements (like headings)
-      if (element.isStatic || element.isCustomImage) {
-        return element;
+const updateElementContent = (element) => {
+  // Skip updating static elements (like headings)
+  if (element.isStatic || element.isCustomImage) {
+    return element;
+  }
+
+  // Only update dynamic elements (those linked to excelData headers)
+  if (excelData.headers.includes(element.heading)) {
+
+    let newContent = excelData.rows[currentRecordIndex]?.[element.heading] ?? element.heading;
+
+    // 🔥 FIX: Safely convert to string
+    if (newContent == null) newContent = ""; 
+    if (typeof newContent !== "string") newContent = String(newContent);
+
+    console.log("Updating element content:", element.heading, "->", newContent);
+
+    if (
+      element.type === "text" ||
+      element.type === "qrcode" ||
+      element.type === "barcode" ||
+      (element.type === "image" && newContent !== element.content)
+    ) {
+      // Handle empty or invalid content for images
+      if (element.type === "image" && newContent.trim() === "") {
+        console.warn("New content for image is invalid, using placeholder.");
+        return {
+          ...element,
+          content: "/placeholder.svg",
+        };
       }
-    
-      // Only update dynamic elements (those linked to excelData headers)
-      if (excelData.headers.includes(element.heading)) {
-        const newContent = excelData.rows[currentRecordIndex]?.[element.heading] || element.heading;
-    
-        console.log("Updating element content:", element.heading, "->", newContent);
-    
-        // Check if the element content should be updated (excluding headings)
-        if (
-          element.type === "text" ||
-          element.type === "qrcode" ||
-          element.type === "barcode" ||
-          (element.type === "image" && newContent !== element.content)
-        ) {
-          // Handle empty or invalid content for images (use placeholder if empty)
-          if (element.type === "image" && (!newContent || newContent.trim() === "")) {
-            console.warn("New content for image is invalid, using placeholder.");
-            return {
-              ...element,
-              content: "/placeholder.svg", // Use a placeholder image
-            };
-          }
-    
-          // Return updated element with new content
-          return {
-            ...element,
-            content: newContent,
-          };
-        }
-      }
-    
-      // Return the element as-is if no updates are required
-      return element;
-    };
+
+      return {
+        ...element,
+        content: newContent,
+      };
+    }
+  }
+
+  return element;
+};
+
     
     // useEffect to update the elements
     useEffect(() => {
@@ -1985,243 +1922,213 @@ return (
   </div>
 )}
 
+      {/* Background Upload Component */}
+      <BackgroundUpload
+        onUpload={(backgroundData) => {
+          const updatedTemplate = {
+            ...template,
+            [currentSide]: {
+              ...template[currentSide],
+              backgroundMode: 'dynamic',
+              backgroundColumn: backgroundData.column,
+              backgroundGroups: backgroundData.groups
+            }
+          };
 
+          if (currentSide === 'front') {
+            updatedTemplate.back = {
+              ...updatedTemplate.back,
+              backgroundMode: 'dynamic',
+              backgroundColumn: backgroundData.column,
+              backgroundGroups: backgroundData.groups.map(group => ({
+                ...group,
+                name: group.name.replace('Front:', 'Back:'),
+                image: null
+              }))
+            };
+          }
 
-      {/* Top Control Bar - Compact & Clean */}
-      <div className="bg-gradient-to-r from-gray-50 to-gray-100 p-3 rounded-lg shadow-sm border border-gray-200 mb-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+          setTemplate(updatedTemplate);
+          onTemplateChange(updatedTemplate);
+        }}
+        onSizeChange={handleCardSizeChange}
+        excelData={excelData}
+        backgroundConfig={template[currentSide]}
+        sideLabel={currentSide === 'front' ? 'Front' : 'Back'}
+        currentSide={currentSide}
+        template={template}
+      />
+
+      {/* Control Bar - Top Section */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-3 rounded-lg shadow-sm">
+        {/* Side Toggle */}
+        <div className="flex gap-2">
+          <Button 
+            variant={currentSide === "front" ? "default" : "outline"} 
+            size="sm"
+            onClick={() => setCurrentSide("front")}
+          >
+            Front Side
+          </Button>
+          <Button 
+            variant={currentSide === "back" ? "default" : "outline"} 
+            size="sm"
+            onClick={() => setCurrentSide("back")}
+            disabled={!template.front.backgroundGroups?.length} // Disable if no front groups
+          >
+            Back Side
+          </Button>
+        </div>
+
+        {/* Navigation Controls */}
+        <div className="flex items-center gap-2">
+          <Button 
+            onClick={() => navigateRecord("prev")} 
+            disabled={currentRecordIndex === 0}
+            size="sm"
+            variant="outline"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </Button>
           
-          {/* Side Toggle */}
-          <div className="flex items-center gap-2">
-            <Label className="text-xs font-medium text-gray-600">Card Side:</Label>
-            <div className="flex gap-1">
-              <Button 
-                variant={currentSide === "front" ? "default" : "outline"} 
-                size="sm"
-                onClick={() => setCurrentSide("front")}
-                className="h-8 px-3 text-xs"
-              >
-                Front
-              </Button>
-              <Button 
-                variant={currentSide === "back" ? "default" : "outline"} 
-                size="sm"
-                onClick={() => setCurrentSide("back")}
-                className="h-8 px-3 text-xs"
-              >
-                Back
-              </Button>
-            </div>
+          <div className="flex items-center gap-1">
+            <input
+              type="number"
+              min="1"
+              max={excelData.rows.length}
+              value={currentRecordIndex + 1}
+              onChange={(e) => {
+                let newIndex = parseInt(e.target.value, 10) - 1;
+                if (!isNaN(newIndex) && newIndex >= 0 && newIndex < excelData.rows.length) {
+                  setCurrentRecordIndex(newIndex);
+                }
+              }}
+              className="w-16 h-8 border rounded text-center text-sm"
+            />
+            <span className="text-sm text-muted-foreground">/ {excelData.rows.length}</span>
           </div>
+          
+          <Button 
+            onClick={() => navigateRecord("next")} 
+            disabled={currentRecordIndex === excelData.rows.length - 1}
+            size="sm"
+            variant="outline"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </Button>
+        </div>
 
-          {/* Record Navigation */}
+        {/* Zoom Controls */}
+        <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
-            <Label className="text-xs font-medium text-gray-600">Record:</Label>
-            <Button 
-              onClick={() => navigateRecord("prev")} 
-              disabled={currentRecordIndex === 0}
-              size="sm"
-              variant="outline"
-              className="h-8 w-8 p-0"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </Button>
-            
-            <div className="flex items-center gap-1">
-              <input
-                type="number"
-                min="1"
-                max={excelData.rows.length}
-                value={currentRecordIndex + 1}
-                onChange={(e) => {
-                  let newIndex = parseInt(e.target.value, 10) - 1;
-                  if (!isNaN(newIndex) && newIndex >= 0 && newIndex < excelData.rows.length) {
-                    setCurrentRecordIndex(newIndex);
-                  }
-                }}
-                className="w-14 h-8 border rounded text-center text-xs"
-              />
-              <span className="text-xs text-gray-500">/ {excelData.rows.length}</span>
-            </div>
-            
-            <Button 
-              onClick={() => navigateRecord("next")} 
-              disabled={currentRecordIndex === excelData.rows.length - 1}
-              size="sm"
-              variant="outline"
-              className="h-8 w-8 p-0"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </Button>
-          </div>
-
-          {/* Zoom Controls */}
-          <div className="flex items-center gap-2">
-            <Label className="text-xs font-medium text-gray-600">Zoom:</Label>
+            <label htmlFor="zoom" className="text-sm text-muted-foreground">Zoom</label>
+            <input
+              id="zoom"
+              type="range"
+              min="0.25"
+              max="2"
+              step="0.05"
+              value={zoomLevel}
+              onChange={(e) => setZoomLevel(parseFloat(e.target.value))}
+              className="w-24"
+            />
+            <span className="text-sm w-10">{Math.round(zoomLevel * 100)}%</span></div>
+          <div className="flex gap-1">
             <Button 
               variant="outline" 
               size="sm" 
               onClick={() => setZoomLevel((z) => Math.max(z - 0.1, 0.25))}
-              className="h-8 w-8 p-0"
             >
               -
-            </Button>
-            <span className="text-xs font-medium w-12 text-center">{Math.round(zoomLevel * 100)}%</span>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => setZoomLevel((z) => Math.min(z + 0.1, 2))}
-              className="h-8 w-8 p-0"
-            >
-              +
             </Button>
             <Button 
               variant="outline" 
               size="sm" 
               onClick={() => setZoomLevel(1)}
-              className="h-8 px-2 text-xs"
             >
-              <RotateCcw className="w-3 h-3" />
+              Reset
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setZoomLevel((z) => Math.min(z + 0.1, 2))}
+            >
+              +
             </Button>
           </div>
-
-          {/* Mask Toggle */}
-          <div className="flex items-center gap-2">
-            <input 
-              type="checkbox" 
-              id="apply-mask-top" 
-              checked={applyMask} 
-              onChange={(e) => setApplyMask(e.target.checked)} 
-              className="h-4 w-4 rounded border-gray-300"
-            />
-            <label htmlFor="apply-mask-top" className="text-xs font-medium text-gray-600 cursor-pointer">
-              Apply Mask
-            </label>
-          </div>
         </div>
+        {useKeyboardShortcuts.ShortcutHelpPanel && (
+  <div className="mt-2">
+    <useKeyboardShortcuts.ShortcutHelpPanel />
+  </div>
+)}
+{/* Replace the current mask toggle with this */}
+<div className="flex items-center space-x-2">
+  <input 
+    type="checkbox" 
+    id="apply-mask" 
+    checked={applyMask} 
+    onChange={(e) => setApplyMask(e.target.checked)} 
+    className="h-4 w-4"
+  />
+  <label htmlFor="apply-mask" className="text-sm">
+    Apply Mask {maskSrc && `(${masks.find(m => m.url === maskSrc)?.name || 'Custom'})`}
+  </label>
+</div>
       </div>
 
-      {/* Main Workspace - LEFT CONTROLS + RIGHT EDITOR */}
-      <div className="flex flex-col lg:flex-row gap-4 h-[calc(100vh-280px)]">
-        {/* LEFT SIDEBAR - ALL CONTROLS */}
-        <div className="w-full lg:w-80 space-y-3 overflow-y-auto overflow-x-hidden pr-2 custom-scrollbar" style={{ maxHeight: 'calc(100vh - 280px)' }}>
-          
-          {/* Card Size Settings - Compact */}
-          <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-3 rounded-lg shadow-sm border border-blue-200">
-            <h3 className="font-semibold text-xs mb-2 flex items-center gap-1.5 text-blue-900">
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
-              </svg>
-              Card Size
-            </h3>
-            <div className="space-y-1.5">
-              <div className="flex gap-1.5">
-                <div className="flex-1">
-                  <Label className="text-[10px] text-gray-600">Width</Label>
-                  <Input
-                    type="number"
-                    value={(cardWidth * 25.4).toFixed(1)}
-                    onChange={(e) => handleCardSizeChange(parseFloat(e.target.value), cardHeight * 25.4)}
-                    className="h-7 text-xs"
-                  />
-                </div>
-                <div className="flex-1">
-                  <Label className="text-[10px] text-gray-600">Height</Label>
-                  <Input
-                    type="number"
-                    value={(cardHeight * 25.4).toFixed(1)}
-                    onChange={(e) => handleCardSizeChange(cardWidth * 25.4, parseFloat(e.target.value))}
-                    className="h-7 text-xs"
-                  />
-                </div>
-              </div>
-              <div className="flex gap-1">
-                <Button size="sm" variant="outline" className="text-[10px] h-6 px-2 flex-1" onClick={() => handleCardSizeChange(85.6, 53.98)}>CR80</Button>
-                <Button size="sm" variant="outline" className="text-[10px] h-6 px-2 flex-1" onClick={() => handleCardSizeChange(100, 70)}>Custom</Button>
-              </div>
-            </div>
-          </div>
+      {/* Add Elements Horizontal Card */}
+      <div className="bg-white p-4 rounded-lg shadow-sm flex flex-wrap items-center gap-2 mb-4">
+        <Label className="text-sm font-medium whitespace-nowrap mr-2">Add Element:</Label>
+        <select
+          value={selectedHeader}
+          onChange={(e) => setSelectedHeader(e.target.value)}
+          className="p-2 border rounded text-sm h-9"
+        >
+          <option value="custom">Custom</option>
+          {excelData?.headers?.length > 0 ? (
+            excelData.headers.map((header) => (
+              <option key={header} value={header}>{header}</option>
+            ))
+          ) : (
+            <option disabled>No headers available</option>
+          )}
+        </select>
 
-          {/* Background Upload - Compact */}
-          <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-3 rounded-lg shadow-sm border border-purple-200">
-            <h3 className="font-semibold text-xs mb-2 flex items-center gap-1.5 text-purple-900">
-              <ImageIcon className="w-3.5 h-3.5" />
-              Background
-            </h3>
-            <BackgroundUpload
-              side={currentSide}
-              onUpload={currentSide === "front" ? handleFrontUpload : handleBackUpload}
-              excelHeaders={excelData.headers}
-              excelData={excelData}
-              currentBackground={template[currentSide]}
-              template={template}
-              currentSide={currentSide}
-              sideLabel={currentSide === "front" ? "Front" : "Back"}
-              backgroundConfig={template[currentSide]}
-              onSizeChange={handleCardSizeChange}
-            />
-          </div>
+        <Button onClick={() => addElement("text")} size="sm" className="gap-1">
+          <Type className="w-3.5 h-3.5" />
+          Text
+        </Button>
+        <Button onClick={() => addElement("image")} size="sm" className="gap-1">
+          <ImageIcon className="w-3.5 h-3.5" />
+          Image
+        </Button>
+        <Button onClick={() => addElement("qrcode")} size="sm" className="gap-1">
+          <QrCode className="w-3.5 h-3.5" />
+          QR Code
+        </Button>
+        <Button onClick={() => addElement("barcode")} size="sm" className="gap-1">
+          <Barcode className="w-3.5 h-3.5" />
+          Barcode
+        </Button>
+      </div>
 
-          {/* Add Elements Section - Compact */}
-          <div className="bg-gradient-to-br from-green-50 to-green-100 p-3 rounded-lg shadow-sm border border-green-200">
-            <h3 className="font-semibold text-xs mb-2 flex items-center gap-1.5 text-green-900">
-              <Plus className="w-3.5 h-3.5" />
-              Add Elements
-            </h3>
-            <div className="space-y-1.5">
-              <select
-                value={selectedHeader}
-                onChange={(e) => setSelectedHeader(e.target.value)}
-                className="w-full p-1.5 border rounded text-xs h-7 bg-white"
-              >
-                <option value="custom">Custom Element</option>
-                {excelData?.headers?.length > 0 ? (
-                  excelData.headers.map((header) => (
-                    <option key={header} value={header}>{header}</option>
-                  ))
-                ) : (
-                  <option disabled>No Excel data</option>
-                )}
-              </select>
-              
-              <div className="grid grid-cols-2 gap-1.5">
-                <Button onClick={() => addElement("text")} size="sm" className="gap-1 w-full h-7 text-xs">
-                  <Type className="w-3 h-3" />
-                  Text
-                </Button>
-                <Button onClick={() => addElement("image")} size="sm" className="gap-1 w-full h-7 text-xs">
-                  <ImageIcon className="w-3 h-3" />
-                  Image
-                </Button>
-                <Button onClick={() => addElement("qrcode")} size="sm" className="gap-1 w-full h-7 text-xs">
-                  <QrCode className="w-3 h-3" />
-                  QR
-                </Button>
-                <Button onClick={() => addElement("barcode")} size="sm" className="gap-1 w-full h-7 text-xs">
-                  <Barcode className="w-3 h-3" />
-                  Barcode
-                </Button>
-              </div>
-            </div>
-          </div>
-
-          {/* Element Settings - Compact */}
+      {/* Main Workspace */}
+      <div className="flex flex-col lg:flex-row gap-4">
+        {/* Left Sidebar - Only Delete + Settings now */}
+        <div className="w-full lg:w-64 space-y-4">
           {selectedElements.length > 0 && (
-            <div className="bg-gradient-to-br from-orange-50 to-orange-100 p-3 rounded-lg shadow-sm border border-orange-200">
-              <h3 className="font-semibold text-xs mb-2 flex items-center gap-1.5 text-orange-900">
-                <Edit2 className="w-3.5 h-3.5" />
-                Settings ({selectedElements.length})
-              </h3>
-              
+            <div className="space-y-3 bg-white p-4 rounded-lg shadow-sm">
               <Button 
                 onClick={deleteElements} 
                 size="sm" 
                 variant="destructive"
-                className="gap-1 w-full mb-2 h-7 text-xs"
+                className="gap-1 w-full"
               >
-                <Trash2 className="w-3 h-3" />
-                Delete
+                <Trash2 className="w-3.5 h-3.5" />
+                Delete Selected
               </Button>
+
 
               <ElementSettings
                 elements={selectedElements}
@@ -2232,55 +2139,29 @@ return (
               />
             </div>
           )}
-
-          {/* Auto Container Generator - Compact */}
-          <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 p-3 rounded-lg shadow-sm border border-indigo-200">
-            <h3 className="font-semibold text-xs mb-2 flex items-center gap-1.5 text-indigo-900">
-              <Grid className="w-3.5 h-3.5" />
-              Auto Generate
-            </h3>
-            <AutoContainerGenerator
-              onTemplateChange={onTemplateChange}
-              excelData={excelData}
-              currentSide={currentSide}
-              setTemplate={setTemplate}
-            />
-          </div>
         </div>
 
-        {/* RIGHT SIDE - EDITOR/CANVAS */}
-        <div className="flex-1 min-w-0 flex flex-col" style={{ maxHeight: 'calc(100vh - 280px)' }}>
-        {/* Canvas Header - Compact */}
-        <div className="bg-white p-2 rounded-t-lg border border-b-0 shadow-sm flex-shrink-0">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-green-500"></div>
-              <span className="text-xs font-medium text-gray-700">
-                {currentSide === "front" ? "Front" : "Back"} Preview
-              </span>
-            </div>
-            <div className="text-[10px] text-gray-500">
-              {(cardWidth * 25.4).toFixed(1)} × {(cardHeight * 25.4).toFixed(1)} mm
-            </div>
-          </div>
-        </div>
-
-        {/* Canvas Area - Flexible Height */}
+        {/* Canvas Area */}
+        <div className="flex-1">
         <div
-          ref={panWrapperRef}
-          className="overflow-auto p-4 bg-gradient-to-br from-gray-100 to-gray-200 rounded-b-lg border border-t-0 shadow-sm flex-1 flex items-center justify-center"
-          onMouseDown={handlePanStart}
-          onMouseMove={handlePanMove}
-          onMouseUp={handlePanEnd}
-          onMouseLeave={handlePanEnd}
-          style={{ 
-            cursor: isPanning ? "grabbing" : "default",
-            backgroundImage: `
-              radial-gradient(circle, rgba(0,0,0,0.05) 1px, transparent 1px)
-            `,
-            backgroundSize: "20px 20px"
-          }}
-        >
+      ref={panWrapperRef}
+      className="overflow-auto p-4 bg-teal rounded-lg border shadow-sm"
+      onMouseDown={handlePanStart}
+      onMouseMove={handlePanMove}
+      onMouseUp={handlePanEnd}
+      onMouseLeave={handlePanEnd}
+      style={{ 
+        cursor: isPanning ? "grabbing" : "grab",
+        backgroundImage: `
+          linear-gradient(45deg, rgba(0,0,0,0.1) 25%, transparent 25%),
+          linear-gradient(-45deg, rgba(0,0,0,0.1) 25%, transparent 25%),
+          linear-gradient(45deg, transparent 75%, rgba(0,0,0,0.1) 75%),
+          linear-gradient(-45deg, transparent 75%, rgba(0,0,0,0.1) 75%)
+        `,
+        backgroundSize: "20px 20px",
+        backgroundPosition: "0 0, 0 10px, 10px -10px, -10px 0px"
+      }}
+    >
             <div 
               style={{
                 transform: `scale(${zoomLevel})`,
@@ -2373,6 +2254,16 @@ return (
               </Card>
             </div>
           </div>
+        </div>
+
+        {/* Right Sidebar - Template Controls */}
+        <div className="w-full lg:w-64">
+          <AutoContainerGenerator
+            onTemplateChange={onTemplateChange}
+            excelData={excelData}
+            currentSide={currentSide}
+            setTemplate={setTemplate}
+          />
         </div>
       </div>
 

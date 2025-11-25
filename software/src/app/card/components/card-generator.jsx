@@ -725,131 +725,159 @@ const generateQRCode = async (content, width, height, qrConfig = {}) => {
       }
   
 
-      if (element.type === "image") {
-        // 1. Get the correct photo key (handles both custom and dynamic images)
-        const photoKey = element.isCustomImage 
-          ? element.content 
-          : (row[element.heading]?.toString().trim() || element.content); // Fix here
-        
-        // 2. Get the image source (with fallback to placeholder)
-        const originalImage = photos[photoKey] || '/placeholder.svg';
-        
-        // 3. Determine if we should apply mask (only for non-custom images when enabled)
-        const shouldApplyMask = applyMask && maskSrc && !element.isCustomImage;
-        
-        // 4. Calculate all rotation components
-        const elementRotation = element.rotation || 0; // Individual element rotation
-        const galleryRotation = rotations.gallery[photoKey] || 0; // Gallery-wide rotation for this photo
-        const instanceRotation = photoInstanceRotations[element.id]?.[photoKey] || 0; // Instance-specific rotation
-        
-        // 5. Calculate total rotation (sum of all applicable rotations)
-        const totalRotation = elementRotation + galleryRotation + instanceRotation;
-      
-        // 6. Load the image (masked version if applicable)
-        const imageUrl = shouldApplyMask 
-          ? photos[`masked_${photoKey}`] || originalImage 
-          : originalImage;
-        
-        const img = await loadImage(imageUrl);
-        
-        if (img) {
-          // 7. Check for transparency (for proper stroke rendering)
-          const isTransparent = await checkImageTransparency(img);
-      
-          ctx.save();
-          ctx.globalAlpha = element.style?.opacity ?? 1;
-      
-          // 8. Set up transformation context (position + rotation)
-          ctx.translate(
-            element.position.x + offsetX + element.size.width / 2,
-            element.position.y + offsetY + element.size.height / 2
-          );
-          ctx.rotate(totalRotation * (Math.PI / 180)); // Apply total rotation
-      
-          // 9. Calculate drawing area with padding
-          const padding = 10;
-          const strokeOffset = element.style?.strokeWidth 
-            ? element.style.strokeWidth * strokeScaleFactor 
-            : 0;
-          const transparentStrokeScale = 0.5;
-      
-          const drawX = -element.size.width / 2 + padding + strokeOffset / 2;
-          const drawY = -element.size.height / 2 + padding + strokeOffset / 2;
-          const drawWidth = element.size.width - 2 * (padding + strokeOffset / 2);
-          const drawHeight = element.size.height - 2 * (padding + strokeOffset / 2);
-      
-          // 10. Create intermediate canvas for image processing
-          const finalImgCanvas = document.createElement("canvas");
-          const finalImgCtx = finalImgCanvas.getContext("2d");
-          finalImgCanvas.width = element.size.width;
-          finalImgCanvas.height = element.size.height;
-      
-          // 11. Draw the base image
-          finalImgCtx.drawImage(img, 0, 0, element.size.width, element.size.height);
-      
-          // 12. Apply mask if needed
-          if (shouldApplyMask) {
-            const maskImg = await loadImage(maskSrc);
-            if (maskImg) {
-              finalImgCtx.globalCompositeOperation = "destination-in";
-              finalImgCtx.drawImage(maskImg, 0, 0, element.size.width, element.size.height);
-              finalImgCtx.globalCompositeOperation = "source-over";
-            }
-          }
-      
-          // 13. Handle stroke for transparent images
-          if (isTransparent && element.style?.strokeWidth > 0) {
-            const adjustedStroke = strokeOffset * transparentStrokeScale;
-      
-            ctx.filter = `
-              drop-shadow(${adjustedStroke}px 0 ${element.style.strokeColor}) 
-              drop-shadow(-${adjustedStroke}px 0 ${element.style.strokeColor}) 
-              drop-shadow(0 ${adjustedStroke}px ${element.style.strokeColor}) 
-              drop-shadow(0 -${adjustedStroke}px ${element.style.strokeColor})
-            `;
-      
-            const strokeCanvas = document.createElement("canvas");
-            const strokeCtx = strokeCanvas.getContext("2d");
-            strokeCanvas.width = element.size.width;
-            strokeCanvas.height = element.size.height;
-      
-            strokeCtx.drawImage(finalImgCanvas, 0, 0, element.size.width, element.size.height);
-            strokeCtx.globalCompositeOperation = "source-atop";
-            strokeCtx.strokeStyle = element.style.strokeColor;
-            strokeCtx.lineWidth = adjustedStroke;
-            strokeCtx.strokeRect(0, 0, element.size.width, element.size.height);
-            strokeCtx.globalCompositeOperation = "source-over";
-      
-            finalImgCtx.drawImage(strokeCanvas, 0, 0, element.size.width, element.size.height);
-          }
-      
-          // 14. Handle stroke for opaque images
-          if (!isTransparent && element.style?.strokeWidth > 0) {
-            finalImgCtx.strokeStyle = element.style.strokeColor;
-            finalImgCtx.lineWidth = strokeOffset;
-            finalImgCtx.strokeRect(0, 0, element.size.width, element.size.height);
-          }
-      
-          // 15. Apply shadows if needed
-          ctx.save();
-          if (element.style?.shadowBlur > 0) {
-            ctx.shadowColor = element.style.shadowColor || "black";
-            ctx.shadowBlur = element.style.shadowBlur;
-            ctx.shadowOffsetX = element.style.shadowOffsetX || 0;
-            ctx.shadowOffsetY = element.style.shadowOffsetY || 0;
-          } else {
-            ctx.shadowBlur = 0;
-            ctx.shadowOffsetX = 0;
-            ctx.shadowOffsetY = 0;
-          }
-      
-          // 16. Draw the final image
-          ctx.drawImage(finalImgCanvas, drawX, drawY, drawWidth, drawHeight);
-          ctx.restore();
-      
-          // 17. Restore context
-          ctx.restore();
-        }
+if (element.type === "image") {
+
+  // 1. Get the correct photo key (handles custom and dynamic images)
+  const photoKey = element.isCustomImage
+    ? element.content
+    : (row[element.heading]?.toString().trim() || element.content);
+
+  // 2. Get image source (fallback)
+  const originalImage = photos[photoKey] || "/placeholder.svg";
+
+  // 3. Should mask apply?
+  const shouldApplyMask = applyMask && maskSrc && !element.isCustomImage;
+
+  // 4. Rotations
+  const elementRotation = element.rotation || 0;
+  const galleryRotation = rotations.gallery[photoKey] || 0;
+  const instanceRotation = photoInstanceRotations[element.id]?.[photoKey] || 0;
+
+  // 5. Total rotation
+  const totalRotation = elementRotation + galleryRotation + instanceRotation;
+
+  // 6. Choose masked version if available
+  const imageUrl = shouldApplyMask
+    ? photos[`masked_${photoKey}`] || originalImage
+    : originalImage;
+
+  const img = await loadImage(imageUrl);
+
+  if (img) {
+
+    ctx.save();
+    ctx.globalAlpha = element.style?.opacity ?? 1;
+
+    // 8. Transform context
+    ctx.translate(
+      element.position.x + offsetX + element.size.width / 2,
+      element.position.y + offsetY + element.size.height / 2
+    );
+    ctx.rotate(totalRotation * (Math.PI / 180));
+
+    // 9. Drawing area + padding
+    const padding = 10;
+    const strokeOffset = element.style?.strokeWidth
+      ? element.style.strokeWidth * strokeScaleFactor
+      : 0;
+
+    const transparentStrokeScale = 0.5;
+
+    const drawX = -element.size.width / 2 + padding + strokeOffset / 2;
+    const drawY = -element.size.height / 2 + padding + strokeOffset / 2;
+    const drawWidth =
+      element.size.width - 2 * (padding + strokeOffset / 2);
+    const drawHeight =
+      element.size.height - 2 * (padding + strokeOffset / 2);
+
+    // 10. Create processing canvas
+    const finalImgCanvas = document.createElement("canvas");
+    const finalImgCtx = finalImgCanvas.getContext("2d");
+    finalImgCanvas.width = element.size.width;
+    finalImgCanvas.height = element.size.height;
+
+    // 11. Draw base image
+    finalImgCtx.drawImage(img, 0, 0, element.size.width, element.size.height);
+
+    // 12. Apply mask FIRST
+    if (shouldApplyMask) {
+      const maskImg = await loadImage(maskSrc);
+      if (maskImg) {
+        finalImgCtx.globalCompositeOperation = "destination-in";
+        finalImgCtx.drawImage(
+          maskImg,
+          0,
+          0,
+          element.size.width,
+          element.size.height
+        );
+        finalImgCtx.globalCompositeOperation = "source-over";
+      }
+    }
+
+    // ---------------------------------------------------
+    // ⭐ FIXED: CHECK TRANSPARENCY AFTER MASK IS APPLIED
+    // ---------------------------------------------------
+    const isTransparent = await checkImageTransparency(finalImgCanvas);
+
+    // 13. Stroke for transparent (masked PNG shape)
+    if (isTransparent && element.style?.strokeWidth > 0) {
+      const adjustedStroke = strokeOffset * transparentStrokeScale;
+
+      ctx.filter = `
+        drop-shadow(${adjustedStroke}px 0 ${element.style.strokeColor})
+        drop-shadow(-${adjustedStroke}px 0 ${element.style.strokeColor})
+        drop-shadow(0 ${adjustedStroke}px ${element.style.strokeColor})
+        drop-shadow(0 -${adjustedStroke}px ${element.style.strokeColor})
+      `;
+
+      const strokeCanvas = document.createElement("canvas");
+      const strokeCtx = strokeCanvas.getContext("2d");
+      strokeCanvas.width = element.size.width;
+      strokeCanvas.height = element.size.height;
+
+      strokeCtx.drawImage(
+        finalImgCanvas,
+        0,
+        0,
+        element.size.width,
+        element.size.height
+      );
+
+      strokeCtx.globalCompositeOperation = "source-atop";
+      strokeCtx.strokeStyle = element.style.strokeColor;
+      strokeCtx.lineWidth = adjustedStroke;
+      strokeCtx.strokeRect(0, 0, element.size.width, element.size.height);
+      strokeCtx.globalCompositeOperation = "source-over";
+
+      finalImgCtx.drawImage(
+        strokeCanvas,
+        0,
+        0,
+        element.size.width,
+        element.size.height
+      );
+    }
+
+    // 14. Stroke for opaque images (JPEG)
+    if (!isTransparent && element.style?.strokeWidth > 0) {
+      finalImgCtx.strokeStyle = element.style.strokeColor;
+      finalImgCtx.lineWidth = strokeOffset;
+      finalImgCtx.strokeRect(0, 0, element.size.width, element.size.height);
+    }
+
+    // 15. Shadows
+    ctx.save();
+    if (element.style?.shadowBlur > 0) {
+      ctx.shadowColor = element.style.shadowColor || "black";
+      ctx.shadowBlur = element.style.shadowBlur;
+      ctx.shadowOffsetX = element.style.shadowOffsetX || 0;
+      ctx.shadowOffsetY = element.style.shadowOffsetY || 0;
+    } else {
+      ctx.shadowBlur = 0;
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 0;
+    }
+
+    // 16. Draw final image
+    ctx.drawImage(finalImgCanvas, drawX, drawY, drawWidth, drawHeight);
+    ctx.restore();
+
+    // 17. Restore main context
+    ctx.restore();
+  }
+
+
       }}}
     
 
