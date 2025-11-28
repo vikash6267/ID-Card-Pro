@@ -10,7 +10,7 @@ import { Alignment } from "./alignment"; // ✅ Import Alignment settings
 
 
 
-export function ElementStyleSettings({ elements, onUpdate }) {
+export function ElementStyleSettings({ elements, onUpdate, isImageElement = false, isTextElement = false }) {
   const [style, setStyle] = useState(() => {
     if (elements.length === 0) return {}; // Prevent errors if no elements selected
 
@@ -211,11 +211,12 @@ const handleStyleChange = (key, value) => {
 
   return (
     
-    <div className="space-y-4 max-h-96 overflow-y-auto p-6 bg-white rounded-lg shadow-lg border-2 border-blue-500 custom-scrollbar">
+    <div className="space-y-3 max-h-[70vh] overflow-y-auto p-3 bg-white rounded-lg custom-scrollbar">
 
-      {/* Font Settings Card */}
-      <div className="p-4 bg-gray-100 rounded-lg shadow-md border border-gray-300">
-        <Label className="font-semibold">Font Settings</Label>
+      {/* Font Settings Card - Only for text elements */}
+      {isTextElement && (
+      <div className="p-3 bg-gray-50 rounded-lg shadow-sm border border-gray-200">
+        <Label className="font-semibold text-sm mb-2 block">Font Settings</Label>
         <div className="flex space-x-2">
           <Button onClick={() => handleStyleChange("isBold", !style.isBold, true)} variant={style.isBold ? "default" : "outline"}>
             <Bold className="w-4 h-4" />
@@ -314,10 +315,12 @@ const handleStyleChange = (key, value) => {
         <Label>Text Color</Label>
         <Input type="color" value={style.color} onChange={(e) => handleStyleChange("color", e.target.value, true)} className="border rounded" />
       </div>
+      )}
 
-{/* Stroke Settings Card */}
-<div className="p-4 bg-gray-100 rounded-lg shadow-md border border-gray-300">
-  <Label className="font-semibold">Stroke Settings</Label>
+{/* Stroke Settings Card - Only for image elements */}
+{isImageElement && (
+<div className="p-3 bg-gray-50 rounded-lg shadow-sm border border-gray-200">
+  <Label className="font-semibold text-sm mb-2 block">Stroke Settings</Label>
   
   {/* Directly show Stroke Color and Stroke Width without dropdown */}
   <Label>Stroke Color</Label>
@@ -351,10 +354,12 @@ const handleStyleChange = (key, value) => {
 </div>
 
 </div>
+)}
 
-      {/* Shadow Settings Card */}
-      <div className="p-4 bg-gray-100 rounded-lg shadow-md border border-gray-300">
-        <Label className="font-semibold">Shadow Settings</Label>
+      {/* Shadow Settings Card - Only for image elements */}
+      {isImageElement && (
+      <div className="p-3 bg-gray-50 rounded-lg shadow-sm border border-gray-200">
+        <Label className="font-semibold text-sm mb-2 block">Shadow Settings</Label>
         <div className="flex flex-col items-center space-y-2">
           <Label>Shadow Color</Label>
           <Input
@@ -403,10 +408,12 @@ const handleStyleChange = (key, value) => {
 </div>
 
       </div>
+      )}
 
-      {/* Gradient Settings Card */}
-      <div className="p-4 bg-gray-100 rounded-lg shadow-md border border-gray-300">
-        <Label className="font-semibold">Gradient Settings</Label>
+      {/* Gradient Settings Card - Only for text elements */}
+      {isTextElement && (
+      <div className="p-3 bg-gray-50 rounded-lg shadow-sm border border-gray-200">
+        <Label className="font-semibold text-sm mb-2 block">Gradient Settings</Label>
         <div className="flex items-center space-x-2">
           <Button onClick={() => handleStyleChange("gradient", !style.gradient)} variant={style.gradient ? "default" : "outline"}>
             <Droplet className="w-4 h-4" /> Enable Gradient
@@ -491,6 +498,7 @@ const handleStyleChange = (key, value) => {
           ))}
         </div>
       </div>
+      )}
 
       <style jsx>{`
         .custom-scrollbar {

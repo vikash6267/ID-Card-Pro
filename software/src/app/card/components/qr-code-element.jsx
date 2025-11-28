@@ -53,17 +53,25 @@ const QRCodeElement = ({
     const ctx = canvas.getContext("2d");
 
     // Set the canvas size to match the bounding rectangle exactly
-    const padding = 10; // ✅ Ensure same padding as images
-    const strokeOffset = 2; // ✅ Adjust stroke thickness
     canvas.width = size.width;
     canvas.height = size.height;
 
     ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear previous content
 
     // Construct the QR content string
-    const qrContent = customText || selectedFields
-      .map((field) => `${field}: ${currentRecord?.[field] ?? "N/A"}`)
-      .join(" | ");
+    let qrContent = customText;
+    
+    // If no custom text, build from selected fields
+    if (!qrContent && selectedFields.length > 0) {
+      qrContent = selectedFields
+        .map((field) => `${field}: ${currentRecord?.[field] ?? "N/A"}`)
+        .join(" | ");
+    }
+    
+    // If still no content, use a default placeholder
+    if (!qrContent) {
+      qrContent = "Sample QR Code";
+    }
 
     const generateQR = async () => {
       setLoading(true);
@@ -78,9 +86,9 @@ const QRCodeElement = ({
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
         if (qrFormat === "qrcode") {
-          await QRCode.toCanvas(canvas, qrContent || "Default QR", {
+          await QRCode.toCanvas(canvas, qrContent, {
             errorCorrectionLevel: "H",
-            margin: 0,
+            margin: 1,
             width: size.width,
             height: size.height
           });
@@ -96,33 +104,16 @@ const QRCodeElement = ({
         }
       } catch (error) {
         console.error("❌ Error generating QR/Barcode:", error);
+        // Show error message on canvas
+        ctx.fillStyle = "#ff0000";
+        ctx.font = "12px Arial";
+        ctx.fillText("Error generating code", 10, 20);
       } finally {
         setLoading(false);
       }
     };
 
-    // If no QR/Barcode content has been selected, show temporary QR or placeholder image
-    if (!customText && selectedFields.length === 0) {
-      const defaultContent = "https://www.example.com"; // Default content for the temporary QR code
-      if (qrFormat === "qrcode") {
-        QRCode.toCanvas(canvas, defaultContent, {
-          errorCorrectionLevel: "M",
-          margin: 1,
-          width: Math.min(size.width, size.height),
-          type: "terminal",  // Ensure it's a valid QR code type
-        });
-      } else {
-        BwipJS.toCanvas(canvas, {
-          bcid: qrFormat,  // Barcode format (e.g., "datamatrix", "code128")
-          text: defaultContent,
-          scale: 3,
-          height: 10,
-          includetext: true,
-        });
-      }
-    } else {
-      generateQR();
-    }
+    generateQR();
   }, [selectedFields, size.width, size.height, qrFormat, currentRecord, customText]); // Update when any setting changes
 
   return (

@@ -8,6 +8,20 @@ import JsBarcode from "jsbarcode"
 import BwipJS from "bwip-js";  // Import bwip-js for generating barcodes including DataMatrix
 import { X, Search, Loader2, ChevronLeft, ChevronRight, Check, ChevronDown, ChevronUp } from 'lucide-react';
 
+// Helper function to load images
+const loadImage = (src) => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => resolve(img);
+    img.onerror = (error) => {
+      console.error("Failed to load image:", src, error);
+      resolve(null); // Resolve with null instead of rejecting
+    };
+    img.src = src;
+  });
+};
+
 const PAGE_SIZES = [
   { label: "A4", width: 210, height: 297 },
   { label: "A5", width: 148, height: 210 },
@@ -246,35 +260,45 @@ const generateQRCode = async (content, width, height, qrConfig = {}) => {
 
   const generateBarcode = async (content, width, height) => {
     try {
-      const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg")
-      svg.setAttribute("width", width)
-      svg.setAttribute("height", height)
-      document.body.appendChild(svg)
+      // Create a canvas instead of SVG for better quality
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      
+      const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      svg.setAttribute("width", width);
+      svg.setAttribute("height", height);
+      document.body.appendChild(svg);
+
+      // Calculate optimal barcode settings based on size
+      const barcodeWidth = Math.max(2, Math.floor(width / 100));
+      const barcodeHeight = Math.max(60, height * 0.7);
+      const fontSize = Math.max(14, height * 0.12);
 
       JsBarcode(svg, content, {
         format: "CODE128",
-        width: 2,
-        height: height * 0.6,
+        width: barcodeWidth,
+        height: barcodeHeight,
         displayValue: true,
-        fontSize: Math.max(10, height * 0.1),
-        margin: 5,
+        fontSize: fontSize,
+        margin: 10,
         background: "#ffffff",
         lineColor: "#000000",
-      })
+      });
 
-      const svgData = new XMLSerializer().serializeToString(svg)
-      const svgBlob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" })
-      const svgUrl = URL.createObjectURL(svgBlob)
+      const svgData = new XMLSerializer().serializeToString(svg);
+      const svgBlob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
+      const svgUrl = URL.createObjectURL(svgBlob);
 
-      const img = await loadImage(svgUrl)
+      const img = await loadImage(svgUrl);
 
-      document.body.removeChild(svg)
-      URL.revokeObjectURL(svgUrl)
+      document.body.removeChild(svg);
+      URL.revokeObjectURL(svgUrl);
 
-      return img
+      return img;
     } catch (error) {
-      console.error("Error generating barcode:", error)
-      return null
+      console.error("Error generating barcode:", error);
+      return null;
     }
   }
   const handleProjectSelection = (projectId, isChecked) => {
@@ -728,12 +752,39 @@ const generateQRCode = async (content, width, height, qrConfig = {}) => {
 if (element.type === "image") {
 
   // 1. Get the correct photo key (handles custom and dynamic images)
-  const photoKey = element.isCustomImage
+  let photoKey = element.isCustomImage
     ? element.content
     : (row[element.heading]?.toString().trim() || element.content);
 
-  // 2. Get image source (fallback)
-  const originalImage = photos[photoKey] || "/placeholder.svg";
+  // 2. Try to find the photo with multiple strategies
+  let originalImage = photos[photoKey];
+  
+  // If not found, try without extension
+  if (!originalImage || originalImage === "/placeholder.svg") {
+    const withoutExt = photoKey.replace(/\.[^/.]+$/, "");
+    originalImage = photos[withoutExt];
+    if (originalImage && originalImage !== "/placeholder.svg") {
+      photoKey = withoutExt; // Update photoKey for rotations
+    }
+  }
+  
+  // If still not found, try case-insensitive match
+  if (!originalImage || originalImage === "/placeholder.svg") {
+    const lowerKey = photoKey.toLowerCase();
+    const matchingKey = Object.keys(photos).find(key => 
+      key.toLowerCase() === lowerKey || 
+      key.toLowerCase() === lowerKey.replace(/\.[^/.]+$/, "")
+    );
+    if (matchingKey && photos[matchingKey] !== "/placeholder.svg") {
+      originalImage = photos[matchingKey];
+      photoKey = matchingKey; // Update photoKey for rotations
+    }
+  }
+  
+  // Final fallback
+  if (!originalImage || originalImage === "/placeholder.svg") {
+    originalImage = "/placeholder.svg";
+  }
 
   // 3. Should mask apply?
   const shouldApplyMask = applyMask && maskSrc && !element.isCustomImage;
@@ -876,10 +927,94 @@ if (element.type === "image") {
     // 17. Restore main context
     ctx.restore();
   }
+}
 
-
-      }}}
+    // Handle QR Code elements
+    if (element.type === "qrcode") {
+      ctx.save();
+      
+      const posX = element.position.x + offsetX;
+      const posY = element.position.y + offsetY;
+      const width = element.size.width;
+      const height = element.size.height;
+      const rotation = (element.rotation || 0) * (Math.PI / 180);
+      
+      // Build QR content
+      const qrConfig = element.qrConfig || {};
+      let qrContent = qrConfig.customText || "";
+      
+      if (!qrContent && qrConfig.selectedFields && qrConfig.selectedFields.length > 0) {
+        qrContent = qrConfig.selectedFields
+          .map(field => `${field}: ${row[field] || "N/A"}`)
+          .join(" | ");
+      }
+      
+      if (!qrContent) {
+        qrContent = element.content || "Sample QR Code";
+      }
+      
+      // Generate QR code image
+      const qrDataUrl = await generateQRCode(qrContent, width, height, qrConfig);
+      
+      if (qrDataUrl) {
+        const qrImg = await loadImage(qrDataUrl);
+        
+        if (qrImg) {
+          // Apply rotation
+          ctx.translate(posX + width / 2, posY + height / 2);
+          ctx.rotate(rotation);
+          ctx.translate(-width / 2, -height / 2);
+          
+          // Apply opacity
+          ctx.globalAlpha = element.style?.opacity ?? 1;
+          
+          // Draw QR code
+          ctx.drawImage(qrImg, 0, 0, width, height);
+          
+          ctx.globalAlpha = 1;
+        }
+      }
+      
+      ctx.restore();
+    }
     
+    // Handle Barcode elements
+    if (element.type === "barcode") {
+      ctx.save();
+      
+      const posX = element.position.x + offsetX;
+      const posY = element.position.y + offsetY;
+      const width = element.size.width;
+      const height = element.size.height;
+      const rotation = (element.rotation || 0) * (Math.PI / 180);
+      
+      // Get barcode content
+      const barcodeContent = element.isStatic 
+        ? element.content 
+        : (row[element.heading]?.toString().trim() || element.content || "123456789012");
+      
+      // Generate barcode image
+      const barcodeImg = await generateBarcode(barcodeContent, width, height);
+      
+      if (barcodeImg) {
+        // Apply rotation
+        ctx.translate(posX + width / 2, posY + height / 2);
+        ctx.rotate(rotation);
+        ctx.translate(-width / 2, -height / 2);
+        
+        // Apply opacity
+        ctx.globalAlpha = element.style?.opacity ?? 1;
+        
+        // Draw barcode
+        ctx.drawImage(barcodeImg, 0, 0, width, height);
+        
+        ctx.globalAlpha = 1;
+      }
+      
+      ctx.restore();
+    }
+  }
+};
 
   const checkImageTransparency = (image) => {
     return new Promise((resolve) => {

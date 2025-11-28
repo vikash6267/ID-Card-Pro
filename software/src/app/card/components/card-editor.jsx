@@ -118,6 +118,7 @@ const [showGalleryModal, setShowGalleryModal] = useState(false);
 const [selectedPhoto, setSelectedPhoto] = useState(null);
 const cropCanvasRef = useRef(null);
 const [showPhotoEditor, setShowPhotoEditor] = useState(false);
+const [isProjectManagerOpen, setIsProjectManagerOpen] = useState(false);
 
 useEffect(() => {
   onExcelDataChange?.(excelData);
@@ -415,6 +416,11 @@ const startBatchCropping = () => {
   // Project management state
   const [projects, setProjects] = useState([]);
   const [currentProject, setCurrentProject] = useState(null);
+  // Search + Sort for Project Manager
+const [projectSearch, setProjectSearch] = useState("");
+const [projectSortBy, setProjectSortBy] = useState("updatedAt"); // 'name' or 'updatedAt'
+const [projectSortOrder, setProjectSortOrder] = useState("desc"); // 'asc' or 'desc'
+
   const [isNewProjectModalOpen, setIsNewProjectModalOpen] = useState(false);
   const [newProjectName, setNewProjectName] = useState("");
   const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
@@ -422,7 +428,37 @@ const startBatchCropping = () => {
   const [renameProjectName, setRenameProjectName] = useState("");
   const [lastSaved, setLastSaved] = useState(null);
   const [photoInstanceRotations, setPhotoInstanceRotations] = useState({});
-  
+ // Filter and sort projects for display in Project Manager
+const filteredAndSortedProjects = (() => {
+  if (!projects || projects.length === 0) return [];
+
+  // filter by search (name match)
+  const q = projectSearch.trim().toLowerCase();
+  const filtered = q ? projects.filter(p => (p.name || "").toLowerCase().includes(q)) : [...projects];
+
+  // sort
+  const compare = (a, b) => {
+    if (projectSortBy === "name") {
+      const an = (a.name || "").toLowerCase();
+      const bn = (b.name || "").toLowerCase();
+      if (an < bn) return -1;
+      if (an > bn) return 1;
+      return 0;
+    }
+    // default: updatedAt (fallback to createdAt)
+    const at = new Date(a.updatedAt || a.createdAt || 0).getTime();
+    const bt = new Date(b.updatedAt || b.createdAt || 0).getTime();
+    return at - bt;
+  };
+
+  filtered.sort((a, b) => {
+    const r = compare(a, b);
+    return projectSortOrder === "asc" ? r : -r;
+  });
+
+  return filtered;
+})();
+ 
   
   useEffect(() => {
     loadProjectsFromStorage();
@@ -496,14 +532,15 @@ const saveProject = (manualSave = true) => {
     return;
   }
 
-  // Create a photos object with all current photos
-  const photosToSave = { ...photos };
-
-  // Also ensure all referenced images are included
+  // Only save custom images (not Excel data images) to reduce storage
+  const photosToSave = {};
+  
   ['front', 'back'].forEach(side => {
     template[side]?.elements?.forEach(element => {
-      if (element.type === "image" && element.content && !photosToSave[element.content]) {
-        photosToSave[element.content] = "/placeholder.svg";
+      if (element.type === "image" && element.isCustomImage && element.content) {
+        if (photos[element.content]) {
+          photosToSave[element.content] = photos[element.content];
+        }
       }
     });
   });
@@ -512,12 +549,12 @@ const saveProject = (manualSave = true) => {
     ...currentProject,
     template: JSON.parse(JSON.stringify(template)),
     excelData: JSON.parse(JSON.stringify(excelData)),
-    photos: photosToSave, // Save all photos
+    photos: photosToSave, // Only save custom images
     maskSrc,
-    masks,
+    masks: masks || [],
     applyMask,
-    rotations: JSON.parse(JSON.stringify(rotations)),
-    photoInstanceRotations: JSON.parse(JSON.stringify(photoInstanceRotations)),
+    rotations: JSON.parse(JSON.stringify(rotations || { elements: {}, gallery: {} })),
+    photoInstanceRotations: JSON.parse(JSON.stringify(photoInstanceRotations || {})),
     updatedAt: new Date().toISOString()
   };
 
@@ -526,12 +563,27 @@ const saveProject = (manualSave = true) => {
   );
   
   setProjects(updatedProjects);
-  localStorage.setItem('idCardProjects', JSON.stringify(updatedProjects));
-  setCurrentProject(updatedProject);
-  setLastSaved(new Date().toISOString());
   
-  if (manualSave) {
-    toast.success(`Project "${updatedProject.name}" saved successfully`);
+  try {
+    localStorage.setItem('idCardProjects', JSON.stringify(updatedProjects));
+    setCurrentProject(updatedProject);
+    setLastSaved(new Date().toISOString());
+    
+    if (manualSave) {
+      toast.success(`Project "${updatedProject.name}" saved successfully`);
+    }
+  } catch (error) {
+    console.error("Failed to save project:", error);
+    if (error.name === 'QuotaExceededError') {
+      toast.error("Storage quota exceeded. Try removing some images or use Export instead.");
+      
+      // Offer to export instead
+      if (window.confirm("Storage is full. Would you like to export this project as a file instead?")) {
+        exportProject();
+      }
+    } else {
+      toast.error("Failed to save project: " + error.message);
+    }
   }
 };
 
@@ -1419,699 +1471,900 @@ const applySelectedMask = (maskUrl) => {
 };
 
 return (
+  <div className="space-y-3 px-3 py-2 bg-gradient-to-br from-gray-50 to-white rounded-xl shadow-sm">
 
-      <div className="space-y-3 px-3 py-2 bg-gradient-to-br from-gray-50 to-white rounded-xl shadow-sm">
-        {/* Project Management Toolbar */}
-        <div className="bg-white rounded-xl shadow-md px-5 py-4 flex flex-col sm:flex-row justify-between gap-4 items-start sm:items-center border border-gray-200">
-          <div className="flex flex-wrap gap-3 items-center">
-            <Button onClick={() => setIsNewProjectModalOpen(true)} size="sm" className="gap-1">
-              <Plus className="w-4 h-4" />
-              New Project
-            </Button>
-    
-            <div className="relative">
-              <select
-                value={currentProject?.id || ""}
-                onChange={(e) => loadProject(e.target.value)}
-                className="pl-3 pr-8 py-2 text-sm border border-black-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Select Project</option>
-                {projects.map((project) => (
-                  <option key={project.id} value={project.id}>
-                    {project.name} ({new Date(project.updatedAt).toLocaleDateString()})
-                  </option>
-                ))}
-              </select>
-              {currentProject && (
-                <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-                  <FolderOpen className="w-4 h-4 text-gray-400" />
-                </div>
-              )}
-            </div>
-    
-            {currentProject && (
-              <>
-                <Button
-                  onClick={() => {
-                    setRenameProjectId(currentProject.id);
-                    setRenameProjectName(currentProject.name);
-                    setIsRenameModalOpen(true);
-                  }}
-                  variant="ghost"
-                  size="sm"
-                  className="text-blue-600 hover:text-blue-800"
-                >
-                  <Edit2 className="w-4 h-4 mr-1" />
-                  Rename
-                </Button>
-    
-                <Button
-                  onClick={() => deleteProject(currentProject.id)}
-                  variant="ghost"
-                  size="sm"
-                  className="text-red-500 hover:text-red-700"
-                >
-                  <Trash2 className="w-4 h-4 mr-1" />
-                  Delete
-                </Button>
-              </>
-            )}
-          </div>
-    
-          <div className="flex flex-wrap gap-2 items-center">
-            {lastSaved && (
-              <span className="text-xs text-gray-500">
-                Last saved: {new Date(lastSaved).toLocaleString()}
-              </span>
-            )}
-    
-            <Button onClick={saveProject} disabled={!currentProject} size="sm" className="gap-1">
-              <Save className="w-4 h-4" />
-              Save
-            </Button>
-    
-            <Button onClick={exportProject} disabled={!currentProject} variant="outline" size="sm" className="gap-1">
-              <HardDriveDownload className="w-4 h-4" />
-              Export
-            </Button>
-    
-            <Button variant="outline" size="sm" className="gap-1" onClick={() => fileInputRef.current?.click()}>
-              <HardDriveUpload className="w-4 h-4" />
-              Import
-            </Button>
-    
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".idcard,application/json"
-              onChange={importProject}
-              className="hidden"
-            />
-          </div>
-        </div>
+    {/* =========================
+       Project Management Banner (gradient) — all primary controls live here
+       Project name placed below Manage Projects button
+       ========================= */}
+    <div className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white rounded-xl shadow-2xl px-4 py-3 flex flex-wrap items-center justify-between gap-3">
 
- {/* New Project Modal */}
- 
-      {isNewProjectModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-md">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold">Create New Project</h3>
-              <button 
-                onClick={() => {
-                  setIsNewProjectModalOpen(false);
-                  setNewProjectName("");
-                }}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="project-name" className="block mb-1">
-                  Project Name
-                </Label>
-                <Input
-                  id="project-name"
-                  type="text"
-                  value={newProjectName}
-                  onChange={(e) => setNewProjectName(e.target.value)}
-                  placeholder="Enter project name"
-                  className="w-full"
-                />
-              </div>
-              
-              <div className="flex justify-end gap-2 pt-2">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setIsNewProjectModalOpen(false);
-                    setNewProjectName("");
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={createNewProject}
-                  disabled={!newProjectName.trim()}
-                >
-                  Create Project
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-      
-      {/* Rename Project Modal */}
-      {isRenameModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-md">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold">Rename Project</h3>
-              <button 
-                onClick={() => {
-                  setIsRenameModalOpen(false);
-                  setRenameProjectName("");
-                }}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="rename-project" className="block mb-1">
-                  New Project Name
-                </Label>
-                <Input
-                  id="rename-project"
-                  type="text"
-                  value={renameProjectName}
-                  onChange={(e) => setRenameProjectName(e.target.value)}
-                  placeholder="Enter new project name"
-                  className="w-full"
-                />
-              </div>
-              
-              <div className="flex justify-end gap-2 pt-2">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setIsRenameModalOpen(false);
-                    setRenameProjectName("");
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={() => renameProject(renameProjectId, renameProjectName)}
-                  disabled={!renameProjectName.trim()}
-                >
-                  Rename Project
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Current Project Info */}
-      {currentProject && (
-        <div className="bg-white p-3 rounded-lg shadow-sm mb-4">
-          <div className="flex justify-between items-center">
-            <div>
-              <h3 className="font-semibold">{currentProject.name}</h3>
-              <p className="text-sm text-gray-500">
-                Created: {new Date(currentProject.createdAt).toLocaleString()} | 
-                Last Modified: {new Date(currentProject.updatedAt).toLocaleString()}
-              </p>
-            </div>
-            <div className="text-sm">
-              <span className="font-medium">Elements:</span> {template[currentSide].elements.length} | 
-              <span className="font-medium ml-2">Records:</span> {excelData.rows.length}
-            </div>
-          </div>
-        </div>
-      )}
-
-{/* Upload Section - Compact Grid with Enhanced UX */}
-<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-  {/* Excel Data Upload */}
-  <div className="space-y-1">
-    <div className="flex items-center justify-between">
-      <Label className="text-sm font-medium flex items-center gap-1">
-        <FileText className="w-4 h-4 text-blue-600" /> Excel Data
-      </Label>
-      {excelData?.rows?.length > 0 && (
-        <span className="text-xs text-muted-foreground">
-          {excelData.rows.length} records
-        </span>
-      )}
-    </div>
-    <div className="flex items-center gap-2">
-      <Input
-        type="file"
-        accept=".xlsx,.xls"
-        onChange={handleExcelUpload}
-        className="h-9 flex-1 file:mr-2 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-        id="excel-upload"
-      />
-      <Button
-        variant="outline"
-        onClick={() => setShowExcelEditor(true)}
-        disabled={!excelData?.rows?.length}
-        className="h-9 px-2.5"
-        title="Edit Excel data"
-      >
-        <Edit2 className="w-4 h-4" />
-      </Button>
-    </div>
-  </div>
-
-  {/* Photo Upload */}
-  <div className="space-y-1">
-    <div className="flex items-center justify-between">
-      <Label className="text-sm font-medium flex items-center gap-1">
-        <ImageIcon className="w-4 h-4 text-purple-600" /> Card Photos
-      </Label>
-      {Object.keys(photos).length > 0 && (
-        <span className="text-xs text-muted-foreground">
-          {Object.keys(photos).length} photos
-        </span>
-      )}
-    </div>
-    <div className="flex items-center gap-2">
-      <Input
-        type="file"
-        accept="image/*"
-        multiple
-        onChange={handlePhotoUpload}
-        className="h-9 flex-1 file:mr-2 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-sm file:font-medium file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100"
-        id="photo-upload"
-      />
-      <Button
-        variant="outline"
-        onClick={() => setShowGalleryModal(true)}
-        disabled={Object.keys(photos).length === 0}
-        className="h-9 px-2.5"
-        title="View photo gallery"
-      >
-        <Grid className="w-4 h-4" />
-      </Button>
-    </div>
-  </div>
-
-  {/* Mask Upload */}
-  <div className="space-y-1">
-    <div className="flex items-center justify-between">
-      <Label className="text-sm font-medium flex items-center gap-1">
-        <Layers className="w-4 h-4 text-green-600" /> Card Masks
-      </Label>
-      {masks.length > 0 && (
-        <span className="text-xs text-muted-foreground">
-          {masks.length} masks
-        </span>
-      )}
-    </div>
-    <div className="flex items-center gap-2">
-      <Input
-        type="file"
-        accept="image/png"
-        multiple
-        onChange={handleMaskUpload}
-        className="h-9 flex-1 file:mr-2 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-sm file:font-medium file:bg-green-50 file:text-green-700 hover:file:bg-green-100"
-        id="mask-upload"
-      />
-      <Button
-        variant="outline"
-        onClick={() => setShowMaskGallery(true)}
-        disabled={masks.length === 0}
-        className="h-9 px-2.5"
-        title="View mask gallery"
-      >
-        <Grid className="w-4 h-4" />
-      </Button>
-    </div>
-  </div>
-</div>
-
-{/* Excel Editor Modal */}
-{showExcelEditor && (
-  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
-    <div className="bg-white rounded-lg max-w-6xl w-full max-h-[90vh] flex flex-col">
-      <div className="flex items-center justify-between p-4 border-b">
-        <h2 className="text-lg font-semibold">Excel Data Editor</h2>
-        <Button
-          variant="ghost"
-          onClick={() => setShowExcelEditor(false)}
-          className="text-gray-500 hover:text-gray-900"
-        >
-          <X className="w-5 h-5" />
-        </Button>
-      </div>
-      <div className="flex-1 overflow-auto">
-<ExcelEditor
-  excelData={excelData}
-  onSave={(newData) => {
-    setExcelData(newData);
-
-    // ✅ Update all data elements based on the current record
-    const updatedElements = template[currentSide].elements.map(el => {
-      if (el.heading && !el.isStatic) {
-        const updatedValue = newData.rows[currentRecordIndex]?.[el.heading];
-        if (updatedValue !== undefined) {
-          return { ...el, content: updatedValue };
-        }
-      }
-      return el;
-    });
-
-    // ✅ Apply update
-    setTemplate(prev => ({
-      ...prev,
-      [currentSide]: {
-        ...prev[currentSide],
-        elements: updatedElements
-      }
-    }));
-  }}
-/>
-
-      </div>
-      <div className="p-4 border-t flex justify-end gap-2">
-        <Button
-          variant="outline"
-          onClick={() => setShowExcelEditor(false)}
-        >
-          Cancel
-        </Button>
-        <Button
-          onClick={() => {
-            // Handle save through ExcelEditor's internal logic
-            const editor = document.querySelector('#excel-editor');
-            if (editor) editor.dispatchEvent(new Event('save'));
-          }}
-        >
-          Save Changes
-        </Button>
-      </div>
-    </div>
-  </div>
-)}
-
-{/* Mask Gallery Modal */}
-{showMaskGallery && (
-  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
-    <div className="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] flex flex-col shadow-xl">
-      {/* Header */}
-      <div className="flex items-center justify-between p-3 border-b">
-        <div className="flex items-center gap-2">
-          <Layers className="w-5 h-5 text-green-600" />
-          <h2 className="text-lg font-semibold">Mask Gallery</h2>
-          <span className="text-xs text-muted-foreground ml-1">
-            ({masks.length} masks)
-          </span>
-        </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setShowMaskGallery(false)}
-          className="text-gray-500 hover:text-gray-900"
-        >
-          <X className="w-5 h-5" />
-        </Button>
-      </div>
-      
-      {/* Content */}
-      <div className="flex-1 overflow-hidden flex flex-col">
-        {selectedMask ? (
-          <div className="flex flex-col h-full">
-            {/* Preview Pane */}
-            <div className="flex-1 p-4 bg-gray-50 flex items-center justify-center">
-              <div className="relative w-full max-w-md aspect-square bg-white shadow-sm rounded-lg overflow-hidden border">
-                {photos[Object.keys(photos)[0]] ? (
-                  <>
-                    <PhotoMask
-                      src={photos[Object.keys(photos)[0]]}
-                      maskSrc={selectedMask.url}
-                      className="absolute inset-0 w-full h-full object-contain"
-                    />
-                    <div className="absolute inset-0 border-2 border-green-400/50 pointer-events-none" />
-                  </>
-                ) : (
-                  <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-gray-400">
-                    <ImageIcon className="w-8 h-8" />
-                    <p className="text-sm">No photo available for preview</p>
-                  </div>
-                )}
-              </div>
-            </div>
-            
-            {/* Action Bar */}
-            <div className="p-3 border-t bg-white flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium px-2 py-1 bg-gray-100 rounded">
-                  {selectedMask.name}
-                </span>
-              </div>
-              
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setSelectedMask(null)}
-                >
-                  Back
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={() => applySelectedMask(selectedMask.url)}
-                  className="bg-green-600 hover:bg-green-700"
-                >
-                  Apply Mask
-                </Button>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 p-3 overflow-auto">
-            {masks.map((mask) => (
-              <div
-                key={mask.name}
-                className="group relative cursor-pointer"
-                onClick={() => setSelectedMask(mask)}
-              >
-                <div className="aspect-square bg-gray-50 rounded-md overflow-hidden border relative">
-                  {photos[Object.keys(photos)[0]] ? (
-                    <PhotoMask
-                      src={photos[Object.keys(photos)[0]]}
-                      maskSrc={mask.url}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-gray-300">
-                      <ImageIcon className="w-6 h-6" />
-                    </div>
-                  )}
-                  <div className="absolute inset-0 group-hover:bg-black/10 transition-colors" />
-                </div>
-                <div className="mt-1 px-1">
-                  <p className="text-xs font-medium truncate">{mask.name}</p>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="iconSm"
-                  className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 hover:bg-white"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setMasks(masks.filter(m => m.name !== mask.name));
-                  }}
-                >
-                  <Trash2 className="w-3 h-3 text-red-500" />
-                </Button>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  </div>
-)}
-
-      {/* Background Upload Component */}
-      <BackgroundUpload
-        onUpload={(backgroundData) => {
-          const updatedTemplate = {
-            ...template,
-            [currentSide]: {
-              ...template[currentSide],
-              backgroundMode: 'dynamic',
-              backgroundColumn: backgroundData.column,
-              backgroundGroups: backgroundData.groups
-            }
-          };
-
-          if (currentSide === 'front') {
-            updatedTemplate.back = {
-              ...updatedTemplate.back,
-              backgroundMode: 'dynamic',
-              backgroundColumn: backgroundData.column,
-              backgroundGroups: backgroundData.groups.map(group => ({
-                ...group,
-                name: group.name.replace('Front:', 'Back:'),
-                image: null
-              }))
-            };
-          }
-
-          setTemplate(updatedTemplate);
-          onTemplateChange(updatedTemplate);
-        }}
-        onSizeChange={handleCardSizeChange}
-        excelData={excelData}
-        backgroundConfig={template[currentSide]}
-        sideLabel={currentSide === 'front' ? 'Front' : 'Back'}
-        currentSide={currentSide}
-        template={template}
-      />
-
-      {/* Control Bar - Top Section */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-3 rounded-lg shadow-sm">
-        {/* Side Toggle */}
-        <div className="flex gap-2">
-          <Button 
-            variant={currentSide === "front" ? "default" : "outline"} 
+      {/* Left group: Manage Projects button + project name (stacked) */}
+      <div className="flex items-start gap-3 min-w-0">
+        <div className="flex flex-col items-start gap-2">
+          <Button
+            onClick={() => setIsProjectManagerOpen(true)}
             size="sm"
-            onClick={() => setCurrentSide("front")}
+            className="flex items-center gap-2 bg-white text-indigo-600 hover:scale-[1.02] transform transition px-3 py-1 rounded-full"
           >
-            Front Side
+            <FolderOpen className="w-4 h-4" />
+            <span className="text-sm font-semibold">Manage Projects</span>
           </Button>
-          <Button 
-            variant={currentSide === "back" ? "default" : "outline"} 
+
+          {/* Project name shown below the button */}
+          {currentProject ? (
+            <div className="text-left">
+              <div className="text-sm font-semibold drop-shadow-sm truncate text-white">
+                {currentProject.name}
+              </div>
+            </div>
+          ) : (
+            <div className="text-left">
+              <div className="text-sm font-semibold drop-shadow-sm text-white/80">No project</div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Middle group: Front/Back, Background Upload (compact), Navigation */}
+      <div className="flex items-center gap-2 flex-wrap justify-center">
+        {/* Side switch */}
+        <div className="flex items-center gap-1 bg-white/10 rounded-full p-1">
+          <Button
             size="sm"
-            onClick={() => setCurrentSide("back")}
-            disabled={!template.front.backgroundGroups?.length} // Disable if no front groups
+            className={`${currentSide === 'front' ? 'bg-white text-indigo-700' : 'text-white/90'} rounded-full px-3 py-1 text-sm`}
+            onClick={() => setCurrentSide('front')}
           >
-            Back Side
+            Front
+          </Button>
+          <Button
+            size="sm"
+            className={`${currentSide === 'back' ? 'bg-white text-indigo-700' : 'text-white/90'} rounded-full px-3 py-1 text-sm`}
+            onClick={() => setCurrentSide('back')}
+          >
+            Back
           </Button>
         </div>
 
-        {/* Navigation Controls */}
-        <div className="flex items-center gap-2">
-          <Button 
-            onClick={() => navigateRecord("prev")} 
+        {/* Compact BackgroundUpload trigger (icon wrapper) */}
+        <div className="text-gray-900 dark:text-gray-900">
+          <BackgroundUpload
+            onUpload={(backgroundData) => {
+              const updatedTemplate = {
+                ...template,
+                [currentSide]: {
+                  ...template[currentSide],
+                  backgroundMode: 'dynamic',
+                  backgroundColumn: backgroundData.column,
+                  backgroundGroups: backgroundData.groups,
+                },
+              };
+              if (currentSide === "front") {
+                updatedTemplate.back = {
+                  ...updatedTemplate.back,
+                  backgroundMode: 'dynamic',
+                  backgroundColumn: backgroundData.column,
+                  backgroundGroups: backgroundData.groups.map(group => ({
+                    ...group,
+                    name: group.name.replace('Front:', 'Back:'),
+                    image: null,
+                  })),
+                };
+              }
+              setTemplate(updatedTemplate);
+              onTemplateChange(updatedTemplate);
+            }}
+            onSizeChange={handleCardSizeChange}
+            excelData={excelData}
+            backgroundConfig={template[currentSide]}
+            sideLabel={currentSide === 'front' ? 'Front' : 'Back'}
+            currentSide={currentSide}
+            template={template}
+          />
+        </div>
+
+        {/* Navigation (prev / index / next) */}
+        <div className="flex items-center gap-1 bg-white/10 px-2 py-1 rounded-md shadow-inner">
+          <Button
+            onClick={() => navigateRecord("prev")}
             disabled={currentRecordIndex === 0}
             size="sm"
-            variant="outline"
+            variant="ghost"
+            className="text-white/90 p-1 rounded-md"
           >
             <ChevronLeft className="w-4 h-4" />
           </Button>
-          
-          <div className="flex items-center gap-1">
+
+          <div className="flex items-center gap-1 px-2">
             <input
               type="number"
               min="1"
-              max={excelData.rows.length}
-              value={currentRecordIndex + 1}
+              max={Math.max(1, excelData.rows.length)}
+              value={Math.min(Math.max(1, currentRecordIndex + 1), Math.max(1, excelData.rows.length))}
               onChange={(e) => {
-                let newIndex = parseInt(e.target.value, 10) - 1;
+                const newIndex = parseInt(e.target.value, 10) - 1;
                 if (!isNaN(newIndex) && newIndex >= 0 && newIndex < excelData.rows.length) {
                   setCurrentRecordIndex(newIndex);
                 }
               }}
-              className="w-16 h-8 border rounded text-center text-sm"
+              className="w-14 h-7 bg-transparent border-none text-sm text-center text-white focus:outline-none"
             />
-            <span className="text-sm text-muted-foreground">/ {excelData.rows.length}</span>
+            <span className="text-xs text-white/70">/ {excelData.rows.length || 0}</span>
           </div>
-          
-          <Button 
-            onClick={() => navigateRecord("next")} 
+
+          <Button
+            onClick={() => navigateRecord("next")}
             disabled={currentRecordIndex === excelData.rows.length - 1}
             size="sm"
-            variant="outline"
+            variant="ghost"
+            className="text-white/90 p-1 rounded-md"
           >
             <ChevronRight className="w-4 h-4" />
           </Button>
         </div>
+      </div>
 
-        {/* Zoom Controls */}
+      {/* Right group: zoom, +/- and mask toggle */}
+      <div className="flex items-center gap-3 min-w-0">
+        {/* Zoom */}
+        <div className="flex items-center gap-2 bg-white/10 px-2 py-1 rounded-full">
+          <label htmlFor="zoom" className="text-xs text-white/80 hidden sm:inline">Zoom</label>
+          <input
+            id="zoom"
+            type="range"
+            min="0.25"
+            max="2"
+            step="0.05"
+            value={zoomLevel}
+            onChange={(e) => setZoomLevel(parseFloat(e.target.value))}
+            className="w-28"
+          />
+          <span className="text-xs font-medium text-white/90 w-10 text-right">{Math.round(zoomLevel * 100)}%</span>
+        </div>
+
+        {/* quick +/- */}
+        <div className="flex items-center gap-1">
+          <Button variant="outline" size="sm" onClick={() => setZoomLevel((z) => Math.max(z - 0.1, 0.25))} className="text-white/90 border-white/20 p-1 rounded-md">-</Button>
+          <Button variant="outline" size="sm" onClick={() => setZoomLevel(1)} className="text-white/90 border-white/20 p-1 rounded-md">Reset</Button>
+          <Button variant="outline" size="sm" onClick={() => setZoomLevel((z) => Math.min(z + 0.1, 2))} className="text-white/90 border-white/20 p-1 rounded-md">+</Button>
+        </div>
+
+        {/* Apply Mask */}
+        <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
+          <input
+            type="checkbox"
+            id="apply-mask"
+            checked={applyMask}
+            onChange={(e) => setApplyMask(e.target.checked)}
+            className="h-4 w-4 rounded border-white/40"
+          />
+          <span className="text-xs text-white/90">Apply Mask {maskSrc && `(${masks.find(m => m.url === maskSrc)?.name || 'Custom'})`}</span>
+        </label>
+      </div>
+
+
+
+{/* =========================
+   Project Manager modal (now 3 columns: Projects | Create | Uploads)
+   ========================= */}
+{isProjectManagerOpen && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    {/* backdrop */}
+    <div
+      className="absolute inset-0 bg-gradient-to-br from-black/40 via-indigo-700/20 to-pink-700/10 backdrop-blur-sm"
+      onClick={() => setIsProjectManagerOpen(false)}
+      aria-hidden="true"
+    />
+
+    {/* Modal */}
+    <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[92vh] overflow-hidden flex flex-col ring-1 ring-indigo-100">
+      {/* Header */}
+      <div className="flex items-center justify-between p-4 bg-gradient-to-r from-indigo-600 to-pink-500 text-white">
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
-            <label htmlFor="zoom" className="text-sm text-muted-foreground">Zoom</label>
-            <input
-              id="zoom"
-              type="range"
-              min="0.25"
-              max="2"
-              step="0.05"
-              value={zoomLevel}
-              onChange={(e) => setZoomLevel(parseFloat(e.target.value))}
-              className="w-24"
-            />
-            <span className="text-sm w-10">{Math.round(zoomLevel * 100)}%</span></div>
-          <div className="flex gap-1">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => setZoomLevel((z) => Math.max(z - 0.1, 0.25))}
-            >
-              -
-            </Button>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => setZoomLevel(1)}
-            >
-              Reset
-            </Button>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => setZoomLevel((z) => Math.min(z + 0.1, 2))}
-            >
-              +
-            </Button>
+          <div className="p-2 rounded-lg bg-white/20">
+            <FolderOpen className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h3 className="text-lg font-semibold leading-tight">Projects</h3>
+            <div className="text-sm text-white/80">Manage your saved projects · {projects.length} total</div>
           </div>
         </div>
-        {useKeyboardShortcuts.ShortcutHelpPanel && (
-  <div className="mt-2">
+
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-white hover:bg-white/10"
+            onClick={() => setIsProjectManagerOpen(false)}
+          >
+            <X className="w-4 h-4" />
+          </Button>
+        </div>
+      </div>
+
+      {/* Body: 3 columns — switched to light background + black text for readability */}
+      <div className="flex-1 overflow-auto p-5 grid grid-cols-1 lg:grid-cols-3 gap-6 bg-gradient-to-b from-black to-indigo-50 text-black">
+
+        {/* ---------- Left: Project list (click-to-open) ---------- */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <Label className="text-sm font-medium text-white">All Projects</Label>
+
+            <div className="flex items-center gap-3">
+              <div className="text-xs text-white">{projects.length} total</div>
+
+              {/* Sort control */}
+              <div className="flex items-center gap-2">
+                <select
+                  value={projectSortBy}
+                  onChange={(e) => setProjectSortBy(e.target.value)}
+                  className="h-8 text-xs rounded-md border px-2 bg-white text-black"
+                  aria-label="Sort projects by"
+                >
+                  <option value="updatedAt">Updated</option>
+                  <option value="name">Name</option>
+                </select>
+
+                <button
+                  title="Toggle sort order"
+                  onClick={() => setProjectSortOrder(prev => prev === "asc" ? "desc" : "asc")}
+                  className="h-8 w-8 flex items-center justify-center rounded-md border hover:shadow-sm bg-white text-gray-600"
+                  aria-label="Toggle sort order"
+                >
+                  {projectSortOrder === "asc" ? "▲" : "▼"}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Search input */}
+          <div className="flex items-center gap-2">
+            <Input
+              placeholder="Search projects (name)…"
+              value={projectSearch}
+              onChange={(e) => setProjectSearch(e.target.value)}
+              className="w-full text-black"
+              aria-label="Search projects by name"
+            />
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setProjectSearch("")}
+              title="Clear search"
+              className="h-8 w-8"
+            >
+              ✕
+            </Button>
+          </div>
+
+          {/* Projects list */}
+          <div className="p-4 bg-white rounded-2xl shadow-md border border-gray-100 space-y-4">
+            {filteredAndSortedProjects.length === 0 ? (
+              <div className="text-sm text-gray-500">No projects match your search. Create one on the right.</div>
+            ) : (
+              filteredAndSortedProjects.map((p) => (
+                <div
+                  key={p.id}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => {
+                    loadProject(p.id);
+                    setCurrentProject(p);
+                    setIsProjectManagerOpen(false);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      loadProject(p.id);
+                      setCurrentProject(p);
+                      setIsProjectManagerOpen(false);
+                    }
+                  }}
+                  className={`flex items-center justify-between p-3 rounded-lg border transition-shadow duration-150 transform cursor-pointer ${
+                    currentProject?.id === p.id
+                      ? 'bg-gradient-to-r from-indigo-50 to-purple-50 border-indigo-200 shadow-md scale-[1.01]'
+                      : 'bg-white border-gray-100 hover:shadow-sm hover:scale-[1.01]'
+                  }`}
+                >
+                  <div className="min-w-0">
+                    <div className="font-medium truncate text-gray-800">{p.name}</div>
+                  </div>
+
+                  <div className="flex items-center gap-2 ml-4">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={(e) => { e.stopPropagation(); loadProject(p.id); setIsProjectManagerOpen(false); }}
+                      className="text-indigo-600"
+                    >
+                      Open
+                    </Button>
+
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const newName = window.prompt('Rename project', p.name);
+                        if (newName && newName.trim() && newName.trim() !== p.name) {
+                          renameProject(p.id, newName.trim());
+                        }
+                      }}
+                      className="text-purple-600"
+                    >
+                      Rename
+                    </Button>
+
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (window.confirm(`Delete "${p.name}"? This cannot be undone.`)) {
+                          deleteProject(p.id);
+                        }
+                      }}
+                    >
+                      Delete
+                    </Button>
+
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setCurrentProject(p);
+                        exportProject();
+                      }}
+                      className="text-indigo-600"
+                    >
+                      Export
+                    </Button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* ---------- Middle: Create / Import (kept light with black text) ---------- */}
+        <div className="p-4 bg-teal rounded-2xl shadow-md border border-gray-900 space-y-6">
+          <div className="p-4 rounded-xl border border-gray-900 bg-gradient-to-br from-white to-indigo-50">
+            <Label className="text-sm font-medium text-black">Create New Project</Label>
+
+            <div className="flex gap-2 mt-3">
+              <Input
+                type="text"
+                placeholder="Project name"
+                value={newProjectName}
+                onChange={(e) => setNewProjectName(e.target.value)}
+                className="flex-1 text-black"
+              />
+              <Button
+                onClick={() => {
+                  createNewProject();
+                }}
+              >
+                Create
+              </Button>
+            </div>
+          </div>
+
+          <div className="p-4 rounded-xl border border-gray-900 bg-gradient-to-br from-white to-pink-50">
+            <Label className="text-sm font-medium text-black">Import Project</Label>
+            <div className="flex gap-2 mt-3 items-center">
+              <Input type="file" accept=".idcard,application/json" onChange={importProject} />
+              <div className="text-xs text-gray-500">Import .idcard (JSON)</div>
+            </div>
+          </div>
+        </div>
+
+        {/* ---------- Right: Upload Section (Excel / Photos / Masks) (light bg) ---------- */}
+        <div className="p-4 bg-orange rounded-2xl shadow-md border border-red-100 space-y-4">
+          <div className="p-3 rounded-2xl border border-gray-900 bg-gradient-to-br from-blue to-indigo-50">
+            <div className="flex items-center justify-between mb-2">
+              <Label className="text-sm font-medium flex items-center gap-2 text-white">
+                <FileText className="w-4 h-4 text-white" /> Uploads
+              </Label>
+              <div className="text-xs text-gray-500">{excelData?.rows?.length || 0} / {Object.keys(photos).length} / {masks.length}</div>
+            </div>
+
+            {/* Compact upload grid */}
+            <div className="grid grid-cols-1 gap-3">
+              {/* Excel tile */}
+              <div className="p-3 rounded-lg border border-dashed border-gray-200 bg-white/80 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <FileText className="w-5 h-5 text-blue-600" />
+                  <div>
+                    <div className="text-sm font-medium text-black">Excel Data</div>
+                    <div className="text-xs text-gray-500">{excelData?.rows?.length || 0} records</div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <>
+                    <Input
+                      id="excel-upload-modal"
+                      type="file"
+                      accept=".xlsx,.xls"
+                      onChange={handleExcelUpload}
+                      className="hidden"
+                    />
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => document.getElementById('excel-upload-modal').click()}
+                    >
+                      Upload
+                    </Button>
+
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setShowExcelEditor(true)}
+                      disabled={!excelData?.rows?.length}
+                    >
+                      Edit
+                    </Button>
+                  </>
+                </div>
+              </div>
+
+              {/* Photos tile */}
+              <div className="p-3 rounded-lg border border-dashed border-gray-200 bg-white/80 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <ImageIcon className="w-5 h-5 text-purple-600" />
+                  <div>
+                    <div className="text-sm font-medium text-black">Card Photos</div>
+                    <div className="text-xs text-gray-500">{Object.keys(photos).length} photos</div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <>
+                    <Input
+                      id="photo-upload-modal"
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handlePhotoUpload}
+                      className="hidden"
+                    />
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => document.getElementById('photo-upload-modal').click()}
+                    >
+                      Upload
+                    </Button>
+
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setShowGalleryModal(true)}
+                      disabled={Object.keys(photos).length === 0}
+                    >
+                      Gallery
+                    </Button>
+                  </>
+                </div>
+              </div>
+
+              {/* Masks tile */}
+              <div className="p-3 rounded-lg border border-dashed border-gray-200 bg-white/80 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Layers className="w-5 h-5 text-green-600" />
+                  <div>
+                    <div className="text-sm font-medium text-black">Card Masks</div>
+                    <div className="text-xs text-gray-500">{masks.length} masks</div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <>
+                    <Input
+                      id="mask-upload-modal"
+                      type="file"
+                      accept="image/png"
+                      multiple
+                      onChange={handleMaskUpload}
+                      className="hidden"
+                    />
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => document.getElementById('mask-upload-modal').click()}
+                    >
+                      Upload
+                    </Button>
+
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setShowMaskGallery(true)}
+                      disabled={masks.length === 0}
+                    >
+                      Gallery
+                    </Button>
+                  </>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-3 text-xs text-gray-600">
+              Tip: Upload Excel to bind data to text fields. Upload photos & masks to preview and apply to cards.
+            </div>
+          </div>
+        </div>
+      </div>
+
+{/* Footer */}
+<div className="p-4 border-t bg-white flex items-center justify-end gap-3">
+  <Button
+    variant="outline"
+    onClick={() => setIsProjectManagerOpen(false)}
+    className="border-gray-200 bg-white hover:bg-gray-50 text-gray-700"
+    aria-label="Close project manager"
+  >
+    <span className="text-gray-700">Close</span>
+  </Button>
+
+  <Button
+    onClick={saveProject}
+    disabled={!currentProject}
+    size="sm"
+    className="gap-1 bg-white text-indigo-600 hover:bg-indigo-50"
+    aria-label="Save project"
+  >
+    <Save className="w-4 h-4" />
+    <span className="text-indigo-600">Save</span>
+  </Button>
+</div>
+    </div>
+  </div>
+)}
+
+
+  {/* =========================
+     Excel Editor Modal (keeps your prior logic, wired to setShowExcelEditor)
+     ========================= */}
+  {showExcelEditor && (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
+      <div className="bg-white rounded-lg max-w-6xl w-full max-h-[90vh] flex flex-col">
+        <div className="flex items-center justify-between p-4 border-b">
+          <h2 className="text-lg font-semibold">Excel Data Editor</h2>
+          <Button
+            variant="ghost"
+            onClick={() => setShowExcelEditor(false)}
+            className="text-gray-500 hover:text-gray-900"
+          >
+            <X className="w-5 h-5" />
+          </Button>
+        </div>
+
+        <div className="flex-1 overflow-auto">
+          <ExcelEditor
+            excelData={excelData}
+            onSave={(newData) => {
+              setExcelData(newData);
+
+              // Update data elements based on the current record index (keeps existing logic)
+              const updatedElements = template[currentSide].elements.map(el => {
+                if (el.heading && !el.isStatic) {
+                  const updatedValue = newData.rows[currentRecordIndex]?.[el.heading];
+                  if (updatedValue !== undefined) {
+                    return { ...el, content: updatedValue };
+                  }
+                }
+                return el;
+              });
+
+              setTemplate(prev => ({
+                ...prev,
+                [currentSide]: {
+                  ...prev[currentSide],
+                  elements: updatedElements
+                }
+              }));
+            }}
+          />
+        </div>
+
+        <div className="p-4 border-t flex justify-end gap-2">
+          <Button variant="outline" onClick={() => setShowExcelEditor(false)}>Cancel</Button>
+          <Button
+            onClick={() => {
+              // Let the ExcelEditor component handle save via a custom event
+              const editor = document.querySelector('#excel-editor');
+              if (editor) editor.dispatchEvent(new Event('save'));
+            }}
+          >
+            Save Changes
+          </Button>
+        </div>
+      </div>
+    </div>
+  )}
+
+  {/* =========================
+     Photo Gallery Modal (compact gallery & selection)
+     ========================= */}
+  {showGalleryModal && (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
+      <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] flex flex-col shadow-xl">
+        <div className="flex items-center justify-between p-3 border-b">
+          <div className="flex items-center gap-2">
+            <Grid className="w-5 h-5 text-gray-700" />
+            <h2 className="text-lg font-semibold">Photo Gallery</h2>
+            <span className="text-xs text-muted-foreground ml-1">({Object.keys(photos).length} photos)</span>
+          </div>
+          <Button variant="ghost" size="sm" onClick={() => setShowGalleryModal(false)} className="text-gray-500 hover:text-gray-900">
+            <X className="w-5 h-5" />
+          </Button>
+        </div>
+
+        <div className="flex-1 overflow-auto p-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+            {Object.entries(photos).length === 0 ? (
+              <div className="text-gray-500">No photos uploaded.</div>
+            ) : (
+              Object.entries(photos).map(([key, src]) => (
+                <div key={key} className="group relative rounded-md overflow-hidden border bg-gray-50">
+                  <img src={src} alt={key} className="w-full h-40 object-cover" />
+                  <div className="absolute inset-0 group-hover:bg-black/10 transition-colors" />
+                  <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button size="iconSm" variant="ghost" onClick={(e) => { e.stopPropagation(); const cp = { ...photos }; delete cp[key]; setPhotos(cp); }}>
+                      <Trash2 className="w-4 h-4 text-red-500" />
+                    </Button>
+                    <Button size="iconSm" variant="ghost" onClick={(e) => { e.stopPropagation(); /* set as main preview or similar */ }}>
+                      <ImageIcon className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        <div className="p-3 border-t flex justify-end gap-2">
+          <Button variant="outline" onClick={() => setShowGalleryModal(false)}>Close</Button>
+          <Button onClick={() => setShowGalleryModal(false)}>Done</Button>
+        </div>
+      </div>
+    </div>
+  )}
+
+  {/* =========================
+     Mask Gallery Modal (keeps your prior logic, with preview + apply)
+     ========================= */}
+  {showMaskGallery && (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
+      <div className="bg-white rounded-lg w-full max-w-2xl max-h-[90vh] flex flex-col shadow-xl">
+        {/* Header */}
+        <div className="flex items-center justify-between p-3 border-b">
+          <div className="flex items-center gap-2">
+            <Layers className="w-5 h-5 text-green-600" />
+            <h2 className="text-lg font-semibold">Mask Gallery</h2>
+            <span className="text-xs text-muted-foreground ml-1">({masks.length} masks)</span>
+          </div>
+          <Button variant="ghost" size="sm" onClick={() => setShowMaskGallery(false)} className="text-gray-500 hover:text-gray-900">
+            <X className="w-5 h-5" />
+          </Button>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-hidden flex flex-col">
+          {selectedMask ? (
+            <div className="flex flex-col h-full">
+              {/* Preview Pane */}
+              <div className="flex-1 p-4 bg-gray-50 flex items-center justify-center">
+                <div className="relative w-full max-w-md aspect-square bg-white shadow-sm rounded-lg overflow-hidden border">
+                  {photos[Object.keys(photos)[0]] ? (
+                    <>
+                      <PhotoMask
+                        src={photos[Object.keys(photos)[0]]}
+                        maskSrc={selectedMask.url}
+                        className="absolute inset-0 w-full h-full object-contain"
+                      />
+                      <div className="absolute inset-0 border-2 border-green-400/50 pointer-events-none" />
+                    </>
+                  ) : (
+                    <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-gray-400">
+                      <ImageIcon className="w-8 h-8" />
+                      <p className="text-sm">No photo available for preview</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Action Bar */}
+              <div className="p-3 border-t bg-white flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium px-2 py-1 bg-gray-100 rounded">
+                    {selectedMask.name}
+                  </span>
+                </div>
+
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={() => setSelectedMask(null)}>Back</Button>
+                  <Button size="sm" onClick={() => { applySelectedMask(selectedMask.url); setShowMaskGallery(false); }} className="bg-green-600 hover:bg-green-700">
+                    Apply Mask
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 p-3 overflow-auto">
+              {masks.map((mask) => (
+                <div
+                  key={mask.name}
+                  className="group relative cursor-pointer"
+                  onClick={() => setSelectedMask(mask)}
+                >
+                  <div className="aspect-square bg-gray-50 rounded-md overflow-hidden border relative">
+                    {photos[Object.keys(photos)[0]] ? (
+                      <PhotoMask
+                        src={photos[Object.keys(photos)[0]]}
+                        maskSrc={mask.url}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-gray-300">
+                        <ImageIcon className="w-6 h-6" />
+                      </div>
+                    )}
+                    <div className="absolute inset-0 group-hover:bg-black/10 transition-colors" />
+                  </div>
+                  <div className="mt-1 px-1">
+                    <p className="text-xs font-medium truncate">{mask.name}</p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="iconSm"
+                    className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 hover:bg-white"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setMasks(masks.filter(m => m.name !== mask.name));
+                    }}
+                  >
+                    <Trash2 className="w-3 h-3 text-red-500" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )}
+
+{/* Shortcut help (if present) */}
+{useKeyboardShortcuts.ShortcutHelpPanel && (
+  <div className="ml-2 hidden sm:block text-black">
     <useKeyboardShortcuts.ShortcutHelpPanel />
   </div>
 )}
-{/* Replace the current mask toggle with this */}
-<div className="flex items-center space-x-2">
-  <input 
-    type="checkbox" 
-    id="apply-mask" 
-    checked={applyMask} 
-    onChange={(e) => setApplyMask(e.target.checked)} 
-    className="h-4 w-4"
-  />
-  <label htmlFor="apply-mask" className="text-sm">
-    Apply Mask {maskSrc && `(${masks.find(m => m.url === maskSrc)?.name || 'Custom'})`}
-  </label>
+
+      </div>
+
+{/* Unified Add & Delete Elements UI - Stylish & Dashing */}
+<div className="bg-gradient-to-r from-indigo-50 via-purple-50 to-pink-50 p-4 rounded-xl shadow-lg flex flex-wrap items-center gap-2 mb-4">
+
+  {/* Label */}
+  <Label className="text-sm font-semibold whitespace-nowrap mr-2 text-gray-700">Add Element:</Label>
+  
+  {/* Select Dropdown */}
+  <select
+    value={selectedHeader}
+    onChange={(e) => setSelectedHeader(e.target.value)}
+    className="p-2 border border-gray-300 rounded-lg text-sm h-9 focus:ring-2 focus:ring-purple-400 focus:border-purple-400 transition-all"
+  >
+    <option value="custom">Custom</option>
+    {excelData?.headers?.length > 0 ? (
+      excelData.headers.map((header) => (
+        <option key={header} value={header}>{header}</option>
+      ))
+    ) : (
+      <option disabled>No headers available</option>
+    )}
+  </select>
+
+  {/* Add Buttons with gradient & hover */}
+  <Button 
+    onClick={() => addElement("text")} 
+    size="sm" 
+    className="gap-1 bg-gradient-to-r from-green-400 to-green-600 text-white font-semibold shadow-md hover:scale-105 transform transition-all rounded-lg"
+  >
+    <Type className="w-3.5 h-3.5" />
+    Text
+  </Button>
+
+  <Button 
+    onClick={() => addElement("image")} 
+    size="sm" 
+    className="gap-1 bg-gradient-to-r from-blue-400 to-blue-600 text-white font-semibold shadow-md hover:scale-105 transform transition-all rounded-lg"
+  >
+    <ImageIcon className="w-3.5 h-3.5" />
+    Image
+  </Button>
+
+  <Button 
+    onClick={() => addElement("qrcode")} 
+    size="sm" 
+    className="gap-1 bg-gradient-to-r from-purple-400 to-purple-600 text-white font-semibold shadow-md hover:scale-105 transform transition-all rounded-lg"
+  >
+    <QrCode className="w-3.5 h-3.5" />
+    QR Code
+  </Button>
+
+  <Button 
+    onClick={() => addElement("barcode")} 
+    size="sm" 
+    className="gap-1 bg-gradient-to-r from-pink-400 to-pink-600 text-white font-semibold shadow-md hover:scale-105 transform transition-all rounded-lg"
+  >
+    <Barcode className="w-3.5 h-3.5" />
+    Barcode
+  </Button>
+
+  {/* AutoContainerGenerator Button inline with gradient */}
+  <div className="flex items-center">
+    <div className="bg-gradient-to-r from-yellow-400 to-yellow-600 rounded-lg p-1 shadow-md">
+      <AutoContainerGenerator
+        onTemplateChange={onTemplateChange}
+        excelData={excelData}
+        currentSide={currentSide}
+        setTemplate={setTemplate}
+      />
+    </div>
+  </div>
+
+  {/* Delete Button with danger style */}
+  <Button 
+    onClick={deleteElements} 
+    size="sm" 
+    className="gap-1 bg-gradient-to-r from-red-400 to-red-600 text-white font-semibold shadow-md hover:scale-105 transform transition-all rounded-lg"
+  >
+    <Trash2 className="w-3.5 h-3.5" />
+    Delete Selected
+  </Button>
+  
+    <div className="flex flex-wrap gap-2 items-center">
+
+      {/* Save stays outside the modal as requested */}
+                  {lastSaved && (
+        <span className="text-xs text-black-50/80 mr-2">
+          Last saved: {new Date(lastSaved).toLocaleString()}
+        </span>
+      )}
+      <Button
+        onClick={saveProject}
+        disabled={!currentProject}
+        size="sm"
+        className="bg-gradient-to-r from-yellow-400 to-yellow-600 rounded-lg p-1 shadow-md"
+      >
+        <Save className="w-4 h-4" />
+        Save
+      </Button>
+
+
+      {/* Batch Generator */}
+      <div className="mt-2">
+
+      <CardGenerator
+  template={template}
+  excelData={excelData}
+  photos={photos}
+  applyMask={applyMask}
+  maskSrc={maskSrc}
+  projects={projects}
+  currentProject={currentProject}
+  rotations={rotations} // Pass rotations
+  photoInstanceRotations={photoInstanceRotations} // Pass instance rotations
+/>
+      </div>
+    </div>
+
 </div>
-      </div>
 
-      {/* Add Elements Horizontal Card */}
-      <div className="bg-white p-4 rounded-lg shadow-sm flex flex-wrap items-center gap-2 mb-4">
-        <Label className="text-sm font-medium whitespace-nowrap mr-2">Add Element:</Label>
-        <select
-          value={selectedHeader}
-          onChange={(e) => setSelectedHeader(e.target.value)}
-          className="p-2 border rounded text-sm h-9"
-        >
-          <option value="custom">Custom</option>
-          {excelData?.headers?.length > 0 ? (
-            excelData.headers.map((header) => (
-              <option key={header} value={header}>{header}</option>
-            ))
-          ) : (
-            <option disabled>No headers available</option>
-          )}
-        </select>
-
-        <Button onClick={() => addElement("text")} size="sm" className="gap-1">
-          <Type className="w-3.5 h-3.5" />
-          Text
-        </Button>
-        <Button onClick={() => addElement("image")} size="sm" className="gap-1">
-          <ImageIcon className="w-3.5 h-3.5" />
-          Image
-        </Button>
-        <Button onClick={() => addElement("qrcode")} size="sm" className="gap-1">
-          <QrCode className="w-3.5 h-3.5" />
-          QR Code
-        </Button>
-        <Button onClick={() => addElement("barcode")} size="sm" className="gap-1">
-          <Barcode className="w-3.5 h-3.5" />
-          Barcode
-        </Button>
-      </div>
 
       {/* Main Workspace */}
       <div className="flex flex-col lg:flex-row gap-4">
@@ -2119,16 +2372,6 @@ return (
         <div className="w-full lg:w-64 space-y-4">
           {selectedElements.length > 0 && (
             <div className="space-y-3 bg-white p-4 rounded-lg shadow-sm">
-              <Button 
-                onClick={deleteElements} 
-                size="sm" 
-                variant="destructive"
-                className="gap-1 w-full"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-                Delete Selected
-              </Button>
-
 
               <ElementSettings
                 elements={selectedElements}
@@ -2145,7 +2388,7 @@ return (
         <div className="flex-1">
         <div
       ref={panWrapperRef}
-      className="overflow-auto p-4 bg-teal rounded-lg border shadow-sm"
+      className="overflow-auto p-4 bg-black/10 rounded-lg border border-gray-200 shadow-sm"
       onMouseDown={handlePanStart}
       onMouseMove={handlePanMove}
       onMouseUp={handlePanEnd}
@@ -2256,32 +2499,9 @@ return (
           </div>
         </div>
 
-        {/* Right Sidebar - Template Controls */}
-        <div className="w-full lg:w-64">
-          <AutoContainerGenerator
-            onTemplateChange={onTemplateChange}
-            excelData={excelData}
-            currentSide={currentSide}
-            setTemplate={setTemplate}
-          />
-        </div>
+
       </div>
 
-      {/* Batch Generator */}
-      <div className="mt-4">
-
-      <CardGenerator
-  template={template}
-  excelData={excelData}
-  photos={photos}
-  applyMask={applyMask}
-  maskSrc={maskSrc}
-  projects={projects}
-  currentProject={currentProject}
-  rotations={rotations} // Pass rotations
-  photoInstanceRotations={photoInstanceRotations} // Pass instance rotations
-/>
-      </div>
 {/* Photo Gallery Modal */}
 {showGalleryModal && (
   <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4">
@@ -2549,42 +2769,91 @@ return (
     </div>
   ) : (
     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 bg-white p-2">
-      {Object.entries(photos).map(([name, url]) => (
-        <div
-          key={name}
-          className="cursor-pointer bg-white rounded-lg border border-gray-200 p-2 hover:shadow-md transition-shadow relative group"
-          onClick={() => setSelectedPhoto({ name, url })}
-        >
-          <div className="aspect-square overflow-hidden rounded-md bg-gray-100 relative">
-            <img
-              src={url}
-              alt={name}
-              className="w-full h-full object-cover"
-              style={{
-                transform: `rotate(${rotations.gallery[name] || 0}deg)`,
-                transition: 'transform 0.3s ease',
-                backgroundColor: 'white'
-              }}
-            />
-            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-              <Button
-                size="icon"
-                variant="destructive"
-                className="h-6 w-6"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handlePhotoDelete(name);
-                }}
-              >
-                <X className="h-3 w-3" />
-              </Button>
+      {(() => {
+        // Get all image elements and their selected headers
+        const imageHeaders = new Set();
+        ['front', 'back'].forEach(side => {
+          template[side]?.elements?.forEach(element => {
+            if (element.type === "image" && element.heading && !element.isCustomImage) {
+              imageHeaders.add(element.heading);
+            }
+          });
+        });
+
+        // Get all photo names from Excel data based on selected headers
+        const relevantPhotoNames = new Set();
+        if (imageHeaders.size > 0 && excelData.rows) {
+          excelData.rows.forEach(row => {
+            imageHeaders.forEach(header => {
+              const photoName = row[header];
+              if (photoName) {
+                relevantPhotoNames.add(photoName.toString().trim());
+              }
+            });
+          });
+        }
+
+        // Filter photos: show custom images + photos matching Excel data
+        const filteredPhotos = Object.entries(photos).filter(([name]) => {
+          // Always show custom images
+          if (name.startsWith('custom_image_')) return true;
+          // Show if it matches a photo name from Excel data
+          if (relevantPhotoNames.has(name)) return true;
+          // Show if no image elements exist (show all)
+          if (imageHeaders.size === 0) return true;
+          return false;
+        });
+
+        if (filteredPhotos.length === 0) {
+          return (
+            <div className="col-span-full text-center py-8 text-gray-500">
+              <p className="text-sm">No photos uploaded yet.</p>
+              {imageHeaders.size > 0 && (
+                <p className="text-xs mt-2">
+                  Upload photos matching: {Array.from(imageHeaders).join(', ')}
+                </p>
+              )}
             </div>
+          );
+        }
+
+        return filteredPhotos.map(([name, url]) => (
+          <div
+            key={name}
+            className="cursor-pointer bg-white rounded-lg border border-gray-200 p-2 hover:shadow-md transition-shadow relative group"
+            onClick={() => setSelectedPhoto({ name, url })}
+          >
+            <div className="aspect-square overflow-hidden rounded-md bg-gray-100 relative">
+              <img
+                src={url}
+                alt={name}
+                className="w-full h-full object-cover"
+                style={{
+                  transform: `rotate(${rotations.gallery[name] || 0}deg)`,
+                  transition: 'transform 0.3s ease',
+                  backgroundColor: 'white'
+                }}
+              />
+              <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <Button
+                  size="icon"
+                  variant="destructive"
+                  className="h-6 w-6"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handlePhotoDelete(name);
+                  }}
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              </div>
+            </div>
+            <p className="text-xs mt-2 text-center text-gray-700 font-medium truncate px-1">
+              {name} ({rotations.gallery[name] || 0}°)
+            </p>
           </div>
-          <p className="text-xs mt-2 text-center text-gray-700 font-medium truncate px-1">
-            {name} ({rotations.gallery[name] || 0}°)
-          </p>
-        </div>
-      ))}
+        ));
+      })()}
     </div>
   )}
 </div>

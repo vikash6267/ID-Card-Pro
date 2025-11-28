@@ -497,17 +497,57 @@ const handleTextChange = (e) => {
         
         // For custom images, check photos first
         if (element.isCustomImage) {
+          console.log("Custom image:", photoKey, "->", photos[photoKey]);
           return photos[photoKey] || "/placeholder.svg";
         }
         
-        // For dynamic images, try both direct and excel-based references
-        const excelValue = excelData.rows[currentRecordIndex]?.[element.heading];
-        return photos[excelValue] || photos[photoKey] || "/placeholder.svg";
+        // For dynamic images, get value from current record
+        if (element.heading && currentRecord) {
+          const excelValue = currentRecord[element.heading];
+          
+          if (excelValue) {
+            const trimmedValue = excelValue.toString().trim();
+            
+            // Try exact match first
+            let photoUrl = photos[excelValue] || photos[trimmedValue];
+            
+            // If not found, try without extension
+            if (!photoUrl || photoUrl === "/placeholder.svg") {
+              const withoutExt = trimmedValue.replace(/\.[^/.]+$/, ""); // Remove extension
+              photoUrl = photos[withoutExt];
+              console.log("Trying without extension:", withoutExt, "found:", !!photoUrl);
+            }
+            
+            // If still not found, try case-insensitive match
+            if (!photoUrl || photoUrl === "/placeholder.svg") {
+              const lowerValue = trimmedValue.toLowerCase();
+              const matchingKey = Object.keys(photos).find(key => 
+                key.toLowerCase() === lowerValue || 
+                key.toLowerCase() === lowerValue.replace(/\.[^/.]+$/, "")
+              );
+              if (matchingKey) {
+                photoUrl = photos[matchingKey];
+                console.log("Found case-insensitive match:", matchingKey);
+              }
+            }
+            
+            if (photoUrl && photoUrl !== "/placeholder.svg") {
+              console.log("✅ Returning photo URL for", excelValue);
+              return photoUrl;
+            }
+            
+            console.log("❌ No photo found for:", excelValue, "tried:", trimmedValue);
+          }
+        }
+        
+        // Fallback to direct photo key
+        console.log("Fallback - photoKey:", photoKey, "photo exists:", !!photos[photoKey]);
+        return photos[photoKey] || "/placeholder.svg";
       }
       
       return element.content || "/placeholder.svg";
     } catch (error) {
-      console.warn("Error getting content:", error);
+      console.error("Error getting content:", error);
       return "/placeholder.svg";
     }
   };
@@ -664,28 +704,36 @@ const handleTextChange = (e) => {
            
           }}
         >
-{getContent() ? (
-  applyMask && maskSrc && !element.isCustomImage ? (
+{(() => {
+  const imageUrl = getContent();
+  console.log("Rendering image - URL:", imageUrl, "element:", element.id, "heading:", element.heading);
+  
+  if (!imageUrl || imageUrl === "/placeholder.svg") {
+    return <ImageIcon className="w-6 h-6 text-gray-400" />;
+  }
+  
+  return applyMask && maskSrc && !element.isCustomImage ? (
     <PhotoMask
-      src={photos[element.content] || "/placeholder.svg"}
+      src={imageUrl}
       maskSrc={maskSrc}
-      onMaskApply={() => handleMaskApply(photos[element.content], true)}
-      rotation={totalRotation} // Pass combined rotation
+      onMaskApply={() => handleMaskApply(imageUrl, true)}
+      rotation={totalRotation}
       className="w-full h-full object-cover"
       elementStyle={element.style}
     />
   ) : (
     <div className="relative w-full h-full flex items-center justify-center">
       <img
-        src={applyMask 
-          ? photos[element.content] 
-          : photos[`original_${element.content}`] || photos[element.content] || "/placeholder.svg"
-        }
+        src={imageUrl}
         alt="Element Image"
         className="w-full h-full object-cover"
         onLoad={(e) => checkTransparency(e.target, setHasImageTransparency)}
+        onError={(e) => {
+          console.error("Image failed to load:", imageUrl);
+          e.target.src = "/placeholder.svg";
+        }}
         style={{
-          transform: `rotate(${totalRotation}deg)`, // Apply combined rotation
+          transform: `rotate(${totalRotation}deg)`,
           transformOrigin: "center center",
           transition: 'transform 0.2s ease',
           opacity: element.style?.opacity ?? 1,
@@ -707,10 +755,8 @@ const handleTextChange = (e) => {
         }}
       />
     </div>
-  )
-) : (
-  <ImageIcon className="w-6 h-6 text-gray-400" />
-)}
+  );
+})()}
        
         </div>
       );
@@ -759,16 +805,17 @@ const handleTextChange = (e) => {
     else if (element.type === "barcode") {
       return (
         <div
-          className="w-full h-full flex items-center justify-center"
+          className="w-full h-full flex items-center justify-center bg-white"
           style={{
             width: "100%", 
             height: "100%",
-            padding: "0", // Ensure no extra space
+            padding: "5px",
+            boxSizing: "border-box"
           }}
         >
           <BarcodeElement 
             content={element.content || "123456789012"} 
-            size={{ width: "100%", height: "100%" }} // Ensure it fills the container
+            size={{ width: element.size.width, height: element.size.height }}
             rotation={rotation} 
           />
         </div>
